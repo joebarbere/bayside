@@ -46,9 +46,11 @@
 
 ## Stage 3: Annotation
 
+**Cross-cutting reference:** INT E0h API reference compiled (2026-04-07). All 8 service classes documented, 28 AX codes inventoried, full cross-reference by module. See `research/docs/int-e0h-api-reference.md`.
+
 | Module | Functions Labeled | Data Structures | Hardware I/O | Notes |
 |--------|------------------|-----------------|--------------|-------|
-| DESK.EXE | :white_large_square: | :white_large_square: | :white_large_square: | |
+| DESK.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 118 functions named; INT E0h dispatch handler at seg_03F5:0000; PDM/RES module loader chain; 32-slot resource table (11 bytes/entry); INT 09h/13h/21h/24h hooks; memory management; EMS support; keyboard translation tables; 5 global variable regions mapped; see disassembly/annotated/desk.asm |
 | DESKTOP.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | TEXT.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | WRKSHEET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
@@ -58,11 +60,11 @@
 | CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | TELECOM.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| HANGMAN.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| HANGMAN.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 200 functions named (100+ app + CRT); player struct (21 bytes), BSS map, packed word list format, profanity filter (55 fragments); no direct HW I/O -- uses DM API via INT E0h; see disassembly/annotated/hangman.asm |
 | FORMSET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| PLAY.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| PLAY.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 114 functions named (25 app + 30 DMGUF + 9 PRGUF + 6 resource + 25 CRT); tutorial lesson catalog (15 entries); dmplay/unpack resource interaction; no direct HW I/O; see disassembly/annotated/play.asm |
 | MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| DMVID.EXE | :white_large_square: | :white_large_square: | :white_large_square: | |
+| DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 74 functions named (18 app + 56 CRT); DMCSR.CFG format mapped; no direct HW I/O — selects .RES driver for DESK.EXE; see disassembly/annotated/dmvid.asm |
 | *.RES | :white_large_square: | :white_large_square: | :white_large_square: | |
 
 ## Stage 4: C Transpilation

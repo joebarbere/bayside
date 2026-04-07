@@ -1,8 +1,8 @@
-# Bayside
+# bayside
 
 **Reverse engineering Tandy DeskMate 3.05 into clean, compilable C source code.**
 
-Bayside is a preservation and reconstruction project targeting DeskMate 3.05 (1990), the integrated desktop environment that shipped with Tandy 1000-series PCs. The goal is to produce fully annotated disassembly of every DeskMate binary and transpile it into readable C89 that compiles with OpenWatcom and runs identically in DOSBox.
+bayside is a preservation and reconstruction project targeting DeskMate 3.05 (1990), the integrated desktop environment that shipped with Tandy 1000-series PCs. The goal is to produce fully annotated disassembly of every DeskMate binary and transpile it into readable C89 that compiles with OpenWatcom and runs identically in DOSBox.
 
 ## Status
 
