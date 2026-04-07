@@ -1,0 +1,169 @@
+DDM89>
+0-\*.*
+PDMCOMEXEBATSR
+SQRU
+8N-u
+:F-w
+]ZY[
+B8f,t
+NZ_^
+)PRS
+[ZHXu
+^[]X
+&T!Z
+VWSQ
+#Hu,
+Y[_^
+SQRU3
+!r8;
+]ZY[
+VWSQR
+ZY[_^
+$XHt
+SQWV
+-GQW
+^_Y[
+PSQRVW
+_^ZY[X
+ZY[r
+u-QWV
+VWRPQ
+XZ_^2
+!QWV
+<DMu
+r_SP
+USQRWVW
+^_ZY[]
+__ZY
+G7[S
+QRWVUSS
+Xu%&
+[]^_ZY
+< r.:
+, ,A
+rDWV
+PSQ3
+Y[XZ
+QSR3
+v*PS
+u'SR
+!Z[YX
+VWSQR
+^_Yt
+ZY[_^
+VWQ2
+!X_Z
+WVQRU
+P]ZY^_
+VWSQR
+Y[_^
+VWSQ
+QWV3
+SQRWV
+^_ZY[
+QRVW
+ _^ZY
+r$9>
+SQVWR
+Z_^Y[
+QVW3
+r6Hu3R
+VWSQRP
+ZZY[_^
+VWSQR3
+ZY[_^
+WVQS
+[Y^_
+WVQR
+ZY^_
+SQRVW
+_^ZY[
+UVWSQRP
+XZY[_^]
+UVWSQRP
+WARNING: Resource $ had UseCount = $h
+$RQWP
+023I3
+@1`2
+01l3
+0j1w1
+L1[1
+1File Not Found
+Not Enough Memory
+Disk Error
+Write Protected Disk
+Disk not formatted
+Share Violation
+Program Not Run
+Disk Needed
+Network Error
+Couldn't load 
+The program 
+ will not fit.  Enter to return.
+Enter to retry, Esc to cancel.
+ into any drive.
+Enter to continue, Esc to cancel.
+Please insert the disk labeled 
+Please insert a disk containing the file 
+There is a problem with the disk in drive 
+Please insert a disk into drive 
+Disk in drive 
+ is write protected.
+Enter to retry with the same disk, Esc to Cancel.
+Unrecognized disk format in drive 
+Access denied.
+File is in use by another program.
+Unable to locate file 
+Enter to search, Esc to cancel.
+Another non-DeskMate application is running.  
+WVSQR
+, ,A2
+ZY[^_
+SQRVW
+_^ZY[
+!]ZY_^
+SQVW
+_^Y[
+SQRVW
+Hu{3
+_^ZY[
+DeskMate
+Version: 03.05.00
+Copyright 1984,1990 Tandy Corporation 
+The DeskMate product is already running.
+DeskMate Extended Memory support not loaded.
+VWQRU
+,A< r
+SQRWVU
+O<\t
+]^_ZY[
+_^Y[
+VWSQRU&
+]ZY[_^
+DESKMATE$05.00 900919$
+!X[YZ^_]
+)YZfiklpqrtuz}
+OKGRSPMHQI
+%U+U$
+"5:u
+AUTOLOAD.CFG
+DMPRELOD$WRKGROUP$
+DMEMM
+.ACC
+PATH=
+PRGUF
+DMCONFIG=
+COMSPEC=
+$.PDM
+COMMAND.COM
+DESKTOP
+DMOLDAPP.MOD
+DMTASK1=
+DMCSR
+DMGUF
+DMDB
+.R89
+.RES
+CSRHX
+DMCSR
+DMDB

@@ -1,0 +1,298 @@
+20DM89>
+%2@u
+@5@u
+;GVw
+9GVs
+r#=Z
+.k(
+<;Ct
+t"UWP
+ZY^_
+VWQSR
+Z[Y_^
+=D!~
+F<7X
+!u9VWQR
+NOGF
+ZY_^
+tkGN
+tX<"t$<\t
+t'<"t
+?CCN
+t^<"t'<\t
+t*<"t
+P<-t
+u_^
+WVS3
+MS Run-Time Library - Copyright (c) 1987, Microsoft Corp
+'LYL
+Sdud
+r r(m0g4V8
+m m(g0a4V8
+*8V8g<m@rHrTm\g`Vd
+V8a<g@mHmTg\a`Vd
+P%X0`AdLd\`gXmP
+D%P*X5`Ad
+m$r0rDmPgX\`Kd
+g$m0mDgPaXV`Kd
+N(NH
+-8N8
+dpdpLjd
+N(NH
+-8N8
+X'`8dCdS`^X
+P!X,`8d
+^D^d
+dDdd
+NDuD0
+"8e8
+d3d
+Td{d
+0dWd
+QTL`@d5d*`%X%P*L0P*T
+LTF`@d
+A4md
+;4hd
+Wdxd
+dmdmLgd
+Vd}d
+d0dX
+P"X-`>dIdY`dXjPp@p4j$d
+@"P'X2`>d
+IdT`_XdPj@j4d$_
+r r,m4g8V<*<
+m m,g4a8V<
+d;d~
+P"X-`>dIdY`dXjPp@p4j$d
+@"P'X2`>d
+IdT`_XdPj@j4d$_
+-\-X2P>LCLNPTXYt_xjxpppl
+TXYh_pdtjtppV
+o o(j0d4S8'8
+j j(d0^4S8
+C8N<S@d\j`o`u\
+N<SD^`ddodu\uXE
+$",(034T<_@jH
+$(,30T8_<e@jHjX_`Od>d-`"X
+0dWd
+L"X-`>dIdY`eXjLj
+"L'X3`>d
+Sdud%
+A<Ad
+F<Fd
+0dWd
+djdjLed
+$X*X*p
+`$`$X&
+*X*PiPipcpcX0X0p*p*X
+>P>LULUP
+RPRL
+Z``PZPZ
+rEE
+mh
+H H(
+H(H8
+H8?L
+H8QLF
+H G G
+F$G"I"J$
+8;Z;
+`;c;
+Z;`;
+>P>LRL
+*PiP
+cX0X
+RPRLULUP
+UXUpRpRX$
+M L%J'H(F'D%C C
+H(H@
+H.<4
+H.T4
+H@FO
+EXCd
+H@JO
+KXMd
+H.<4
+H.T4
+H@GO
+FXEd
+H@IO
+JXKd
+H@DO
+BX?d
+H@LO
+NXQd
+R>fz
+fz
+fz
+fz
+Hangman
+Hangman.pdm
+            
+Game
+Save
+Restore
+Exit    Esc
+Run ...
+About ...
+Players
+Define...
+Add...
+Delete...
+The letter % has already been guessed.  Try a different letter!
+CANCEL
+Define Game
+Number of Players
+Add Player
+New player name:
+Delete Player
+Choose player to delete:
+Words per Game:
+Wrong Guesses:
+Define Players
+Player 1:
+Player 2:
+Player 3:
+Player 4:
+             SCOREBOARD               
+            CURRENT GAME              
+Player       Words Guessed     Score
+            
+Current player: 
+Current word: 
+Words per game: 
+Number of guesses so far: 
+Number of wrong guesses: 
+Maximum wrong guesses: 
+HANGMAN.CFG
+DMCONFIG
+HANGCFG
+A previous game was saved.  Would you like to continue with the saved game?
+Would you like to save this game before quitting?
+Saving will overwrite a previously saved game!
+Would you like to play again?
+The current game has been saved.
+Error - the current game was not saved.
+The saved game could not be restored.  Starting a new game.
+      (Press any key to continue)      
+YOU'VE BEEN
+PARDONED!
+ HANGED!
+Please wait while a word is chosen...
+[#z(
+2[7Q<
+[<b'p
+(s+&/
+EqNnWP[
+e=lQu
+XALG
+HOTELER
+SALOONR
+JAILR
+bQ\]VaJe=e1a+]%Q%J
+$JaJ
+ehe,
+/%216V>bBhFnNnYbaPe8e%a
+Y*a7eOe[agYnQtFt2n'g
+dmdmLgdX
+P"X-`>dIdY`dXjPp@p4j$d
+@"P'X2`>d
+IdT`_XdPj@j4d$_
+0dWd)
+N(NH
+-8N8
+dpdpLjd0
+"8e8
+d3d
+Td{d
+;C_FILE_INFO
+PRGUF
+DMGUF
+DMSPELL
+DMCSR
+SPELL
+About
+Version 
+Resources
+DESK.EXE      
+ CANCEL 
+DeskMate Copyright 1984, 1990
+Tandy Corporation, All Rights Reserved
+1000CGA
+DDGAEGA
+HERCPLANTC16TC4
+MCGAEGA
+LREST256TC40H
+         (((((                  H
+SunMonTueWedThuFriSat
+JanFebMarAprMayJunJulAugSepOctNovDec
+bortion
+itch
+astard
+estial
+isex
+litor
+oitus
+ondom
+opulat
+rotch
+efeca
+jaculat
+xcrem
+ellat
+eces
+allopian
+ornicat
+oreskin
+aggot
+oddam
+lans
+onorrh
+erpes
+omosex
+ncest
+abia
+esbian
+asochis
+enses
+olest
+enstrua
+asturb
+ipple
+rgasm
+enis
+enile
+hall
+rostit
+ubic
+ubis
+ueer
+ectum
+ectal
+apist
+adis
+crot
+emen
+odom
+chmuck
+yphili
+perm
+esticl
+estes
+agina
+omit
+ulva
+.RES
+1988
+<<NMSG>>
+R6000
+- stack overflow
+R6003
+- integer divide by 0
+R6009
+- not enough space for environment
+run-time error 
+R6002
+- floating point not loaded
+R6001
+- null pointer assignment

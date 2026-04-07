@@ -1,0 +1,442 @@
+68DM89>
+Z_F9v
+&WV+
+Z_ u
+~4PP
+D4`t
+D4`t=
+D4`t
+t;=(
+tE=)
+tV=J
+D4`u,
+tu=&
+t%=(
+tf=)
+t==J
+t(SV
+8D.u
+D48F
+t`9v
+D4`t
+D4`u
+D4@u
+D4 u
+G4`tN
+G4$`<`t
+G4@t"
+V(PV
+z^v
+'&PV
+z^v
+pWV+
+~8t
+>~<2
+D$8D!r
+D$8D!v
+:WV+
+7W7WFWUWUWUWUWFW
+tP<0|
+<9~B
+<Z~4
+<)~&
+<`t<{t
+c}RP
+3}^_
+t^=H
+8H9F
+|<9F
+6W0+
+0_9F
+>W0Au
+>W0Au
+:u4+
+33PV
+$`<`u
+$`<`u
+$`<`u
+t69N
+D4`u
+D4`u
+8't\
+G4`u
+u-WV
+b@@u
+=21u
+A<.u
+WVRQS
+[YZ^_
+8<@r
+.<#r
+$<!t <-t
+<{t<}t
+,SQR
+<\u,
+<\t0
+h3PW
+<.uG
+<.u}
+E4`u
+t-PV
+D4`t
+<.tq
+8D4tI<
+.@Ky
+<;Ct
+tkGN
+tX<"t$<\t
+t'<"t
+?CCN
+t^<"t'<\t
+t*<"t
+v.r59
+p.s%
+u_^
+tBH;
+WVS3
+p.s&
+6[0S
+6[0S
+8UWP
+ZY^_
+VWSQR
+6l0+
+ZY[_^
+VWQSR
+p<4[
+C1n;
+Z[Y_^
+=D!~
+v0<)X
+v0<)
+F<7X
+!u9VWQR
+NOGF
+ZY_^
+&v.6
+MS Run-Time Library - Copyright (c) 1987, Microsoft Corp
+J2V2
+h2t2
+TLLOGIN
+=&E&
+e&m&
+)'2'
+['e'
+!-~@^`{}_
+\DESKTOP.CFG
+DESKTOP.PDM
+DMCONFIG
+DESKTOP
+AddrBook
+PersonalCal
+DESKTOPD.CFG
+INSTALL.PDM
+*EdE:
+autoconfig
+learn
+PLAY.PDM
+month
+)text
+TEXT.PDM
+filer
+FILER.PDM
+address
+ADDRESS.PDM
+worksheet
+WRKSHEET.PDM
+corkboard
+'draw
+DRAW.PDM
+telecom
+TELECOM.PDM
+calendar
+CALENDAR.PDM
+phone
+&programs
+pclink
+PC_LINK.PDM
+others
+to do
+Jhangman
+HANGMAN.PDM
+form setup
+FORMSET.PDM
+                   
+ln
+a(D3
+')M3V)J
+Z3[3\3b
+JulyL
+f3A:\
+PRGUF
+DeskMate
+File
+Directory
+Disk
+View
+Sort by
+Desktop
+Get Info...
+Run...
+Copy...
+Delete...
+Rename...
+Update screen  Ctrl+U
+Exit           Esc
+About...
+Create...
+Change...
+Format...
+Diskcopy...
+Create...
+Delete...
+Redefine...
+Display...
+Remove
+Move
+Install
+Create quick load...
+Name
+Type
+Date
+Size
+Menus   Ctrl+M
+Tree    Ctrl+T
+Files   Ctrl+F
+CANCEL
+File Info
+Filename:
+    Size:
+Bytes
+Modified:
+Run File
+Program:
+Data file:
+CPU clock speed:
+Normal
+Fast
+Delete File
+Filename:
+Rename File
+From:
+Copy File
+Copy from:
+Copy to:
+Create Directory
+Path:
+Delete Directory
+Path:
+Change Directory
+Path:
+Disk Info
+Volume name:
+Free space on drive
+         bytes
+Format Disk
+Drive:
+Install operating system
+Options:
+     inch diskette
+High Density (     MB)
+Double Sided (     KB)
+Volume Label
+3.5 
+5.25
+1.2 
+1.44
+Invalid volume label.
+Copy Disk
+From:
+Create Menu
+Menu title:
+Program name:
+Data file extension:
+Start-up directory:
+CPU clock speed:
+Normal
+Fast
+Programs
+Delete Menu
+Menus
+Redefine Menu
+Create Quick Load
+Display Menu
+Menus
+ Current Drive: 
+No Label
+Filename Ext.   Size    Date     Time   Program      
+            Press <Esc> to return to tree.         
+A menu definition already has this title. Do you want to modify the existing definition?
+Modify Quick Load
+Do you want to modify the existing Quick Load Definition?
+Copy File
+Put "Copy from" diskette in drive.
+Copy File
+Put "Copy to" diskette in drive.
+Error
+Will not fit.
+Swap Disk
+Please insert the startup disk in drive A.
+Error
+Menu must be given a title.
+Invalid data file extension.
+Invalid directory name.
+Invalid file or directory name.
+Invalid program name.
+Error
+Invalid disk drive specified.
+Error
+File was not found.
+Invalid file name.
+Path was not found.
+Invalid directory or file already exists.
+Access is denied for this function.
+Cannot remove current or root directory.
+Disk is full.
+Invalid directory.
+Directory already exists.
+Directory is not empty or access is denied.
+Cannot create directory.
+Insufficient memory.
+Cannot write file.
+Filename within path.
+Wildcard character within path.
+Filenames are the same.
+Invalid character in directory or filename.
+Invalid extension.
+Devices are not the same.
+Invalid path.
+Cannot switch to alternate task.
+Two non-DeskMate applications may not run at the same time.
+File is in use.
+Cannot delete this file.
+Duplicate menu title.
+Could not sign in - DeskMate will exit.
+File already exists.
+Could not find new application on floppy disk.
+Pathname is too long.
+Disk is not in the drive.
+New application was not added to the Desktop. Maximum number of applications already exist.
+ Phone List 
+ Corkboard 
+ January
+ February
+ March
+ April
+ May
+ June
+ July
+ August
+ September
+ October
+ November
+ December
+ Things To Do 
+DeskTop
+Creating configuration file.
+DeskTop
+Is this the first time you have run DeskMate?
+DeskTop
+Insert the diskette which will contain the configuration file: DESKTOP.CFG.
+Cannot create the configuration file: DESKTOP.CFG.
+DeskMate
+Press Enter to confirm exit.
+Install
+Please replace the disk containing the application you wish to install.
+You cannot run two non-DeskMate programs simultaneously.
+Address Book
+Calendar
+Hangman
+Information
+Center
+Teach Me
+Home Organizer
+QUICK LOAD
+TEACH ME!
+MONTH
+TEXT
+FILER
+ADDRESS
+WORKSHEET
+CORKBOARD
+DRAW
+TELECOM
+CALENDAR
+PHONE
+PROGRAMS
+PC-LINK
+OTHERS
+TO DO
+HANGMAN
+FORM SETUP
+INFO CNTR
+ORGANIZER
+3.68
+v.;C_FILE_INFO
+         (((((                  H
+PRGUF
+DMGUF
+DMSPELL
+PRGUF
+DMCSR
+About
+Version 
+Resources
+DESK.EXE      
+ CANCEL 
+DeskMate Copyright 1984, 1990
+Tandy Corporation, All Rights Reserved
+i1e1
+1000CGA
+DDGAEGA
+HERCPLANTC16TC4
+MCGAEGA
+LREST256TC40H
+DESKTOP.CFG
+DMCONFIG
+dmphone
+DESKTOP.CFG
+DMCONFIG
+CORKBOARD
+DESKTOP.CFG
+DESKTOP.CFG
+DMCONFIG
+CALENDAR
+TENSTAT.CFG
+DMCONFIG
+TENETWRK
+TENSTAT.CFG
+DMCONFIG
+TENETWRK
+USER.CFG
+USER
+\*.*
+DMGUF
+TREE.CFG
+ /T:40 /N:9
+ /T:80 /N:9
+ /F:360
+ /F:720
+COMSPEC
+ /V:
+FORMAT.COM
+DISKCOPY.COM
+INFOCNTR.PDM
+PLAY.PDM
+TOOLSLCT.PDM
+TEN_NET
+AUTOCONFIG
+.RES
+1988
+<<NMSG>>
+R6000
+- stack overflow
+R6003
+- integer divide by 0
+R6009
+- not enough space for environment
+run-time error 
+R6002
+- floating point not loaded
+R6001
+- null pointer assignment

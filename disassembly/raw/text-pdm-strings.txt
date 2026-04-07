@@ -1,0 +1,360 @@
+39DM89>
+< sM
+tr9F
+< s4
+t@9F
+tIVW
+< sK
+u996
+2HPV
+um96f2u
+.f2P
+< s?
+< s7
+>"$Ov
+uD=O
+< w3
+96b$t
+< s4
+&$9F
+H%+F
+h$HRPR
+F96H%v
+F96H%v
+H%@P
+H%@P
+$uPP
+< sh<
+>f2O~
+>f2Ou
+>f2+
+2O~)
+2} ;
+f2^_
+~996
+$O~5
+>f2Ou
+< sA
++6F%F96
+F%)F
+$rk9
+9>H%w
+< r096
+9>H%v
+96H%v
+= s!
+H%9F
+< s,
+< s.
+< s$
+< s$
+< s?
+< s.
+H%9F
+H%9F
+H%9F
+6f2F96
+9>&$}
+9>&$}
+$O}x
+b$@;F
+b$@;F
+< s@
+< s@
+< s?
+b$FG
+$@;F
+$@;F
+H%HP
+H%9F
+H%9F
+96b$u
+u0VW
+$NFG9~
+< s=<
+G9>^2}
+82@)
+b$HHP
+82HHP
+b$HHP
+b$HHP
+b$HHP
+b$HHP
+82HHP
+b$HHP
+b$HHP
+< sg
+&$H;
+&$H;
+$O~B
+.f2P
+.f2P
+.f2P
+1+6J%
+u)F96
+u)F96
+< sl
+u896
+9>b$v 
+D%+F
+&$9F
+?.u)@P
+6W@u
+.f2P
+ R@u
+&$~
+u <-t
+H%HP
+"$PV
+H%HP
+_^^_
+H%HP
+< s5
+. $P
+#@@P+
+#@@P
+. $P
+#@@P+
+t6=M
+$O~6
+$O~d
+< r:
+2@;F
+2@;F
+< s>
+< s%
+< s5
+< sa
+< sl
+*96H%u
+< s,
+96H%t
+NF96
+< s 
+< sc
+t%9~
+< s>
+< sf
+t%9~
+< s$
+< s!
+<;Ct
+#UWP
+ZY^_
+VWSQR
+ZY[_^
+ZY[]
+VWQSR
+>>2+
+Z[Y_^
+[YZ]
+CSQ2
+Y[ZIu
+=D!~
+F<7X
+!u9VWQR
+NOGF
+ZY_^
+tkGN
+tX<"t$<\t
+t'<"t
+?CCN
+t^<"t'<\t
+t*<"t
+P<-t
+0<9v
+WVS3
+MS Run-Time Library - Copyright (c) 1987, Microsoft Corp
+DICTARY
+TRANSLAT
+                                                                                                                                
+TEXT.PDM
+Setup Printer CPI Change Ignored
+Printer "Characters Per Inch" (CPI) makes a picture in the header/footer too tall. Change CPI to "Condensed".
+Printer "Characters Per Inch" (CPI) makes a picture in the document too tall. Change CPI to "Condensed".
+Changing Printer Characters Per Inch has made a picture in the header/ footer too tall.  Resize picture.
+Changing Printer "Characters Per Inch" has made a picture in the document too tall.  Resize picture.
+The line width in the Text application cannot be less than 
+Line width setting is invalid with existing paragraph indention.
+Clipboard
+Clipboard is not large enough for selected block.
+Picture on clipboard is too tall to fit on page.
+Clipboard picture is too wide to fit in current column.
+Input Ignored
+Out of memory. File is full.
+The carriage return before a picture cannot be deleted.
+Text
+Column 
+Line 
+Page 
+ASCII    
+Non-ASCII
+Open...
+Save
+Save as...
+Merge...
+Page setup...
+Print...
+Print form letter...
+Exit             Esc
+Run...
+To ASCII
+About...
+Cut          Shift+Del
+Copy         Ctrl+Ins
+Paste        Shift+Ins
+Clear        Del
+Select all
+Un-Delete    Ctrl+U
+Insert       Ins
+Proof...
+Thesaurus...
+Plain
+Bold
+Underline
+Center        Ctrl+C
+Un-Center
+Indent...     Ctrl+I
+Dictionary...
+Translate...
+Find...       Ctrl+F
+Find next     Ctrl+N
+Substitute... Ctrl+S
+Return to Document
+Header...
+Footer...
+Page number
+Today's date...
+Add field...
+Show
+Hide
+Move
+Size
+File
+Edit
+Text
+Search
+Layout
+Picture
+CANCEL
+Find
+Substitute
+Replace?
+Search for:
+Replace with:
+You did not enter a "Replace with:" string. Do you want to enter this string?
+Search string was not found.
+Enter "Search for:" string or CANCEL.
+Found 
+ occurrence, 
+ occurrences, 
+replaced 
+** Picture Located Here **
+"Printed Line Width" is invalid. Picture 
+in header 
+in footer 
+extends to column 
+"Printed Lines Per Page" is invalid. Picture 
+ lines tall.
+To move picture, point to rectangle, press button and drag to desired location, release button.
+To move picture, press Left or Right arrow keys. To accept position, press Enter or Spacebar.
+To size picture, point to size handle, press button and drag to desired size, release button.
+To size picture, press Left, Right, Up, or Down arrow keys. To accept size, press Enter or Spacebar.
+Indent
+First line indent:
+Left margin indent:
+Right margin indent:
+Center
+Only single line paragraphs may be centered.
+Centering line would result in a remaining line width of less than the minimum of 22.
+A numeric entry of 0 or greater is required in all margin settings.
+Negative numbers are not allowed in margin settings.
+Line width (
+) minus "First line indent" (
+) minus "Left indent" (
+) minus "Right margin indent" (
+) cannot be less than 
+Header
+No header
+Header on all pages
+Header on all pages except first page
+Footer
+No footer
+Footer on all pages
+Footer on all pages except first page
+Printed lines per page (
+) minus header lines (
+) minus footer lines (
+) cannot be less than 
+ must be shortened by 
+ line
+ lines
+ to allow for printing of the tallest picture in the document.
+The tallest picture in the document is too tall to allow creating a header.
+The tallest picture in the document is too tall to allow creating a footer.
+Add Field
+Field does not exist, please select from listbox.
+Error occurred trying to access file for Address Book.
+Fields
+Name:
+Today's Date
+YYYY
+Print
+Starting page number:
+"Starting page number" must be greater than or equal to 1 and less than or equal to 999.
+About
+Version 
+Resources
+CANCEL
+DeskMate Copyright 1984, 1989
+Tandy Corporation, All Rights Reserved
+;C_FILE_INFO
+PRGUF
+DMGUF
+DMSPELL
+PRGUF
+DMCSR
+SPELL
+DMTHES
+DMDB
+DMDBRD
+About
+Version 
+Resources
+DESK.EXE      
+ CANCEL 
+DeskMate Copyright 1984, 1990
+Tandy Corporation, All Rights Reserved
+1000CGA
+DDGAEGA
+HERCPLANTC16TC4
+MCGAEGA
+LREST256TC40H
+ SunMonTueWedThuFriSat
+JanFebMarAprMayJunJulAugSepOctNovDec
+         (((((                  H
+Users
+PERSONAL.ADR
+NAMES
+PRGUF
+A:\DESKTOP.CFG
+DESKTOP.CFG
+DMCONFIG
+AddrBook
+ 0 TEXT.PDM
+MAILMRGE.PDM
+DMPGSET
+.RES
+1988
+<<NMSG>>
+R6000
+- stack overflow
+R6003
+- integer divide by 0
+R6009
+- not enough space for environment
+run-time error 
+R6002
+- floating point not loaded
+R6001
+- null pointer assignment

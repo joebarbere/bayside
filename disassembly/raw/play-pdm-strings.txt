@@ -1,0 +1,122 @@
+DM89>
+dmguf
+dmplay
+unpack
+t.=e
+t$=f
+HO9F
+G9>@
+6@O+
+<;Ct
+ZY^_
+VWSQR
+ZY[_^
+=D!~
+F<7X
+!u9VWQR
+NOGF
+ZY_^
+tkGN
+tX<"t$<\t
+t'<"t
+?CCN
+t^<"t'<\t
+t*<"t
+u_^
+tBH;
+MS Run-Time Library - Copyright (c) 1987, Microsoft Corp
+Play Error
+Specified file is not a .TUT file.
+Unable to open specified lesson file. Press the ENTER key to continue.
+.TUT
+Write Protected Disk/Directory
+The current disk/directory is write protected. Teach Me! cannot be run from a write protected directory.
+Incompatible DeskMate Version
+Tutorial lessons cannot be run under DeskMate versions 03.02.00 or earlier.
+Tutorial lessons cannot be run while another task is running.
+File
+Run lesson
+Search for lessons
+Exit             ESC
+Searching for tutorial lessons...
+Teach Me About...
+ To select a tutorial lesson,
+  press the 
+ or 
+ key until
+  your choice is highlighted.
+  Then, press the 
+ENTER
+ key.
+ To search the entire system
+  for lessons not listed,
+  press the 
+space bar
+ To exit, press the 
+ key.
+ Press the 
+ key for help.
+Teach Me!
+DeskMate: An Introduction
+Address Book: Organize Addresses
+Calendar: Schedule Appointments
+Desktop: Manage Programs and Files
+Draw: Draw Colorful Pictures
+Filer: Store & Retrieve Index Cards
+Form Setup: Customize Index Cards
+Music: A Music Composing Tool
+Sound: Record Sounds & Music
+Text: An Electronic Typewriter
+Worksheet: Electronic Budgeting
+Financial Solutions: Managing Money
+Information Center: Daily Events
+Kitchen Solutions: Managing Meals
+Personal Solutions: Keeping Records
+DMINTRO.TUT
+ADDRESS.TUT
+CALENDAR.TUT
+DESKTOP.TUT
+DRAW.TUT
+FILER.TUT
+FORMSET.TUT
+MUSIC.TUT
+SOUND.TUT
+TEXT.TUT
+WRKSHEET.TUT
+FINANCE.TUT
+INFOCNTR.TUT
+KITCHEN.TUT
+PERSONAL.TUT
+REQUIRED.DOC
+*.tut
+*.$B$
+DMPLAY
+DMUNPACK
+;C_FILE_INFO
+PRGUF
+DMGUF
+DMSPELL
+PRGUF
+DMCSR
+1000CGA
+DDGAEGA
+HERCPLANTC16TC4
+MCGAEGA
+LREST256TC40H
+AAAAAAAA
+about.doc
+about.doc
+about.doc
+about.doc
+<<NMSG>>
+R6000
+- stack overflow
+R6003
+- integer divide by 0
+R6009
+- not enough space for environment
+run-time error 
+R6002
+- floating point not loaded
+R6001
+- null pointer assignment

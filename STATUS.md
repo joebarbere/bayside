@@ -16,31 +16,33 @@
 | DeskMate version history documented | :white_check_mark: | See research/docs/ |
 | DeskMate 3.05 binaries acquired | :white_check_mark: | archive.org ISO + WinWorld 3.5"/5.25" disk images; 148 files extracted |
 | DOSBox config for original | :white_check_mark: | dosbox/configs/deskmate-tandy.conf (Tandy mode, 8086, 4000 cycles) |
-| File format documentation | :white_large_square: | .PDM, .SND, .SNG, .FIG, .RES |
+| File format documentation | :yellow_circle: | .PDM (confirmed MZ+DM89 header), .WKS, .FIL, .CFG partially documented; .SND, .FIG, .SNG headers known from community; see research/docs/deskmate-sdk-research.md |
+| SDK / compiler identified | :white_check_mark: | Microsoft C 5.x (1987 runtime); DM89 extended header format decoded; INT E0h API service classes mapped |
 | Hardware register documentation | :white_large_square: | TGA, SN76496, DAC |
 
 ## Stage 2: Binary Analysis
 
 | Binary | Disassembled | Call Graph | Compiler ID | Notes |
 |--------|-------------|------------|-------------|-------|
-| DESK.EXE | :white_large_square: | :white_large_square: | :white_large_square: | Main shell |
-| DESKTOP.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Desktop UI |
-| TEXT.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Word processor |
-| WORKSHT.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Spreadsheet |
-| FILER.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Database |
-| DRAW.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Vector graphics |
-| CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Scheduler |
-| ADDRESS.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Address book |
-| MUSIC.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Music composer |
-| SOUND.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Audio editor |
-| TELECOM.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Terminal |
-| HANGMAN.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Word game |
-| PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Online client |
-| FORMSET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Form designer |
-| PLAY.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Music player |
-| MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Mail merge |
-| DMVID.EXE | :white_large_square: | :white_large_square: | :white_large_square: | Video config |
-| *.RES | :white_large_square: | :white_large_square: | :white_large_square: | Resource drivers |
+| DESK.EXE | :white_large_square: | :white_large_square: | :white_check_mark: | Hand-written ASM; DM89 header; 5 segments, 33 relocs; version 05.00 build 900919 |
+| DESKTOP.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmguf |
+| TEXT.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| WRKSHEET.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| FILER.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmguf+dmform+dmdb |
+| DRAW.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| ADDRESS.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmguf+dmform+dmdb |
+| TELECOM.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| HANGMAN.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; contains profanity filter |
+| PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x (1988); MZ+DM89; DM89 CS:IP overrides broken MZ entry |
+| FORMSET.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| PLAY.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmplay; smallest PDM (12KB) |
+| MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| INSTALL.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
+| DMVID.EXE | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); standalone DOS program |
+| INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | 828-byte chain loader; validates DM89 sig then EXEC's DESK.EXE |
+| *.RES | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 (except ALRMINIT/D87/DMUNPACK: plain MZ legacy) |
+| *.ACC | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; typically import dmguf |
 
 ## Stage 3: Annotation
 
