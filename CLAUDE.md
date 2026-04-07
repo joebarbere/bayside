@@ -93,17 +93,17 @@ bayside/
 │   ├── common/            # Shared: DOS API wrappers, video, sound, input
 │   ├── desktop/           # DESK.EXE shell and DESKTOP.PDM
 │   ├── text/              # Text word processor
-│   ├── worksheet/         # Worksheet spreadsheet
+│   ├── worksheet/         # Worksheet spreadsheet (WRKSHEET.PDM)
 │   ├── filer/             # Filer database
 │   ├── draw/              # Draw vector graphics editor
 │   ├── telecom/           # Telecom terminal emulator
 │   ├── calendar/          # Calendar/scheduler
-│   ├── addressbook/       # Address Book
-│   ├── music/             # Music composer (3-channel + samples)
-│   ├── sound/             # Sound recorder/editor
-│   ├── pclink/            # PC-Link online service client
+│   ├── addressbook/       # Address Book (ADDRESS.PDM)
+│   ├── pclink/            # PC-Link online service client (PC_LINK.PDM)
 │   ├── hangman/           # Hangman word game
-│   └── calculator/        # Calculator accessory
+│   ├── formset/           # Form designer (FORMSET.PDM)
+│   ├── play/              # Music player (PLAY.PDM)
+│   └── mailmerge/         # Mail merge (MAILMRGE.PDM)
 ├── build/                 # Build output directory
 ├── scripts/               # Build, test, and analysis automation
 ├── tools/                 # Custom analysis tools (Python/Bash)
@@ -117,19 +117,21 @@ bayside/
 | Shell | DESK.EXE | P0 | Main DeskMate host environment |
 | Desktop | DESKTOP.PDM | P0 | Desktop UI, icon launcher, file manager |
 | Text | TEXT.PDM | P1 | Word processor |
-| Worksheet | WORKSHT.PDM | P1 | Spreadsheet |
-| Filer | FILER.PDM | P1 | Flat-file database |
+| Worksheet | WRKSHEET.PDM | P1 | Spreadsheet |
+| Filer | FILER.PDM | P1 | Flat-file database / file manager |
 | Draw | DRAW.PDM | P1 | Vector graphics editor |
 | Calendar | CALENDAR.PDM | P2 | Scheduler with alarms |
-| Address Book | ADDRBOOK.PDM | P2 | Contact manager |
-| Music | MUSIC.PDM | P2 | 3-channel music composer |
-| Sound | SOUND.PDM | P2 | Digital audio recorder/editor |
+| Address Book | ADDRESS.PDM | P2 | Address/phone book |
 | Telecom | TELECOM.PDM | P2 | Terminal emulator |
-| Calculator | CALC.PDM | P3 | Calculator accessory |
+| Form Set | FORMSET.PDM | P2 | Form designer |
 | Hangman | HANGMAN.PDM | P3 | Word game |
-| PC-Link | PCLINK.PDM | P3 | Online service client |
+| Play | PLAY.PDM | P3 | Music player |
+| PC-Link | PC_LINK.PDM | P3 | Online service client |
+| Mail Merge | MAILMRGE.PDM | P3 | Mail merge utility |
+| Installer | INSTALL.PDM | P3 | Installer module |
 | Video Driver | DMVID.EXE | P1 | Video adapter selection/configuration |
 | Resources | *.RES | P1 | Loadable drivers (video, memory, sound, music) |
+| Accessories | *.ACC | P2 | Desk accessories (notepad, alarm, clipboard, etc.) |
 
 ## Key Technical Details
 
@@ -141,6 +143,7 @@ bayside/
 
 ### File Formats to Document
 - **.PDM** — DeskMate executable (runs inside DESK.EXE host)
+- **.ACC** — DeskMate desk accessories (notepad, alarm, clipboard, spell check, etc.)
 - **.SND** — 8-bit audio (magic byte 0x1A, 16-byte header, optional compression)
 - **.SNG** — 3-channel music composition
 - **.PNT** — Bitmap graphics (Personal DeskMate)
@@ -149,6 +152,13 @@ bayside/
 - **.FIL** — Database records
 - **.RES** — Loadable resource/driver modules
 - **.CFG** — Configuration (DESKTOP.CFG)
+- **.R89** — Resource files (1989 format variant)
+- **.MOD** — Module/compatibility files
+- **.FF1** — Font files
+- **.RFD** — Printer driver definition files
+- **.HLP** — Help files
+- **.TUT** — Tutorial files
+- **.PCL** — Printer control language files
 
 ## Code Style (for transpiled C)
 

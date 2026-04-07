@@ -14,8 +14,8 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | DeskMate version history documented | :white_check_mark: | See research/docs/ |
-| DeskMate 3.05 binaries acquired | :white_large_square: | Check archive.org / WinWorld |
-| DOSBox config for original | :white_large_square: | |
+| DeskMate 3.05 binaries acquired | :white_check_mark: | archive.org ISO + WinWorld 3.5"/5.25" disk images; 148 files extracted |
+| DOSBox config for original | :white_check_mark: | dosbox/configs/deskmate-tandy.conf (Tandy mode, 8086, 4000 cycles) |
 | File format documentation | :white_large_square: | .PDM, .SND, .SNG, .FIG, .RES |
 | Hardware register documentation | :white_large_square: | TGA, SN76496, DAC |
 
@@ -30,13 +30,15 @@
 | FILER.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Database |
 | DRAW.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Vector graphics |
 | CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Scheduler |
-| ADDRBOOK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Contacts |
+| ADDRESS.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Address book |
 | MUSIC.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Music composer |
 | SOUND.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Audio editor |
 | TELECOM.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Terminal |
-| CALC.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Calculator |
 | HANGMAN.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Word game |
-| PCLINK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Online client |
+| PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Online client |
+| FORMSET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Form designer |
+| PLAY.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Music player |
+| MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_large_square: | Mail merge |
 | DMVID.EXE | :white_large_square: | :white_large_square: | :white_large_square: | Video config |
 | *.RES | :white_large_square: | :white_large_square: | :white_large_square: | Resource drivers |
 
@@ -47,11 +49,19 @@
 | DESK.EXE | :white_large_square: | :white_large_square: | :white_large_square: | |
 | DESKTOP.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | TEXT.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| WORKSHT.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| WRKSHEET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | FILER.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | DRAW.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| MUSIC.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| SOUND.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| ADDRESS.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| TELECOM.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| HANGMAN.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| FORMSET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| PLAY.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| DMVID.EXE | :white_large_square: | :white_large_square: | :white_large_square: | |
+| *.RES | :white_large_square: | :white_large_square: | :white_large_square: | |
 
 ## Stage 4: C Transpilation
 
@@ -61,23 +71,32 @@
 | desktop/ | :white_large_square: | — | :white_large_square: | Shell + desktop UI |
 | text/ | :white_large_square: | — | :white_large_square: | Word processor |
 | worksheet/ | :white_large_square: | — | :white_large_square: | Spreadsheet |
-| filer/ | :white_large_square: | — | :white_large_square: | Database |
+| filer/ | :white_large_square: | — | :white_large_square: | Database / file manager |
 | draw/ | :white_large_square: | — | :white_large_square: | Vector graphics |
 | calendar/ | :white_large_square: | — | :white_large_square: | Scheduler |
-| addressbook/ | :white_large_square: | — | :white_large_square: | Contacts |
-| music/ | :white_large_square: | — | :white_large_square: | Music composer |
-| sound/ | :white_large_square: | — | :white_large_square: | Audio editor |
-| calculator/ | :white_large_square: | — | :white_large_square: | Calculator |
+| addressbook/ | :white_large_square: | — | :white_large_square: | Address book |
+| telecom/ | :white_large_square: | — | :white_large_square: | Terminal emulator |
+| pclink/ | :white_large_square: | — | :white_large_square: | Online service client |
 | hangman/ | :white_large_square: | — | :white_large_square: | Word game |
+| formset/ | :white_large_square: | — | :white_large_square: | Form designer |
+| play/ | :white_large_square: | — | :white_large_square: | Music player |
+| mailmerge/ | :white_large_square: | — | :white_large_square: | Mail merge |
 
 ## Stage 5: Verification
 
 | Module | Runs in DOSBox | Visual Match | File I/O Match | Regression Tests |
 |--------|---------------|--------------|----------------|-----------------|
-| Shell | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Shell (DESK.EXE) | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Desktop | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Text | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Worksheet | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Filer | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Draw | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
-| Music | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
-| Sound | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Address Book | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Calendar | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Telecom | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| PC-Link | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Hangman | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Form Set | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Play | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Mail Merge | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
