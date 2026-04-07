@@ -778,7 +778,9 @@ class MZDisassembler:
         lines.append("")
 
         lines.append("; Interrupt Usage:")
-        for (int_num, ah_val), locs in sorted(self.int_calls.items()):
+        for (int_num, ah_val), locs in sorted(
+                self.int_calls.items(),
+                key=lambda x: (x[0][0], x[0][1] if x[0][1] is not None else -1)):
             key = (int_num, ah_val)
             desc = INT_ANNOTATIONS.get(key, "")
             if ah_val is not None:
