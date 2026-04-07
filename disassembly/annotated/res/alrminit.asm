@@ -1,0 +1,3756 @@
+; ========================================================================
+; ALRMINIT.RES -- Fully Annotated Disassembly
+; DeskMate 3.05, Tandy Corporation, Copyright (c) 1987, Microsoft Corp.
+; Compiled with Microsoft C 5.x (1987)
+; Annotated for the Bayside reverse engineering project
+; ========================================================================
+;
+; ALRMINIT.RES is the alarm initialization module for DeskMate 3.05.
+; It sets up the alarm TSR hooks and timer interrupt handlers that
+; ALARM.RES depends on. This module is loaded first to prepare the
+; interrupt chain and memory structures before ALARM.RES goes resident.
+;
+; The module hooks INT vectors for timer tick monitoring, saves original
+; vectors for chain-through, and initializes the shared data area that
+; ALARM.RES uses for alarm scheduling and notification.
+;
+; DM89 imports: INT E0h (DeskMate host API)
+; Hooks: INT 25h (set vector), INT 35h (get vector)
+;
+
+; ========================================================================
+; FUNCTION INDEX
+; ========================================================================
+;
+; --- ALRMINIT.RES Functions ---
+;
+; Address          Name                              Description
+; -------          ----                              -----------
+; 0000:0000        alrminit_dispatchTable            INT E0h dispatch table (3 entry points for host callbacks)
+; 0000:0010        alrminit_initModule               Initialize alarm module - register with host, set up handlers
+; 0000:006C        alrminit_parseConfig              Parse alarm configuration from ALARM.CFG
+; 0000:0095        alrminit_setAlarmInterval         Set alarm check interval (timer tick divisor)
+; 0000:00B9        alrminit_setSoundFile             Set alarm sound filename for playback
+; 0000:00E6        alrminit_processAlarmEvent        Process alarm event (check/fire/snooze)
+; 0000:014B        alrminit_installHooks             Install interrupt hooks and register with DM89 host
+; 0000:01F1        alrminit_uninstallHooks           Uninstall interrupt hooks, restore original vectors
+; 0000:0224        alrminit_getAlarmList             Get pointer to current alarm list
+; 0000:0269        alrminit_addAlarm                 Add new alarm entry to the alarm list
+; 0000:029C        alrminit_removeAlarm              Remove alarm entry from the alarm list
+; 0000:02DB        alrminit_checkAlarmTime           Check if current time matches any alarm trigger time
+; 0000:0343        alrminit_fireAlarm                Fire alarm - play sound, show notification
+; 0000:03A2        alrminit_updateTimestamp          Update last-checked timestamp to current time
+; 0000:044A        alrminit_readConfigFile           Read and parse alarm configuration file
+; 0000:04A4        alrminit_parseConfigLine          Parse single line from alarm config file
+; 0000:0516        alrminit_parseTimeString          Parse time string (HH:MM format) into tick value
+; 0000:059B        alrminit_parseDateString          Parse date string (MM/DD/YYYY) into day value
+; 0000:0612        alrminit_validateAlarm            Validate alarm entry (check time range, no duplicates)
+; 0000:0661        alrminit_writeConfigFile          Write alarm configuration back to file
+; 0000:0695        alrminit_entryPoint               Module entry point - DM89 RES initialization
+; 0000:06EC        alrminit_mainInit                 Main initialization sequence for ALRMINIT module
+; 0000:081D        alrminit_setupInterrupts          Set up interrupt vector hooks (timer, idle, disk)
+; 0000:0992        alrminit_hookTimerTick            Hook INT 1Ch (timer tick) for alarm checking
+; 0000:09AB        alrminit_setVector                Set interrupt vector (wrapper for INT 21h/25h)
+; 0000:09BA        alrminit_restoreVector            Restore original interrupt vector
+; 0000:0A36        alrminit_allocSharedArea          Allocate shared data area for ALARM.RES communication
+; 0000:0B06        alrminit_getModuleInfo            Get module information structure
+; 0000:0B0C        alrminit_getVersion               Get ALRMINIT version string
+; 0000:0B12        alrminit_hostCallback             INT E0h host callback dispatcher (called 10+ times)
+; 0000:0B5C        alrminit_resizeMemory             Resize memory block via INT 21h/4Ah
+; 0000:0B6A        alrminit_getCurrentTime           Get current system time (date + time of day)
+; 0000:0B97        alrminit_exitWithCode             Exit with return code via INT 21h/4Ch
+; 0000:0BA4        alrminit_exitSuccess              Exit successfully (return code 0)
+; 0000:0BC7        alrminit_allocMemory              Allocate memory via INT 21h/4Ah
+; 0000:0BE5        alrminit_setupDataSegment         Set up data segment and BSS initialization
+; 0000:0D54        alrminit_crtStartup               MSC 5.x CRT startup code (recursive self-call pattern)
+; 0000:0FB6        alrminit_ioctl                    IOCTL call via INT 21h/44h
+; 0000:10F0        alrminit_writeFile                Write to file via INT 21h/40h
+; 0000:1116        alrminit_intE0hCall               INT E0h call wrapper (called from 23 locations)
+; 0000:112C        alrminit_closeAndWrite            Close file and write final data
+; 0000:12DC        alrminit_lookupMessage            Look up error message by ID
+; 0000:1307        alrminit_writeToStderr            Write message to stderr (handle 2)
+; 0000:1330        alrminit_seekFile                 Seek file position via INT 21h/42h
+; 0000:1372        alrminit_getEnvValue              Get environment variable value
+; 0000:13B2        alrminit_getConfigPath            Get DESKMATE config directory path
+; 0000:13E4        alrminit_buildFilePath            Build full file path from config dir + filename
+; 0000:1400        alrminit_parseEnvironment         Parse environment block for PATH= entries
+; 0000:1494        alrminit_dateToTicks              Convert date components to tick count
+; 0000:14FC        alrminit_timeToTicks              Convert time components (H:M:S) to tick count
+; 0000:154E        alrminit_strcat                   String concatenation
+; 0000:1590        alrminit_parseTimeField           Parse time field from config string
+; 0000:15BC        alrminit_getDateTime              Get current date and time via DOS
+; 0000:15EE        alrminit_exitCleanup              Exit cleanup - restore vectors, free memory
+; 0000:15F4        alrminit_terminateResident        Go TSR via INT 21h/31h
+; 0000:1622        alrminit_formatDateTime           Format date/time components for output
+; 0000:17CC        alrminit_mulUnsigned32            Unsigned 32-bit multiply
+; 0000:17DC        alrminit_dateToDayCount           Convert date to absolute day count
+; 0000:188C        alrminit_divUnsigned32            Unsigned 32-bit divide
+; 0000:1956        alrminit_ticksToTime              Convert tick count back to time components
+; 0000:1A6C        alrminit_daysInMonth              Get days in month (leap year aware)
+; 0000:1A94        alrminit_isLeapYear               Check if year is leap year
+; 0000:1A98        alrminit_divSigned32              Signed 32-bit divide (called from 4 locations)
+; 0000:1B34        alrminit_modUnsigned32            Unsigned 32-bit modulo
+; 0000:1B68        alrminit_formatNumber             Format number as decimal string
+; 0000:1C0A        alrminit_formatField              Format date/time field with padding
+;
+
+
+seg_0000:
+
+
+; --- alrminit_dispatchTable ---
+; INT E0h dispatch table (3 entry points for host callbacks)
+alrminit_dispatchTable:  ; (sub_0000_0000)
+  0000:0000  0000              add      byte ptr [bx + si], al
+  0000:0002  0000              add      byte ptr [bx + si], al
+  0000:0004  0000              add      byte ptr [bx + si], al
+  0000:0006  0000              add      byte ptr [bx + si], al
+  0000:0008  0000              add      byte ptr [bx + si], al
+  0000:000A  0000              add      byte ptr [bx + si], al
+  0000:000C  0000              add      byte ptr [bx + si], al
+  0000:000E  0000              add      byte ptr [bx + si], al
+
+; --- alrminit_initModule ---
+; Initialize alarm module - register with host, set up handlers
+alrminit_initModule:  ; (sub_0000_0010)
+  0000:0010  55                push     bp
+  0000:0011  8bec              mov      bp, sp
+  0000:0013  b80800            mov      ax, 8
+  0000:0016  e8fd10            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:0019  8d46fa            lea      ax, [bp - 6]
+  0000:001C  50                push     ax
+  0000:001D  e8dc14            call     0x14fc  ; -> sub_0000_14FC  ; alrminit_timeToTicks
+  0000:0020  83c402            add      sp, 2
+  0000:0023  8d46fa            lea      ax, [bp - 6]
+  0000:0026  50                push     ax
+  0000:0027  e86a14            call     0x1494  ; -> sub_0000_1494  ; alrminit_dateToTicks
+  0000:002A  83c402            add      sp, 2
+  0000:002D  8946fe            mov      word ptr [bp - 2], ax
+  0000:0030  8bd8              mov      bx, ax
+  0000:0032  8a4706            mov      al, byte ptr [bx + 6]
+  0000:0035  0461              add      al, 0x61
+  0000:0037  a26f00            mov      byte ptr [0x6f], al
+  0000:003A  8a4708            mov      al, byte ptr [bx + 8]
+  0000:003D  0462              add      al, 0x62
+  0000:003F  a26e00            mov      byte ptr [0x6e], al
+  0000:0042  8a470a            mov      al, byte ptr [bx + 0xa]
+  0000:0045  0411              add      al, 0x11
+  0000:0047  a26d00            mov      byte ptr [0x6d], al
+  0000:004A  ff7702            push     word ptr [bx + 2]
+  0000:004D  e86900            call     0xb9  ; -> sub_0000_00B9  ; alrminit_setSoundFile
+  0000:0050  83c402            add      sp, 2
+  0000:0053  8846f8            mov      byte ptr [bp - 8], al
+  0000:0056  98                cwde
+  0000:0057  50                push     ax
+  0000:0058  8b5efe            mov      bx, word ptr [bp - 2]
+  0000:005B  ff7704            push     word ptr [bx + 4]
+  0000:005E  b87c00            mov      ax, 0x7c
+  0000:0061  50                push     ax
+  0000:0062  e83000            call     0x95  ; -> sub_0000_0095  ; alrminit_setAlarmInterval
+  0000:0065  83c406            add      sp, 6
+  0000:0068  8be5              mov      sp, bp
+  0000:006A  5d                pop      bp
+  0000:006B  c3                ret
+
+; --- alrminit_parseConfig ---
+; Parse alarm configuration from ALARM.CFG
+alrminit_parseConfig:  ; (sub_0000_006C)
+  0000:006C  55                push     bp
+  0000:006D  8bec              mov      bp, sp
+  0000:006F  33c0              xor      ax, ax
+  0000:0071  e8a210            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:0074  57                push     di
+  0000:0075  56                push     si
+  0000:0076  8b7606            mov      si, word ptr [bp + 6]
+  0000:0079  8b7e08            mov      di, word ptr [bp + 8]
+  0000:007C  8a4604            mov      al, byte ptr [bp + 4]
+  0000:007F  2ae4              sub      ah, ah
+  0000:0081  257c00            and      ax, 0x7c
+  0000:0084  d1e8              shr      ax, 1
+  0000:0086  d1e8              shr      ax, 1
+  0000:0088  8804              mov      byte ptr [si], al
+  0000:008A  8a4604            mov      al, byte ptr [bp + 4]
+  0000:008D  2403              and      al, 3
+  0000:008F  8805              mov      byte ptr [di], al
+  0000:0091  5e                pop      si
+  0000:0092  5f                pop      di
+  0000:0093  5d                pop      bp
+  0000:0094  c3                ret
+
+; --- alrminit_setAlarmInterval ---
+; Set alarm check interval (timer tick divisor)
+alrminit_setAlarmInterval:  ; (sub_0000_0095)
+  0000:0095  55                push     bp
+  0000:0096  8bec              mov      bp, sp
+  0000:0098  33c0              xor      ax, ax
+  0000:009A  e87910            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:009D  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:00A0  c60780            mov      byte ptr [bx], 0x80
+  0000:00A3  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:00A6  8a4606            mov      al, byte ptr [bp + 6]
+  0000:00A9  d0e0              shl      al, 1
+  0000:00AB  d0e0              shl      al, 1
+  0000:00AD  0807              or       byte ptr [bx], al
+  0000:00AF  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:00B2  8a4608            mov      al, byte ptr [bp + 8]
+  0000:00B5  0807              or       byte ptr [bx], al
+  0000:00B7  5d                pop      bp
+  0000:00B8  c3                ret
+
+; --- alrminit_setSoundFile ---
+; Set alarm sound filename for playback
+alrminit_setSoundFile:  ; (sub_0000_00B9)
+  0000:00B9  55                push     bp
+  0000:00BA  8bec              mov      bp, sp
+  0000:00BC  33c0              xor      ax, ax
+  0000:00BE  e85510            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:00C1  807e040f          cmp      byte ptr [bp + 4], 0xf
+  0000:00C5  7304              jae      0xcb  ; -> loc_0000_00CB
+  0000:00C7  2bc0              sub      ax, ax
+  0000:00C9  eb19              jmp      0xe4  ; -> loc_0000_00E4
+
+loc_0000_00CB:
+  0000:00CB  807e041e          cmp      byte ptr [bp + 4], 0x1e
+  0000:00CF  7305              jae      0xd6  ; -> loc_0000_00D6
+  0000:00D1  b80100            mov      ax, 1
+  0000:00D4  eb0e              jmp      0xe4  ; -> loc_0000_00E4
+
+loc_0000_00D6:
+  0000:00D6  807e042d          cmp      byte ptr [bp + 4], 0x2d
+  0000:00DA  7305              jae      0xe1  ; -> loc_0000_00E1
+  0000:00DC  b80200            mov      ax, 2
+  0000:00DF  eb03              jmp      0xe4  ; -> loc_0000_00E4
+
+loc_0000_00E1:
+  0000:00E1  b80300            mov      ax, 3
+
+loc_0000_00E4:
+  0000:00E4  5d                pop      bp
+  0000:00E5  c3                ret
+
+; --- alrminit_processAlarmEvent ---
+; Process alarm event (check/fire/snooze)
+alrminit_processAlarmEvent:  ; (sub_0000_00E6)
+  0000:00E6  33c0              xor      ax, ax
+  0000:00E8  e82b10            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:00EB  56                push     si
+  0000:00EC  833e4a0800        cmp      word ptr [0x84a], 0
+  0000:00F1  7405              je       0xf8  ; -> loc_0000_00F8
+  0000:00F3  e85403            call     0x44a  ; -> sub_0000_044A  ; alrminit_readConfigFile
+  0000:00F6  eb40              jmp      0x138  ; -> loc_0000_0138
+
+loc_0000_00F8:
+  0000:00F8  b88800            mov      ax, 0x88
+  0000:00FB  50                push     ax
+  0000:00FC  b84e13            mov      ax, 0x134e
+  0000:00FF  50                push     ax
+  0000:0100  b88600            mov      ax, 0x86
+  0000:0103  f72e4a08          imul     word ptr [0x84a]
+  0000:0107  055008            add      ax, 0x850
+  0000:010A  50                push     ax
+  0000:010B  e88214            call     0x1590  ; -> sub_0000_1590  ; alrminit_parseTimeField
+  0000:010E  83c406            add      sp, 6
+  0000:0111  8b364a08          mov      si, word ptr [0x84a]
+  0000:0115  b103              mov      cl, 3
+  0000:0117  d3e6              shl      si, cl
+  0000:0119  b88600            mov      ax, 0x86
+  0000:011C  f72e4a08          imul     word ptr [0x84a]
+  0000:0120  055d08            add      ax, 0x85d
+  0000:0123  8984d613          mov      word ptr [si + 0x13d6], ax
+  0000:0127  a14a08            mov      ax, word ptr [0x84a]
+  0000:012A  8984dc13          mov      word ptr [si + 0x13dc], ax
+  0000:012E  ff364a08          push     word ptr [0x84a]
+  0000:0132  e86f03            call     0x4a4  ; -> sub_0000_04A4  ; alrminit_parseConfigLine
+  0000:0135  83c402            add      sp, 2
+
+loc_0000_0138:
+  0000:0138  ff064a08          inc      word ptr [0x84a]
+  0000:013C  833e4a0814        cmp      word ptr [0x84a], 0x14
+  0000:0141  7e06              jle      0x149  ; -> loc_0000_0149
+  0000:0143  c7064a081400      mov      word ptr [0x84a], 0x14
+
+loc_0000_0149:
+  0000:0149  5e                pop      si
+  0000:014A  c3                ret
+
+; --- alrminit_installHooks ---
+; Install interrupt hooks and register with DM89 host
+alrminit_installHooks:  ; (sub_0000_014B)
+  0000:014B  55                push     bp
+  0000:014C  8bec              mov      bp, sp
+  0000:014E  b85400            mov      ax, 0x54
+  0000:0151  e8c20f            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:0154  56                push     si
+  0000:0155  b84002            mov      ax, 0x240
+  0000:0158  50                push     ax
+  0000:0159  e83905            call     0x695  ; -> sub_0000_0695  ; alrminit_entryPoint
+  0000:015C  83c402            add      sp, 2
+  0000:015F  50                push     ax
+  0000:0160  8d46ac            lea      ax, [bp - 0x54]
+  0000:0163  50                push     ax
+  0000:0164  e84b12            call     0x13b2  ; -> sub_0000_13B2  ; alrminit_getConfigPath
+  0000:0167  83c404            add      sp, 4
+  0000:016A  8d46ac            lea      ax, [bp - 0x54]
+  0000:016D  50                push     ax
+  0000:016E  e87312            call     0x13e4  ; -> sub_0000_13E4  ; alrminit_buildFilePath
+  0000:0171  83c402            add      sp, 2
+  0000:0174  8bf0              mov      si, ax
+  0000:0176  807aab5c          cmp      byte ptr [bp + si - 0x55], 0x5c
+  0000:017A  740e              je       0x18a  ; -> loc_0000_018A
+  0000:017C  b84902            mov      ax, 0x249
+  0000:017F  50                push     ax
+  0000:0180  8d46ac            lea      ax, [bp - 0x54]
+  0000:0183  50                push     ax
+  0000:0184  e8eb11            call     0x1372  ; -> sub_0000_1372  ; alrminit_getEnvValue
+  0000:0187  83c404            add      sp, 4
+
+loc_0000_018A:
+  0000:018A  b84c02            mov      ax, 0x24c
+  0000:018D  50                push     ax
+  0000:018E  8d46ac            lea      ax, [bp - 0x54]
+  0000:0191  50                push     ax
+  0000:0192  e8dd11            call     0x1372  ; -> sub_0000_1372  ; alrminit_getEnvValue
+  0000:0195  83c404            add      sp, 4
+  0000:0198  8d46ac            lea      ax, [bp - 0x54]
+  0000:019B  50                push     ax
+  0000:019C  e86709            call     0xb06  ; -> sub_0000_0B06  ; alrminit_getModuleInfo
+  0000:019F  83c402            add      sp, 2
+  0000:01A2  0bc0              or       ax, ax
+  0000:01A4  751b              jne      0x1c1  ; -> loc_0000_01C1
+  0000:01A6  2bc0              sub      ax, ax
+  0000:01A8  50                push     ax
+  0000:01A9  8d46ac            lea      ax, [bp - 0x54]
+  0000:01AC  50                push     ax
+  0000:01AD  b84c02            mov      ax, 0x24c
+  0000:01B0  50                push     ax
+  0000:01B1  e88208            call     0xa36  ; -> sub_0000_0A36  ; alrminit_allocSharedArea
+  0000:01B4  83c406            add      sp, 6
+  0000:01B7  3d0100            cmp      ax, 1
+  0000:01BA  7405              je       0x1c1  ; -> loc_0000_01C1
+
+loc_0000_01BC:
+  0000:01BC  b8ffff            mov      ax, 0xffff
+  0000:01BF  eb2b              jmp      0x1ec  ; -> loc_0000_01EC
+
+loc_0000_01C1:
+  0000:01C1  8d46ac            lea      ax, [bp - 0x54]
+  0000:01C4  50                push     ax
+  0000:01C5  b80200            mov      ax, 2
+  0000:01C8  50                push     ax
+  0000:01C9  e84609            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:01CC  83c404            add      sp, 4
+  0000:01CF  a38014            mov      word ptr [0x1480], ax
+  0000:01D2  0bc0              or       ax, ax
+  0000:01D4  7d0c              jge      0x1e2  ; -> loc_0000_01E2
+  0000:01D6  b88202            mov      ax, 0x282
+  0000:01D9  50                push     ax
+  0000:01DA  e82f09            call     0xb0c  ; -> sub_0000_0B0C  ; alrminit_getVersion
+  0000:01DD  83c402            add      sp, 2
+  0000:01E0  ebda              jmp      0x1bc  ; -> loc_0000_01BC
+
+loc_0000_01E2:
+  0000:01E2  ff368014          push     word ptr [0x1480]
+  0000:01E6  e8b901            call     0x3a2  ; -> sub_0000_03A2  ; alrminit_updateTimestamp
+  0000:01E9  83c402            add      sp, 2
+
+loc_0000_01EC:
+  0000:01EC  5e                pop      si
+  0000:01ED  8be5              mov      sp, bp
+  0000:01EF  5d                pop      bp
+  0000:01F0  c3                ret
+
+; --- alrminit_uninstallHooks ---
+; Uninstall interrupt hooks, restore original vectors
+alrminit_uninstallHooks:  ; (sub_0000_01F1)
+  0000:01F1  33c0              xor      ax, ax
+  0000:01F3  e8200f            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:01F6  a18014            mov      ax, word ptr [0x1480]
+  0000:01F9  a31a02            mov      word ptr [0x21a], ax
+  0000:01FC  b81a02            mov      ax, 0x21a
+  0000:01FF  50                push     ax
+  0000:0200  b81400            mov      ax, 0x14
+  0000:0203  50                push     ax
+  0000:0204  e80b09            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:0207  83c404            add      sp, 4
+  0000:020A  a32008            mov      word ptr [0x820], ax
+  0000:020D  50                push     ax
+  0000:020E  e89101            call     0x3a2  ; -> sub_0000_03A2  ; alrminit_updateTimestamp
+  0000:0211  83c402            add      sp, 2
+  0000:0214  a34e08            mov      word ptr [0x84e], ax
+  0000:0217  3dffff            cmp      ax, 0xffff
+  0000:021A  7505              jne      0x221  ; -> loc_0000_0221
+  0000:021C  b8ffff            mov      ax, 0xffff
+  0000:021F  eb02              jmp      0x223  ; -> loc_0000_0223
+
+loc_0000_0221:
+  0000:0221  2bc0              sub      ax, ax
+
+loc_0000_0223:
+  0000:0223  c3                ret
+
+; --- alrminit_getAlarmList ---
+; Get pointer to current alarm list
+alrminit_getAlarmList:  ; (sub_0000_0224)
+  0000:0224  55                push     bp
+  0000:0225  8bec              mov      bp, sp
+  0000:0227  b80400            mov      ax, 4
+  0000:022A  e8e90e            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:022D  c746fc0100        mov      word ptr [bp - 4], 1
+  0000:0232  c746fe0100        mov      word ptr [bp - 2], 1
+  0000:0237  eb1b              jmp      0x254  ; -> loc_0000_0254
+
+loc_0000_0239:
+  0000:0239  8b5efc            mov      bx, word ptr [bp - 4]
+  0000:023C  80bf8a0000        cmp      byte ptr [bx + 0x8a], 0
+  0000:0241  7503              jne      0x246  ; -> loc_0000_0246
+  0000:0243  ff46fe            inc      word ptr [bp - 2]
+
+loc_0000_0246:
+  0000:0246  ff46fc            inc      word ptr [bp - 4]
+  0000:0249  817efc9001        cmp      word ptr [bp - 4], 0x190
+  0000:024E  7e04              jle      0x254  ; -> loc_0000_0254
+  0000:0250  2bc0              sub      ax, ax
+  0000:0252  eb11              jmp      0x265  ; -> loc_0000_0265
+
+loc_0000_0254:
+  0000:0254  8b4604            mov      ax, word ptr [bp + 4]
+  0000:0257  3946fe            cmp      word ptr [bp - 2], ax
+  0000:025A  7edd              jle      0x239  ; -> loc_0000_0239
+  0000:025C  8b46fc            mov      ax, word ptr [bp - 4]
+  0000:025F  058a00            add      ax, 0x8a
+  0000:0262  a32002            mov      word ptr [0x220], ax
+
+loc_0000_0265:
+  0000:0265  8be5              mov      sp, bp
+  0000:0267  5d                pop      bp
+  0000:0268  c3                ret
+
+; --- alrminit_addAlarm ---
+; Add new alarm entry to the alarm list
+alrminit_addAlarm:  ; (sub_0000_0269)
+  0000:0269  33c0              xor      ax, ax
+  0000:026B  e8a80e            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:026E  a18014            mov      ax, word ptr [0x1480]
+  0000:0271  a31e02            mov      word ptr [0x21e], ax
+  0000:0274  b81e02            mov      ax, 0x21e
+  0000:0277  50                push     ax
+  0000:0278  b80600            mov      ax, 6
+  0000:027B  50                push     ax
+  0000:027C  e89308            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:027F  83c404            add      sp, 4
+  0000:0282  a37e14            mov      word ptr [0x147e], ax
+  0000:0285  50                push     ax
+  0000:0286  e81901            call     0x3a2  ; -> sub_0000_03A2  ; alrminit_updateTimestamp
+  0000:0289  83c402            add      sp, 2
+  0000:028C  a34e08            mov      word ptr [0x84e], ax
+  0000:028F  3dffff            cmp      ax, 0xffff
+  0000:0292  7505              jne      0x299  ; -> loc_0000_0299
+  0000:0294  b8ffff            mov      ax, 0xffff
+  0000:0297  eb02              jmp      0x29b  ; -> loc_0000_029B
+
+loc_0000_0299:
+  0000:0299  2bc0              sub      ax, ax
+
+loc_0000_029B:
+  0000:029B  c3                ret
+
+; --- alrminit_removeAlarm ---
+; Remove alarm entry from the alarm list
+alrminit_removeAlarm:  ; (sub_0000_029C)
+  0000:029C  55                push     bp
+  0000:029D  8bec              mov      bp, sp
+  0000:029F  b80200            mov      ax, 2
+  0000:02A2  e8710e            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:02A5  e83300            call     0x2db  ; -> sub_0000_02DB  ; alrminit_checkAlarmTime
+  0000:02A8  8946fe            mov      word ptr [bp - 2], ax
+  0000:02AB  3dffff            cmp      ax, 0xffff
+  0000:02AE  7405              je       0x2b5  ; -> loc_0000_02B5
+  0000:02B0  3dfeff            cmp      ax, 0xfffe
+  0000:02B3  7504              jne      0x2b9  ; -> loc_0000_02B9
+
+loc_0000_02B5:
+  0000:02B5  2bc0              sub      ax, ax
+  0000:02B7  eb1e              jmp      0x2d7  ; -> loc_0000_02D7
+
+loc_0000_02B9:
+  0000:02B9  837efe00          cmp      word ptr [bp - 2], 0
+  0000:02BD  7cf6              jl       0x2b5  ; -> loc_0000_02B5
+  0000:02BF  e88100            call     0x343  ; -> sub_0000_0343  ; alrminit_fireAlarm
+  0000:02C2  8946fe            mov      word ptr [bp - 2], ax
+  0000:02C5  3dffff            cmp      ax, 0xffff
+  0000:02C8  74eb              je       0x2b5  ; -> loc_0000_02B5
+  0000:02CA  3dfeff            cmp      ax, 0xfffe
+  0000:02CD  74e6              je       0x2b5  ; -> loc_0000_02B5
+  0000:02CF  3dfdff            cmp      ax, 0xfffd
+  0000:02D2  75e5              jne      0x2b9  ; -> loc_0000_02B9
+  0000:02D4  b8ffff            mov      ax, 0xffff
+
+loc_0000_02D7:
+  0000:02D7  8be5              mov      sp, bp
+  0000:02D9  5d                pop      bp
+  0000:02DA  c3                ret
+
+; --- alrminit_checkAlarmTime ---
+; Check if current time matches any alarm trigger time
+alrminit_checkAlarmTime:  ; (sub_0000_02DB)
+  0000:02DB  55                push     bp
+  0000:02DC  8bec              mov      bp, sp
+  0000:02DE  b80200            mov      ax, 2
+  0000:02E1  e8320e            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:02E4  a17e14            mov      ax, word ptr [0x147e]
+  0000:02E7  a33002            mov      word ptr [0x230], ax
+  0000:02EA  c70632024e13      mov      word ptr [0x232], 0x134e
+  0000:02F0  c7063c020000      mov      word ptr [0x23c], 0
+  0000:02F6  b83002            mov      ax, 0x230
+  0000:02F9  50                push     ax
+  0000:02FA  b80b00            mov      ax, 0xb
+  0000:02FD  50                push     ax
+  0000:02FE  e81108            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:0301  83c404            add      sp, 4
+  0000:0304  8946fe            mov      word ptr [bp - 2], ax
+  0000:0307  50                push     ax
+  0000:0308  e89700            call     0x3a2  ; -> sub_0000_03A2  ; alrminit_updateTimestamp
+  0000:030B  83c402            add      sp, 2
+  0000:030E  a34e08            mov      word ptr [0x84e], ax
+  0000:0311  3dffff            cmp      ax, 0xffff
+  0000:0314  7505              jne      0x31b  ; -> loc_0000_031B
+  0000:0316  b8fdff            mov      ax, 0xfffd
+  0000:0319  eb24              jmp      0x33f  ; -> loc_0000_033F
+
+loc_0000_031B:
+  0000:031B  837efef7          cmp      word ptr [bp - 2], -9
+  0000:031F  7508              jne      0x329  ; -> loc_0000_0329
+  0000:0321  e8c2fd            call     0xe6  ; -> sub_0000_00E6  ; alrminit_processAlarmEvent
+  0000:0324  b8ffff            mov      ax, 0xffff
+  0000:0327  eb16              jmp      0x33f  ; -> loc_0000_033F
+
+loc_0000_0329:
+  0000:0329  837efef5          cmp      word ptr [bp - 2], -0xb
+  0000:032D  7505              jne      0x334  ; -> loc_0000_0334
+
+loc_0000_032F:
+  0000:032F  b8feff            mov      ax, 0xfffe
+  0000:0332  eb0b              jmp      0x33f  ; -> loc_0000_033F
+
+loc_0000_0334:
+  0000:0334  837efedc          cmp      word ptr [bp - 2], -0x24
+  0000:0338  74f5              je       0x32f  ; -> loc_0000_032F
+  0000:033A  e8a9fd            call     0xe6  ; -> sub_0000_00E6  ; alrminit_processAlarmEvent
+  0000:033D  2bc0              sub      ax, ax
+
+loc_0000_033F:
+  0000:033F  8be5              mov      sp, bp
+  0000:0341  5d                pop      bp
+  0000:0342  c3                ret
+
+; --- alrminit_fireAlarm ---
+; Fire alarm - play sound, show notification
+alrminit_fireAlarm:  ; (sub_0000_0343)
+  0000:0343  55                push     bp
+  0000:0344  8bec              mov      bp, sp
+  0000:0346  b80200            mov      ax, 2
+  0000:0349  e8ca0d            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:034C  a17e14            mov      ax, word ptr [0x147e]
+  0000:034F  a33002            mov      word ptr [0x230], ax
+  0000:0352  c70632024e13      mov      word ptr [0x232], 0x134e
+  0000:0358  b83002            mov      ax, 0x230
+  0000:035B  50                push     ax
+  0000:035C  b80e00            mov      ax, 0xe
+  0000:035F  50                push     ax
+  0000:0360  e8af07            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:0363  83c404            add      sp, 4
+  0000:0366  8946fe            mov      word ptr [bp - 2], ax
+  0000:0369  ff368014          push     word ptr [0x1480]
+  0000:036D  e83200            call     0x3a2  ; -> sub_0000_03A2  ; alrminit_updateTimestamp
+  0000:0370  83c402            add      sp, 2
+  0000:0373  a34e08            mov      word ptr [0x84e], ax
+  0000:0376  3dffff            cmp      ax, 0xffff
+  0000:0379  7505              jne      0x380  ; -> loc_0000_0380
+  0000:037B  b8fdff            mov      ax, 0xfffd
+  0000:037E  eb1e              jmp      0x39e  ; -> loc_0000_039E
+
+loc_0000_0380:
+  0000:0380  837efef7          cmp      word ptr [bp - 2], -9
+  0000:0384  7508              jne      0x38e  ; -> loc_0000_038E
+  0000:0386  e85dfd            call     0xe6  ; -> sub_0000_00E6  ; alrminit_processAlarmEvent
+  0000:0389  b8ffff            mov      ax, 0xffff
+  0000:038C  eb10              jmp      0x39e  ; -> loc_0000_039E
+
+loc_0000_038E:
+  0000:038E  837efef5          cmp      word ptr [bp - 2], -0xb
+  0000:0392  7505              jne      0x399  ; -> loc_0000_0399
+  0000:0394  b8feff            mov      ax, 0xfffe
+  0000:0397  eb05              jmp      0x39e  ; -> loc_0000_039E
+
+loc_0000_0399:
+  0000:0399  e84afd            call     0xe6  ; -> sub_0000_00E6  ; alrminit_processAlarmEvent
+  0000:039C  2bc0              sub      ax, ax
+
+loc_0000_039E:
+  0000:039E  8be5              mov      sp, bp
+  0000:03A0  5d                pop      bp
+  0000:03A1  c3                ret
+
+; --- alrminit_updateTimestamp ---
+; Update last-checked timestamp to current time
+alrminit_updateTimestamp:  ; (sub_0000_03A2)
+  0000:03A2  55                push     bp
+  0000:03A3  8bec              mov      bp, sp
+  0000:03A5  33c0              xor      ax, ax
+  0000:03A7  e86c0d            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:03AA  837e0400          cmp      word ptr [bp + 4], 0
+  0000:03AE  7c04              jl       0x3b4  ; -> loc_0000_03B4
+
+loc_0000_03B0:
+  0000:03B0  2bc0              sub      ax, ax
+  0000:03B2  eb25              jmp      0x3d9  ; -> loc_0000_03D9
+
+loc_0000_03B4:
+  0000:03B4  8b4604            mov      ax, word ptr [bp + 4]
+  0000:03B7  3ddcff            cmp      ax, 0xffdc
+  0000:03BA  74f4              je       0x3b0  ; -> loc_0000_03B0
+  0000:03BC  7f05              jg       0x3c3  ; -> loc_0000_03C3
+  0000:03BE  3dd9ff            cmp      ax, 0xffd9
+  0000:03C1  eb11              jmp      0x3d4  ; -> loc_0000_03D4
+
+loc_0000_03C3:
+  0000:03C3  3df5ff            cmp      ax, 0xfff5
+  0000:03C6  74e8              je       0x3b0  ; -> loc_0000_03B0
+  0000:03C8  3df7ff            cmp      ax, 0xfff7
+  0000:03CB  7c09              jl       0x3d6  ; -> loc_0000_03D6
+  0000:03CD  3df8ff            cmp      ax, 0xfff8
+  0000:03D0  7ede              jle      0x3b0  ; -> loc_0000_03B0
+  0000:03D2  0bc0              or       ax, ax
+
+loc_0000_03D4:
+  0000:03D4  74da              je       0x3b0  ; -> loc_0000_03B0
+
+loc_0000_03D6:
+  0000:03D6  b8ffff            mov      ax, 0xffff
+
+loc_0000_03D9:
+  0000:03D9  5d                pop      bp
+  0000:03DA  c3                ret
+  0000:03DB  55                push     bp
+  0000:03DC  8bec              mov      bp, sp
+  0000:03DE  b80400            mov      ax, 4
+  0000:03E1  e8320d            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:03E4  c746fe0000        mov      word ptr [bp - 2], 0
+  0000:03E9  c746fc0000        mov      word ptr [bp - 4], 0
+  0000:03EE  eb23              jmp      0x413  ; -> loc_0000_0413
+
+loc_0000_03F0:
+  0000:03F0  ff76fc            push     word ptr [bp - 4]
+  0000:03F3  e82efe            call     0x224  ; -> sub_0000_0224  ; alrminit_getAlarmList
+  0000:03F6  83c402            add      sp, 2
+  0000:03F9  ff362002          push     word ptr [0x220]
+  0000:03FD  b84200            mov      ax, 0x42
+  0000:0400  50                push     ax
+  0000:0401  e84a11            call     0x154e  ; -> sub_0000_154E  ; alrminit_strcat
+  0000:0404  83c404            add      sp, 4
+  0000:0407  0bc0              or       ax, ax
+  0000:0409  7505              jne      0x410  ; -> loc_0000_0410
+  0000:040B  c746fe0100        mov      word ptr [bp - 2], 1
+
+loc_0000_0410:
+  0000:0410  ff46fc            inc      word ptr [bp - 4]
+
+loc_0000_0413:
+  0000:0413  a12008            mov      ax, word ptr [0x820]
+  0000:0416  3946fc            cmp      word ptr [bp - 4], ax
+  0000:0419  7ed5              jle      0x3f0  ; -> loc_0000_03F0
+  0000:041B  837efe01          cmp      word ptr [bp - 2], 1
+  0000:041F  7525              jne      0x446  ; -> loc_0000_0446
+  0000:0421  b84200            mov      ax, 0x42
+  0000:0424  50                push     ax
+  0000:0425  ff362002          push     word ptr [0x220]
+  0000:0429  e8860f            call     0x13b2  ; -> sub_0000_13B2  ; alrminit_getConfigPath
+  0000:042C  83c404            add      sp, 4
+  0000:042F  e837fe            call     0x269  ; -> sub_0000_0269  ; alrminit_addAlarm
+  0000:0432  e8dbfb            call     0x10  ; -> sub_0000_0010  ; alrminit_initModule
+  0000:0435  e864fe            call     0x29c  ; -> sub_0000_029C  ; alrminit_removeAlarm
+  0000:0438  ff367e14          push     word ptr [0x147e]
+  0000:043C  b80900            mov      ax, 9
+  0000:043F  50                push     ax
+  0000:0440  e8cf06            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:0443  83c404            add      sp, 4
+
+loc_0000_0446:
+  0000:0446  8be5              mov      sp, bp
+  0000:0448  5d                pop      bp
+  0000:0449  c3                ret
+
+; --- alrminit_readConfigFile ---
+; Read and parse alarm configuration file
+alrminit_readConfigFile:  ; (sub_0000_044A)
+  0000:044A  55                push     bp
+  0000:044B  8bec              mov      bp, sp
+  0000:044D  b80200            mov      ax, 2
+  0000:0450  e8c30c            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:0453  56                push     si
+  0000:0454  ff364a08          push     word ptr [0x84a]
+  0000:0458  e84900            call     0x4a4  ; -> sub_0000_04A4  ; alrminit_parseConfigLine
+  0000:045B  83c402            add      sp, 2
+  0000:045E  833e4a0814        cmp      word ptr [0x84a], 0x14
+  0000:0463  7530              jne      0x495  ; -> loc_0000_0495
+  0000:0465  8b364a08          mov      si, word ptr [0x84a]
+  0000:0469  b103              mov      cl, 3
+  0000:046B  d3e6              shl      si, cl
+  0000:046D  8b84d813          mov      ax, word ptr [si + 0x13d8]
+  0000:0471  8b94da13          mov      dx, word ptr [si + 0x13da]
+  0000:0475  3994d213          cmp      word ptr [si + 0x13d2], dx
+  0000:0479  7c24              jl       0x49f  ; -> loc_0000_049F
+  0000:047B  7f06              jg       0x483  ; -> loc_0000_0483
+  0000:047D  3984d013          cmp      word ptr [si + 0x13d0], ax
+  0000:0481  761c              jbe      0x49f  ; -> loc_0000_049F
+
+loc_0000_0483:
+  0000:0483  8b84d413          mov      ax, word ptr [si + 0x13d4]
+  0000:0487  8946fe            mov      word ptr [bp - 2], ax
+  0000:048A  50                push     ax
+  0000:048B  e88800            call     0x516  ; -> sub_0000_0516  ; alrminit_parseTimeString
+  0000:048E  83c402            add      sp, 2
+  0000:0491  2bc0              sub      ax, ax
+  0000:0493  eb0a              jmp      0x49f  ; -> loc_0000_049F
+
+loc_0000_0495:
+  0000:0495  ff364a08          push     word ptr [0x84a]
+  0000:0499  e87a00            call     0x516  ; -> sub_0000_0516  ; alrminit_parseTimeString
+  0000:049C  83c402            add      sp, 2
+
+loc_0000_049F:
+  0000:049F  5e                pop      si
+  0000:04A0  8be5              mov      sp, bp
+  0000:04A2  5d                pop      bp
+  0000:04A3  c3                ret
+
+; --- alrminit_parseConfigLine ---
+; Parse single line from alarm config file
+alrminit_parseConfigLine:  ; (sub_0000_04A4)
+  0000:04A4  55                push     bp
+  0000:04A5  8bec              mov      bp, sp
+  0000:04A7  b80a00            mov      ax, 0xa
+  0000:04AA  e8690c            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:04AD  a05513            mov      al, byte ptr [0x1355]
+  0000:04B0  8846f8            mov      byte ptr [bp - 8], al
+  0000:04B3  8d46fe            lea      ax, [bp - 2]
+  0000:04B6  50                push     ax
+  0000:04B7  8d46f6            lea      ax, [bp - 0xa]
+  0000:04BA  50                push     ax
+  0000:04BB  8a46f8            mov      al, byte ptr [bp - 8]
+  0000:04BE  98                cwde
+  0000:04BF  50                push     ax
+  0000:04C0  e8a9fb            call     0x6c  ; -> sub_0000_006C  ; alrminit_parseConfig
+  0000:04C3  83c406            add      sp, 6
+  0000:04C6  8a46f6            mov      al, byte ptr [bp - 0xa]
+  0000:04C9  98                cwde
+  0000:04CA  8946fc            mov      word ptr [bp - 4], ax
+  0000:04CD  8a46fe            mov      al, byte ptr [bp - 2]
+  0000:04D0  98                cwde
+  0000:04D1  b90f00            mov      cx, 0xf
+  0000:04D4  f7e9              imul     cx
+  0000:04D6  8946fa            mov      word ptr [bp - 6], ax
+  0000:04D9  0bc0              or       ax, ax
+  0000:04DB  7d17              jge      0x4f4  ; -> loc_0000_04F4
+  0000:04DD  ff4efc            dec      word ptr [bp - 4]
+  0000:04E0  8346fa3c          add      word ptr [bp - 6], 0x3c
+  0000:04E4  837efc00          cmp      word ptr [bp - 4], 0
+  0000:04E8  7d0a              jge      0x4f4  ; -> loc_0000_04F4
+  0000:04EA  c746fc0000        mov      word ptr [bp - 4], 0
+  0000:04EF  c746fa0000        mov      word ptr [bp - 6], 0
+
+loc_0000_04F4:
+  0000:04F4  b94404            mov      cx, 0x444
+  0000:04F7  b83c00            mov      ax, 0x3c
+  0000:04FA  f76efc            imul     word ptr [bp - 4]
+  0000:04FD  0346fa            add      ax, word ptr [bp - 6]
+  0000:0500  f7e9              imul     cx
+  0000:0502  99                cdq
+  0000:0503  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:0506  b103              mov      cl, 3
+  0000:0508  d3e3              shl      bx, cl
+  0000:050A  8987d813          mov      word ptr [bx + 0x13d8], ax
+  0000:050E  8997da13          mov      word ptr [bx + 0x13da], dx
+  0000:0512  8be5              mov      sp, bp
+  0000:0514  5d                pop      bp
+  0000:0515  c3                ret
+
+; --- alrminit_parseTimeString ---
+; Parse time string (HH:MM format) into tick value
+alrminit_parseTimeString:  ; (sub_0000_0516)
+  0000:0516  55                push     bp
+  0000:0517  8bec              mov      bp, sp
+  0000:0519  b80200            mov      ax, 2
+  0000:051C  e8f70b            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:051F  56                push     si
+  0000:0520  c746fe0100        mov      word ptr [bp - 2], 1
+  0000:0525  eb03              jmp      0x52a  ; -> loc_0000_052A
+
+loc_0000_0527:
+  0000:0527  ff46fe            inc      word ptr [bp - 2]
+
+loc_0000_052A:
+  0000:052A  a14a08            mov      ax, word ptr [0x84a]
+  0000:052D  3946fe            cmp      word ptr [bp - 2], ax
+  0000:0530  7f2f              jg       0x561  ; -> loc_0000_0561
+  0000:0532  8b5efe            mov      bx, word ptr [bp - 2]
+  0000:0535  b103              mov      cl, 3
+  0000:0537  d3e3              shl      bx, cl
+  0000:0539  8bf0              mov      si, ax
+  0000:053B  d3e6              shl      si, cl
+  0000:053D  8b84d813          mov      ax, word ptr [si + 0x13d8]
+  0000:0541  8b94da13          mov      dx, word ptr [si + 0x13da]
+  0000:0545  3997d213          cmp      word ptr [bx + 0x13d2], dx
+  0000:0549  7cdc              jl       0x527  ; -> loc_0000_0527
+  0000:054B  7f06              jg       0x553  ; -> loc_0000_0553
+  0000:054D  3987d013          cmp      word ptr [bx + 0x13d0], ax
+  0000:0551  76d4              jbe      0x527  ; -> loc_0000_0527
+
+loc_0000_0553:
+  0000:0553  ff7604            push     word ptr [bp + 4]
+  0000:0556  ff76fe            push     word ptr [bp - 2]
+  0000:0559  e83f00            call     0x59b  ; -> sub_0000_059B  ; alrminit_parseDateString
+  0000:055C  83c404            add      sp, 4
+  0000:055F  eb35              jmp      0x596  ; -> loc_0000_0596
+
+loc_0000_0561:
+  0000:0561  b88800            mov      ax, 0x88
+  0000:0564  50                push     ax
+  0000:0565  b84e13            mov      ax, 0x134e
+  0000:0568  50                push     ax
+  0000:0569  b88600            mov      ax, 0x86
+  0000:056C  f72e4a08          imul     word ptr [0x84a]
+  0000:0570  055008            add      ax, 0x850
+  0000:0573  50                push     ax
+  0000:0574  e81910            call     0x1590  ; -> sub_0000_1590  ; alrminit_parseTimeField
+  0000:0577  83c406            add      sp, 6
+  0000:057A  8b76fe            mov      si, word ptr [bp - 2]
+  0000:057D  b103              mov      cl, 3
+  0000:057F  d3e6              shl      si, cl
+  0000:0581  a14a08            mov      ax, word ptr [0x84a]
+  0000:0584  8984d413          mov      word ptr [si + 0x13d4], ax
+  0000:0588  b88600            mov      ax, 0x86
+  0000:058B  f72e4a08          imul     word ptr [0x84a]
+  0000:058F  055d08            add      ax, 0x85d
+  0000:0592  8984ce13          mov      word ptr [si + 0x13ce], ax
+
+loc_0000_0596:
+  0000:0596  5e                pop      si
+  0000:0597  8be5              mov      sp, bp
+  0000:0599  5d                pop      bp
+  0000:059A  c3                ret
+
+; --- alrminit_parseDateString ---
+; Parse date string (MM/DD/YYYY) into day value
+alrminit_parseDateString:  ; (sub_0000_059B)
+  0000:059B  55                push     bp
+  0000:059C  8bec              mov      bp, sp
+  0000:059E  b80200            mov      ax, 2
+  0000:05A1  e8720b            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:05A4  57                push     di
+  0000:05A5  56                push     si
+  0000:05A6  a14a08            mov      ax, word ptr [0x84a]
+  0000:05A9  8946fe            mov      word ptr [bp - 2], ax
+  0000:05AC  eb1a              jmp      0x5c8  ; -> loc_0000_05C8
+
+loc_0000_05AE:
+  0000:05AE  8b76fe            mov      si, word ptr [bp - 2]
+  0000:05B1  b103              mov      cl, 3
+  0000:05B3  d3e6              shl      si, cl
+  0000:05B5  56                push     si
+  0000:05B6  8dbcd613          lea      di, [si + 0x13d6]
+  0000:05BA  8db4ce13          lea      si, [si + 0x13ce]
+  0000:05BE  1e                push     ds
+  0000:05BF  07                pop      es
+  0000:05C0  a5                movsw    word ptr es:[di], word ptr [si]
+  0000:05C1  a5                movsw    word ptr es:[di], word ptr [si]
+  0000:05C2  a5                movsw    word ptr es:[di], word ptr [si]
+  0000:05C3  a5                movsw    word ptr es:[di], word ptr [si]
+  0000:05C4  5e                pop      si
+  0000:05C5  ff4efe            dec      word ptr [bp - 2]
+
+loc_0000_05C8:
+  0000:05C8  8b4604            mov      ax, word ptr [bp + 4]
+  0000:05CB  3946fe            cmp      word ptr [bp - 2], ax
+  0000:05CE  7dde              jge      0x5ae  ; -> loc_0000_05AE
+  0000:05D0  b88800            mov      ax, 0x88
+  0000:05D3  50                push     ax
+  0000:05D4  b84e13            mov      ax, 0x134e
+  0000:05D7  50                push     ax
+  0000:05D8  b88600            mov      ax, 0x86
+  0000:05DB  f76e06            imul     word ptr [bp + 6]
+  0000:05DE  055008            add      ax, 0x850
+  0000:05E1  50                push     ax
+  0000:05E2  e8ab0f            call     0x1590  ; -> sub_0000_1590  ; alrminit_parseTimeField
+  0000:05E5  83c406            add      sp, 6
+  0000:05E8  8b76fe            mov      si, word ptr [bp - 2]
+  0000:05EB  b103              mov      cl, 3
+  0000:05ED  d3e6              shl      si, cl
+  0000:05EF  b88600            mov      ax, 0x86
+  0000:05F2  f76e06            imul     word ptr [bp + 6]
+  0000:05F5  055d08            add      ax, 0x85d
+  0000:05F8  8984d613          mov      word ptr [si + 0x13d6], ax
+  0000:05FC  8b4606            mov      ax, word ptr [bp + 6]
+  0000:05FF  8984dc13          mov      word ptr [si + 0x13dc], ax
+  0000:0603  ff76fe            push     word ptr [bp - 2]
+  0000:0606  e89bfe            call     0x4a4  ; -> sub_0000_04A4  ; alrminit_parseConfigLine
+  0000:0609  83c402            add      sp, 2
+  0000:060C  5e                pop      si
+  0000:060D  5f                pop      di
+  0000:060E  8be5              mov      sp, bp
+  0000:0610  5d                pop      bp
+  0000:0611  c3                ret
+
+; --- alrminit_validateAlarm ---
+; Validate alarm entry (check time range, no duplicates)
+alrminit_validateAlarm:  ; (sub_0000_0612)
+  0000:0612  33c0              xor      ax, ax
+  0000:0614  e8ff0a            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:0617  833e4a0814        cmp      word ptr [0x84a], 0x14
+  0000:061C  7c2e              jl       0x64c  ; -> loc_0000_064C
+  0000:061E  a17014            mov      ax, word ptr [0x1470]
+  0000:0621  8b167214          mov      dx, word ptr [0x1472]
+  0000:0625  05ec2e            add      ax, 0x2eec
+  0000:0628  83d200            adc      dx, 0
+  0000:062B  a37814            mov      word ptr [0x1478], ax
+  0000:062E  89167a14          mov      word ptr [0x147a], dx
+  0000:0632  83fa17            cmp      dx, 0x17
+  0000:0635  7c29              jl       0x660  ; -> loc_0000_0660
+  0000:0637  7f05              jg       0x63e  ; -> loc_0000_063E
+  0000:0639  3d3cfa            cmp      ax, 0xfa3c
+  0000:063C  7622              jbe      0x660  ; -> loc_0000_0660
+
+loc_0000_063E:
+  0000:063E  c70678143cfa      mov      word ptr [0x1478], 0xfa3c
+  0000:0644  c7067a141700      mov      word ptr [0x147a], 0x17
+  0000:064A  eb14              jmp      0x660  ; -> loc_0000_0660
+
+loc_0000_064C:
+  0000:064C  8b1e4a08          mov      bx, word ptr [0x84a]
+  0000:0650  b103              mov      cl, 3
+  0000:0652  d3e3              shl      bx, cl
+  0000:0654  c787d8133cfa      mov      word ptr [bx + 0x13d8], 0xfa3c
+  0000:065A  c787da131700      mov      word ptr [bx + 0x13da], 0x17
+
+loc_0000_0660:
+  0000:0660  c3                ret
+
+; --- alrminit_writeConfigFile ---
+; Write alarm configuration back to file
+alrminit_writeConfigFile:  ; (sub_0000_0661)
+  0000:0661  55                push     bp
+  0000:0662  8bec              mov      bp, sp
+  0000:0664  b81a00            mov      ax, 0x1a
+  0000:0667  e8ac0a            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:066A  b82208            mov      ax, 0x822
+  0000:066D  8946e6            mov      word ptr [bp - 0x1a], ax
+  0000:0670  8c5ee8            mov      word ptr [bp - 0x18], ds
+  0000:0673  8946f4            mov      word ptr [bp - 0xc], ax
+  0000:0676  8cd8              mov      ax, ds
+  0000:0678  8946ea            mov      word ptr [bp - 0x16], ax
+  0000:067B  8d46ea            lea      ax, [bp - 0x16]
+  0000:067E  50                push     ax
+  0000:067F  8d46f2            lea      ax, [bp - 0xe]
+  0000:0682  50                push     ax
+  0000:0683  8d46f2            lea      ax, [bp - 0xe]
+  0000:0686  50                push     ax
+  0000:0687  b8e900            mov      ax, 0xe9
+  0000:068A  50                push     ax
+  0000:068B  e8720d            call     0x1400  ; -> sub_0000_1400  ; alrminit_parseEnvironment
+  0000:068E  83c408            add      sp, 8
+  0000:0691  8be5              mov      sp, bp
+  0000:0693  5d                pop      bp
+  0000:0694  c3                ret
+
+; --- alrminit_entryPoint ---
+; Module entry point - DM89 RES initialization
+alrminit_entryPoint:  ; (sub_0000_0695)
+  0000:0695  55                push     bp
+  0000:0696  8bec              mov      bp, sp
+  0000:0698  b80800            mov      ax, 8
+  0000:069B  e8780a            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:069E  c746f82c00        mov      word ptr [bp - 8], 0x2c
+  0000:06A3  a12503            mov      ax, word ptr [0x325]
+  0000:06A6  8946fa            mov      word ptr [bp - 6], ax
+  0000:06A9  c746fc0000        mov      word ptr [bp - 4], 0
+  0000:06AE  c45ef8            les      bx, ptr [bp - 8]
+  0000:06B1  268b07            mov      ax, word ptr es:[bx]
+  0000:06B4  8946fe            mov      word ptr [bp - 2], ax
+
+loc_0000_06B7:
+  0000:06B7  c45efc            les      bx, ptr [bp - 4]
+  0000:06BA  26803f00          cmp      byte ptr es:[bx], 0
+  0000:06BE  7426              je       0x6e6  ; -> loc_0000_06E6
+  0000:06C0  b8c207            mov      ax, 0x7c2
+  0000:06C3  50                push     ax
+  0000:06C4  ff7604            push     word ptr [bp + 4]
+  0000:06C7  06                push     es
+  0000:06C8  53                push     bx
+  0000:06C9  e82000            call     0x6ec  ; -> sub_0000_06EC  ; alrminit_mainInit
+  0000:06CC  83c408            add      sp, 8
+  0000:06CF  0bc0              or       ax, ax
+  0000:06D1  750e              jne      0x6e1  ; -> loc_0000_06E1
+
+loc_0000_06D3:
+  0000:06D3  c45efc            les      bx, ptr [bp - 4]
+  0000:06D6  ff46fc            inc      word ptr [bp - 4]
+  0000:06D9  26803f00          cmp      byte ptr es:[bx], 0
+  0000:06DD  74d8              je       0x6b7  ; -> loc_0000_06B7
+  0000:06DF  ebf2              jmp      0x6d3  ; -> loc_0000_06D3
+
+loc_0000_06E1:
+  0000:06E1  b8c207            mov      ax, 0x7c2
+  0000:06E4  eb02              jmp      0x6e8  ; -> loc_0000_06E8
+
+loc_0000_06E6:
+  0000:06E6  2bc0              sub      ax, ax
+
+loc_0000_06E8:
+  0000:06E8  8be5              mov      sp, bp
+  0000:06EA  5d                pop      bp
+  0000:06EB  c3                ret
+
+; --- alrminit_mainInit ---
+; Main initialization sequence for ALRMINIT module
+alrminit_mainInit:  ; (sub_0000_06EC)
+  0000:06EC  55                push     bp
+  0000:06ED  8bec              mov      bp, sp
+  0000:06EF  33c0              xor      ax, ax
+  0000:06F1  e8220a            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:06F4  56                push     si
+
+loc_0000_06F5:
+  0000:06F5  c45e04            les      bx, ptr [bp + 4]
+  0000:06F8  26803f00          cmp      byte ptr es:[bx], 0
+  0000:06FC  741f              je       0x71d  ; -> loc_0000_071D
+  0000:06FE  8b5e08            mov      bx, word ptr [bp + 8]
+  0000:0701  803f00            cmp      byte ptr [bx], 0
+  0000:0704  7417              je       0x71d  ; -> loc_0000_071D
+  0000:0706  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:0709  ff4604            inc      word ptr [bp + 4]
+  0000:070C  8b7608            mov      si, word ptr [bp + 8]
+  0000:070F  ff4608            inc      word ptr [bp + 8]
+  0000:0712  8a04              mov      al, byte ptr [si]
+  0000:0714  263807            cmp      byte ptr es:[bx], al
+  0000:0717  74dc              je       0x6f5  ; -> loc_0000_06F5
+
+loc_0000_0719:
+  0000:0719  2bc0              sub      ax, ax
+  0000:071B  eb32              jmp      0x74f  ; -> loc_0000_074F
+
+loc_0000_071D:
+  0000:071D  8b5e08            mov      bx, word ptr [bp + 8]
+  0000:0720  803f00            cmp      byte ptr [bx], 0
+  0000:0723  75f4              jne      0x719  ; -> loc_0000_0719
+  0000:0725  c45e04            les      bx, ptr [bp + 4]
+  0000:0728  26803f3d          cmp      byte ptr es:[bx], 0x3d
+  0000:072C  75eb              jne      0x719  ; -> loc_0000_0719
+  0000:072E  837e0a00          cmp      word ptr [bp + 0xa], 0
+  0000:0732  7418              je       0x74c  ; -> loc_0000_074C
+  0000:0734  ff4604            inc      word ptr [bp + 4]
+
+loc_0000_0737:
+  0000:0737  8b5e0a            mov      bx, word ptr [bp + 0xa]
+  0000:073A  ff460a            inc      word ptr [bp + 0xa]
+  0000:073D  c47604            les      si, ptr [bp + 4]
+  0000:0740  ff4604            inc      word ptr [bp + 4]
+  0000:0743  268a04            mov      al, byte ptr es:[si]
+  0000:0746  8807              mov      byte ptr [bx], al
+  0000:0748  0ac0              or       al, al
+  0000:074A  75eb              jne      0x737  ; -> loc_0000_0737
+
+loc_0000_074C:
+  0000:074C  b80100            mov      ax, 1
+
+loc_0000_074F:
+  0000:074F  5e                pop      si
+  0000:0750  5d                pop      bp
+  0000:0751  c3                ret
+  0000:0752  55                push     bp
+  0000:0753  8bec              mov      bp, sp
+  0000:0755  b80400            mov      ax, 4
+  0000:0758  e8bb09            call     0x1116  ; -> sub_0000_1116  ; alrminit_intE0hCall
+  0000:075B  a12503            mov      ax, word ptr [0x325]
+  0000:075E  8946fe            mov      word ptr [bp - 2], ax
+  0000:0761  50                push     ax
+  0000:0762  e8b800            call     0x81d  ; -> sub_0000_081D  ; alrminit_setupInterrupts
+  0000:0765  83c402            add      sp, 2
+  0000:0768  e8a5f8            call     0x10  ; -> sub_0000_0010  ; alrminit_initModule
+  0000:076B  e8a4fe            call     0x612  ; -> sub_0000_0612  ; alrminit_validateAlarm
+  0000:076E  b80500            mov      ax, 5
+  0000:0771  50                push     ax
+  0000:0772  e87004            call     0xbe5  ; -> sub_0000_0BE5  ; alrminit_setupDataSegment
+  0000:0775  83c402            add      sp, 2
+  0000:0778  0bc0              or       ax, ax
+  0000:077A  7403              je       0x77f  ; -> loc_0000_077F
+  0000:077C  e98900            jmp      0x808  ; -> loc_0000_0808
+
+loc_0000_077F:
+  0000:077F  e8c9f9            call     0x14b  ; -> sub_0000_014B  ; alrminit_installHooks
+  0000:0782  0bc0              or       ax, ax
+  0000:0784  7c49              jl       0x7cf  ; -> loc_0000_07CF
+  0000:0786  e868fa            call     0x1f1  ; -> sub_0000_01F1  ; alrminit_uninstallHooks
+  0000:0789  0bc0              or       ax, ax
+  0000:078B  7c34              jl       0x7c1  ; -> loc_0000_07C1
+  0000:078D  c746fc0100        mov      word ptr [bp - 4], 1
+  0000:0792  eb24              jmp      0x7b8  ; -> loc_0000_07B8
+
+loc_0000_0794:
+  0000:0794  ff76fc            push     word ptr [bp - 4]
+  0000:0797  e88afa            call     0x224  ; -> sub_0000_0224  ; alrminit_getAlarmList
+  0000:079A  83c402            add      sp, 2
+  0000:079D  e8c9fa            call     0x269  ; -> sub_0000_0269  ; alrminit_addAlarm
+  0000:07A0  0bc0              or       ax, ax
+  0000:07A2  7c11              jl       0x7b5  ; -> loc_0000_07B5
+  0000:07A4  e8f5fa            call     0x29c  ; -> sub_0000_029C  ; alrminit_removeAlarm
+  0000:07A7  ff367e14          push     word ptr [0x147e]
+  0000:07AB  b80900            mov      ax, 9
+  0000:07AE  50                push     ax
+  0000:07AF  e86003            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:07B2  83c404            add      sp, 4
+
+loc_0000_07B5:
+  0000:07B5  ff46fc            inc      word ptr [bp - 4]
+
+loc_0000_07B8:
+  0000:07B8  a12008            mov      ax, word ptr [0x820]
+  0000:07BB  48                dec      ax
+  0000:07BC  3946fc            cmp      word ptr [bp - 4], ax
+  0000:07BF  7ed3              jle      0x794  ; -> loc_0000_0794
+
+loc_0000_07C1:
+  0000:07C1  ff368014          push     word ptr [0x1480]
+  0000:07C5  b80300            mov      ax, 3
+  0000:07C8  50                push     ax
+  0000:07C9  e84603            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:07CC  83c404            add      sp, 4
+
+loc_0000_07CF:
+  0000:07CF  e89803            call     0xb6a  ; -> sub_0000_0B6A  ; alrminit_getCurrentTime
+  0000:07D2  833e4a0800        cmp      word ptr [0x84a], 0
+  0000:07D7  7e2f              jle      0x808  ; -> loc_0000_0808
+  0000:07D9  c746fc0000        mov      word ptr [bp - 4], 0
+  0000:07DE  eb20              jmp      0x800  ; -> loc_0000_0800
+
+loc_0000_07E0:
+  0000:07E0  c606220801        mov      byte ptr [0x822], 1
+  0000:07E5  c606230841        mov      byte ptr [0x823], 0x41
+  0000:07EA  b88600            mov      ax, 0x86
+  0000:07ED  f76efc            imul     word ptr [bp - 4]
+  0000:07F0  055008            add      ax, 0x850
+  0000:07F3  a34608            mov      word ptr [0x846], ax
+  0000:07F6  8c1e4808          mov      word ptr [0x848], ds
+  0000:07FA  e864fe            call     0x661  ; -> sub_0000_0661  ; alrminit_writeConfigFile
+  0000:07FD  ff46fc            inc      word ptr [bp - 4]
+
+loc_0000_0800:
+  0000:0800  a14a08            mov      ax, word ptr [0x84a]
+  0000:0803  3946fc            cmp      word ptr [bp - 4], ax
+  0000:0806  7cd8              jl       0x7e0  ; -> loc_0000_07E0
+
+loc_0000_0808:
+  0000:0808  b80002            mov      ax, 0x200
+  0000:080B  50                push     ax
+  0000:080C  b8ff00            mov      ax, 0xff
+  0000:080F  50                push     ax
+  0000:0810  e8a90d            call     0x15bc  ; -> sub_0000_15BC  ; alrminit_getDateTime
+  0000:0813  83c404            add      sp, 4
+  0000:0816  8be5              mov      sp, bp
+  0000:0818  5d                pop      bp
+  0000:0819  c3                ret
+  0000:081A  db 00 00 CB                                        ; |...|
+
+; --- alrminit_setupInterrupts ---
+; Set up interrupt vector hooks (timer, idle, disk)
+alrminit_setupInterrupts:  ; (sub_0000_081D)
+  0000:081D  55                push     bp
+  0000:081E  8bec              mov      bp, sp
+  0000:0820  8b4604            mov      ax, word ptr [bp + 4]
+  0000:0823  a3a802            mov      word ptr [0x2a8], ax
+  0000:0826  8cd8              mov      ax, ds
+  0000:0828  8ec0              mov      es, ax
+  0000:082A  bb8802            mov      bx, 0x288
+  0000:082D  b8ff01            mov      ax, 0x1ff
+  0000:0830  cde0              int      0xe0  ; INT E0h, AH=01h
+  0000:0832  5d                pop      bp
+  0000:0833  c3                ret
+  0000:0834  db CC C3 CB 00 E8 93 01 E8 10 09 33 ED FF 36 46 03 ; |..........3..6F.|
+  0000:0844  db FF 36 44 03 FF 36 42 03 E8 03 FF 50 E8 E3 00 E8 ; |.6D..6B....P....|
+  0000:0854  db 1C 00 CB E8 96 08 CB E8 A9 0A CB E8 01 00 CB    ; |...............|
+
+loc_0000_0863:
+  0000:0863  50                push     ax
+  0000:0864  e88908            call     0x10f0  ; -> sub_0000_10F0  ; alrminit_writeFile
+  0000:0867  e89d0a            call     0x1307  ; -> sub_0000_1307  ; alrminit_writeToStderr
+  0000:086A  b8ff00            mov      ax, 0xff
+  0000:086D  50                push     ax
+  0000:086E  ff16b202          call     word ptr [0x2b2]
+  0000:0872  b430              mov      ah, 0x30
+  0000:0874  cd21              int      0x21  ; INT 21h/30h: Get DOS version
+  0000:0876  a32703            mov      word ptr [0x327], ax
+  0000:0879  06                push     es
+  0000:087A  b80035            mov      ax, 0x3500
+  0000:087D  cd21              int      0x21  ; INT 21h/35h: Get interrupt vector
+  0000:087F  891e1303          mov      word ptr [0x313], bx
+  0000:0883  8c061503          mov      word ptr [0x315], es
+  0000:0887  1f                pop      ds
+  0000:0888  b80025            mov      ax, 0x2500
+  0000:088B  ba8800            mov      dx, 0x88
+  0000:088E  cd21              int      0x21  ; INT 21h/25h: Set interrupt vector
+  0000:0890  16                push     ss
+  0000:0891  1f                pop      ds
+  0000:0892  8b0ede06          mov      cx, word ptr [0x6de]
+  0000:0896  e32e              jcxz     0x8c6  ; -> loc_0000_08C6
+  0000:0898  8e062503          mov      es, word ptr [0x325]
+  0000:089C  268b362c00        mov      si, word ptr es:[0x2c]
+  0000:08A1  c506e006          lds      ax, ptr [0x6e0]
+  0000:08A5  8cda              mov      dx, ds
+  0000:08A7  33db              xor      bx, bx
+  0000:08A9  36ff1edc06        lcall    ss:[0x6dc]
+  0000:08AE  7305              jae      0x8b5  ; -> loc_0000_08B5
+  0000:08B0  16                push     ss
+  0000:08B1  1f                pop      ds
+  0000:08B2  e95b08            jmp      0x1110  ; -> loc_0000_1110
+
+loc_0000_08B5:
+  0000:08B5  36c506e406        lds      ax, ptr ss:[0x6e4]
+  0000:08BA  8cda              mov      dx, ds
+  0000:08BC  bb0300            mov      bx, 3
+  0000:08BF  36ff1edc06        lcall    ss:[0x6dc]
+  0000:08C4  16                push     ss
+  0000:08C5  1f                pop      ds
+
+loc_0000_08C6:
+  0000:08C6  8e062503          mov      es, word ptr [0x325]
+  0000:08CA  268b0e2c00        mov      cx, word ptr es:[0x2c]
+  0000:08CF  e336              jcxz     0x907  ; -> loc_0000_0907
+  0000:08D1  8ec1              mov      es, cx
+  0000:08D3  33ff              xor      di, di
+
+loc_0000_08D5:
+  0000:08D5  26803d00          cmp      byte ptr es:[di], 0
+  0000:08D9  742c              je       0x907  ; -> loc_0000_0907
+  0000:08DB  b90c00            mov      cx, 0xc
+  0000:08DE  be0603            mov      si, 0x306
+  0000:08E1  f3a6              repe cmpsb byte ptr [si], byte ptr es:[di]
+  0000:08E3  740b              je       0x8f0  ; -> loc_0000_08F0
+  0000:08E5  b9ff7f            mov      cx, 0x7fff
+  0000:08E8  33c0              xor      ax, ax
+  0000:08EA  f2ae              repne scasb al, byte ptr es:[di]
+  0000:08EC  7519              jne      0x907  ; -> loc_0000_0907
+  0000:08EE  ebe5              jmp      0x8d5  ; -> loc_0000_08D5
+
+loc_0000_08F0:
+  0000:08F0  06                push     es
+  0000:08F1  1e                push     ds
+  0000:08F2  07                pop      es
+  0000:08F3  1f                pop      ds
+  0000:08F4  8bf7              mov      si, di
+  0000:08F6  bf2e03            mov      di, 0x32e
+  0000:08F9  ac                lodsb    al, byte ptr [si]
+  0000:08FA  98                cwde
+  0000:08FB  91                xchg     cx, ax
+  0000:08FC  ac                lodsb    al, byte ptr [si]
+  0000:08FD  fec0              inc      al
+  0000:08FF  7401              je       0x902  ; -> loc_0000_0902
+  0000:0901  48                dec      ax
+
+loc_0000_0902:
+  0000:0902  aa                stosb    byte ptr es:[di], al
+  0000:0903  e2f7              loop     0x8fc
+  0000:0905  16                push     ss
+  0000:0906  1f                pop      ds
+
+loc_0000_0907:
+  0000:0907  bb0400            mov      bx, 4
+
+loc_0000_090A:
+  0000:090A  80a72e03bf        and      byte ptr [bx + 0x32e], 0xbf
+  0000:090F  b80044            mov      ax, 0x4400
+  0000:0912  cd21              int      0x21  ; INT 21h/44h: IOCTL
+  0000:0914  720a              jb       0x920  ; -> loc_0000_0920
+  0000:0916  f6c280            test     dl, 0x80
+  0000:0919  7405              je       0x920  ; -> loc_0000_0920
+  0000:091B  808f2e0340        or       byte ptr [bx + 0x32e], 0x40
+
+loc_0000_0920:
+  0000:0920  4b                dec      bx
+  0000:0921  79e7              jns      0x90a  ; -> loc_0000_090A
+  0000:0923  bee806            mov      si, 0x6e8
+  0000:0926  bfe806            mov      di, 0x6e8
+  0000:0929  e88e00            call     0x9ba  ; -> sub_0000_09BA  ; alrminit_restoreVector
+  0000:092C  bee806            mov      si, 0x6e8
+  0000:092F  bfe806            mov      di, 0x6e8
+  0000:0932  e87600            call     0x9ab  ; -> sub_0000_09AB  ; alrminit_setVector
+  0000:0935  c3                ret
+  0000:0936  55                push     bp
+  0000:0937  8bec              mov      bp, sp
+  0000:0939  be1408            mov      si, 0x814
+  0000:093C  bf1408            mov      di, 0x814
+  0000:093F  e86900            call     0x9ab  ; -> sub_0000_09AB  ; alrminit_setVector
+  0000:0942  bee806            mov      si, 0x6e8
+  0000:0945  bfe806            mov      di, 0x6e8
+  0000:0948  e86000            call     0x9ab  ; -> sub_0000_09AB  ; alrminit_setVector
+  0000:094B  eb03              jmp      0x950  ; -> loc_0000_0950
+  0000:094D  55                push     bp
+  0000:094E  8bec              mov      bp, sp
+
+loc_0000_0950:
+  0000:0950  bee806            mov      si, 0x6e8
+  0000:0953  bfe806            mov      di, 0x6e8
+  0000:0956  e85200            call     0x9ab  ; -> sub_0000_09AB  ; alrminit_setVector
+  0000:0959  bee806            mov      si, 0x6e8
+  0000:095C  bfe806            mov      di, 0x6e8
+  0000:095F  e85800            call     0x9ba  ; -> sub_0000_09BA  ; alrminit_restoreVector
+  0000:0962  e8c707            call     0x112c  ; -> sub_0000_112C  ; alrminit_closeAndWrite
+  0000:0965  0bc0              or       ax, ax
+  0000:0967  740b              je       0x974  ; -> loc_0000_0974
+  0000:0969  837e0400          cmp      word ptr [bp + 4], 0
+  0000:096D  7505              jne      0x974  ; -> loc_0000_0974
+  0000:096F  c74604ff00        mov      word ptr [bp + 4], 0xff
+
+loc_0000_0974:
+  0000:0974  b90f00            mov      cx, 0xf
+  0000:0977  bb0500            mov      bx, 5
+  0000:097A  f6872e0301        test     byte ptr [bx + 0x32e], 1
+  0000:097F  7404              je       0x985  ; -> loc_0000_0985
+  0000:0981  b43e              mov      ah, 0x3e
+  0000:0983  cd21              int      0x21  ; INT 21h/3Eh: Close file
+
+loc_0000_0985:
+  0000:0985  43                inc      bx
+  0000:0986  e2f2              loop     0x97a
+  0000:0988  e80700            call     0x992  ; -> sub_0000_0992  ; alrminit_hookTimerTick
+  0000:098B  8b4604            mov      ax, word ptr [bp + 4]
+  0000:098E  b44c              mov      ah, 0x4c
+  0000:0990  cd21              int      0x21  ; INT 21h/4Ch: Exit with return code
+
+; --- alrminit_hookTimerTick ---
+; Hook INT 1Ch (timer tick) for alarm checking
+alrminit_hookTimerTick:  ; (sub_0000_0992)
+  0000:0992  8b0ede06          mov      cx, word ptr [0x6de]
+  0000:0996  e307              jcxz     0x99f  ; -> loc_0000_099F
+  0000:0998  bb0200            mov      bx, 2
+  0000:099B  ff1edc06          lcall    [0x6dc]
+
+loc_0000_099F:
+  0000:099F  1e                push     ds
+  0000:09A0  c5161303          lds      dx, ptr [0x313]
+  0000:09A4  b80025            mov      ax, 0x2500
+  0000:09A7  cd21              int      0x21  ; INT 21h/25h: Set interrupt vector
+  0000:09A9  1f                pop      ds
+  0000:09AA  c3                ret
+
+; --- alrminit_setVector ---
+; Set interrupt vector (wrapper for INT 21h/25h)
+alrminit_setVector:  ; (sub_0000_09AB)
+  0000:09AB  3bf7              cmp      si, di
+  0000:09AD  730a              jae      0x9b9  ; -> loc_0000_09B9
+  0000:09AF  4f                dec      di
+  0000:09B0  4f                dec      di
+  0000:09B1  8b0d              mov      cx, word ptr [di]
+  0000:09B3  e3f6              jcxz     0x9ab  ; -> sub_0000_09AB
+  0000:09B5  ffd1              call     cx
+  0000:09B7  ebf2              jmp      0x9ab  ; -> sub_0000_09AB  ; alrminit_setVector
+
+loc_0000_09B9:
+  0000:09B9  c3                ret
+
+; --- alrminit_restoreVector ---
+; Restore original interrupt vector
+alrminit_restoreVector:  ; (sub_0000_09BA)
+  0000:09BA  3bf7              cmp      si, di
+  0000:09BC  730e              jae      0x9cc  ; -> loc_0000_09CC
+  0000:09BE  83ef04            sub      di, 4
+  0000:09C1  8b05              mov      ax, word ptr [di]
+  0000:09C3  0b4502            or       ax, word ptr [di + 2]
+  0000:09C6  74f2              je       0x9ba  ; -> sub_0000_09BA
+  0000:09C8  ff1d              lcall    [di]
+  0000:09CA  ebee              jmp      0x9ba  ; -> sub_0000_09BA  ; alrminit_restoreVector
+
+loc_0000_09CC:
+  0000:09CC  c3                ret
+  0000:09CD  db 00                                              ; |.|
+  0000:09CE  55                push     bp
+  0000:09CF  8bec              mov      bp, sp
+  0000:09D1  55                push     bp
+  0000:09D2  8e1e2503          mov      ds, word ptr [0x325]
+  0000:09D6  33c9              xor      cx, cx
+  0000:09D8  8bc1              mov      ax, cx
+  0000:09DA  8be9              mov      bp, cx
+  0000:09DC  8bf9              mov      di, cx
+  0000:09DE  49                dec      cx
+  0000:09DF  8b362c00          mov      si, word ptr [0x2c]
+  0000:09E3  33f6              xor      si, si
+  0000:09E5  0bf6              or       si, si
+  0000:09E7  7408              je       0x9f1  ; -> loc_0000_09F1
+  0000:09E9  8ec6              mov      es, si
+
+loc_0000_09EB:
+  0000:09EB  f2ae              repne scasb al, byte ptr es:[di]
+  0000:09ED  45                inc      bp
+  0000:09EE  ae                scasb    al, byte ptr es:[di]
+  0000:09EF  75fa              jne      0x9eb  ; -> loc_0000_09EB
+
+loc_0000_09F1:
+  0000:09F1  45                inc      bp
+  0000:09F2  97                xchg     di, ax
+  0000:09F3  40                inc      ax
+  0000:09F4  24fe              and      al, 0xfe
+  0000:09F6  8bfd              mov      di, bp
+  0000:09F8  d1e5              shl      bp, 1
+  0000:09FA  03c5              add      ax, bp
+  0000:09FC  16                push     ss
+  0000:09FD  1f                pop      ds
+  0000:09FE  57                push     di
+  0000:09FF  bf0900            mov      di, 9
+  0000:0A02  e82b09            call     0x1330  ; -> sub_0000_1330  ; alrminit_seekFile
+  0000:0A05  5f                pop      di
+  0000:0A06  8bcf              mov      cx, di
+  0000:0A08  8bfd              mov      di, bp
+  0000:0A0A  03f8              add      di, ax
+  0000:0A0C  892e4603          mov      word ptr [0x346], bp
+  0000:0A10  1e                push     ds
+  0000:0A11  07                pop      es
+  0000:0A12  8ede              mov      ds, si
+  0000:0A14  33f6              xor      si, si
+  0000:0A16  49                dec      cx
+  0000:0A17  e313              jcxz     0xa2c  ; -> loc_0000_0A2C
+  0000:0A19  813c3b43          cmp      word ptr [si], 0x433b
+  0000:0A1D  7405              je       0xa24  ; -> loc_0000_0A24
+  0000:0A1F  897e00            mov      word ptr [bp], di
+  0000:0A22  45                inc      bp
+  0000:0A23  45                inc      bp
+
+loc_0000_0A24:
+  0000:0A24  ac                lodsb    al, byte ptr [si]
+  0000:0A25  aa                stosb    byte ptr es:[di], al
+  0000:0A26  0ac0              or       al, al
+  0000:0A28  75fa              jne      0xa24  ; -> loc_0000_0A24
+  0000:0A2A  e2ed              loop     0xa19
+
+loc_0000_0A2C:
+  0000:0A2C  894e00            mov      word ptr [bp], cx
+  0000:0A2F  16                push     ss
+  0000:0A30  1f                pop      ds
+  0000:0A31  5d                pop      bp
+  0000:0A32  8be5              mov      sp, bp
+  0000:0A34  5d                pop      bp
+  0000:0A35  c3                ret
+
+; --- alrminit_allocSharedArea ---
+; Allocate shared data area for ALARM.RES communication
+alrminit_allocSharedArea:  ; (sub_0000_0A36)
+  0000:0A36  55                push     bp
+  0000:0A37  8bec              mov      bp, sp
+  0000:0A39  1e                push     ds
+  0000:0A3A  06                push     es
+  0000:0A3B  56                push     si
+  0000:0A3C  57                push     di
+  0000:0A3D  53                push     bx
+  0000:0A3E  51                push     cx
+  0000:0A3F  52                push     dx
+  0000:0A40  b80006            mov      ax, 0x600
+  0000:0A43  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:0A45  250080            and      ax, 0x8000
+  0000:0A48  7413              je       0xa5d  ; -> loc_0000_0A5D
+  0000:0A4A  ba5803            mov      dx, 0x358
+  0000:0A4D  1e                push     ds
+  0000:0A4E  07                pop      es
+  0000:0A4F  b80e06            mov      ax, 0x60e
+  0000:0A52  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:0A54  0bc0              or       ax, ax
+  0000:0A56  7405              je       0xa5d  ; -> loc_0000_0A5D
+  0000:0A58  3d6e00            cmp      ax, 0x6e
+  0000:0A5B  7c03              jl       0xa60  ; -> loc_0000_0A60
+
+loc_0000_0A5D:
+  0000:0A5D  e98d00            jmp      0xaed  ; -> loc_0000_0AED
+
+loc_0000_0A60:
+  0000:0A60  8b4608            mov      ax, word ptr [bp + 8]
+  0000:0A63  a35603            mov      word ptr [0x356], ax
+  0000:0A66  83ec41            sub      sp, 0x41
+  0000:0A69  8bfc              mov      di, sp
+  0000:0A6B  57                push     di
+  0000:0A6C  16                push     ss
+  0000:0A6D  07                pop      es
+  0000:0A6E  8b7604            mov      si, word ptr [bp + 4]
+  0000:0A71  b94100            mov      cx, 0x41
+  0000:0A74  fc                cld
+  0000:0A75  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+  0000:0A77  5f                pop      di
+  0000:0A78  83ec41            sub      sp, 0x41
+  0000:0A7B  8bf4              mov      si, sp
+  0000:0A7D  83ec61            sub      sp, 0x61
+  0000:0A80  8bdc              mov      bx, sp
+  0000:0A82  b104              mov      cl, 4
+  0000:0A84  d3eb              shr      bx, cl
+  0000:0A86  8cd2              mov      dx, ss
+  0000:0A88  03d3              add      dx, bx
+  0000:0A8A  81ea9701          sub      dx, 0x197
+  0000:0A8E  b104              mov      cl, 4
+  0000:0A90  d3e3              shl      bx, cl
+  0000:0A92  8bcc              mov      cx, sp
+  0000:0A94  2bcb              sub      cx, bx
+  0000:0A96  81c17019          add      cx, 0x1970
+  0000:0A9A  89365403          mov      word ptr [0x354], si
+  0000:0A9E  2bf3              sub      si, bx
+  0000:0AA0  2bfb              sub      di, bx
+  0000:0AA2  81c67019          add      si, 0x1970
+  0000:0AA6  81c77019          add      di, 0x1970
+  0000:0AAA  fa                cli
+  0000:0AAB  8c165003          mov      word ptr [0x350], ss
+  0000:0AAF  89265203          mov      word ptr [0x352], sp
+  0000:0AB3  8ed2              mov      ss, dx
+  0000:0AB5  8be1              mov      sp, cx
+  0000:0AB7  fb                sti
+  0000:0AB8  8cd0              mov      ax, ss
+  0000:0ABA  8ec0              mov      es, ax
+  0000:0ABC  8b1e5603          mov      bx, word ptr [0x356]
+  0000:0AC0  b80306            mov      ax, 0x603
+  0000:0AC3  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:0AC5  fa                cli
+  0000:0AC6  8e165003          mov      ss, word ptr [0x350]
+  0000:0ACA  8b265203          mov      sp, word ptr [0x352]
+  0000:0ACE  fb                sti
+  0000:0ACF  0bc0              or       ax, ax
+  0000:0AD1  7e0f              jle      0xae2  ; -> loc_0000_0AE2
+  0000:0AD3  8b7e06            mov      di, word ptr [bp + 6]
+  0000:0AD6  1e                push     ds
+  0000:0AD7  07                pop      es
+  0000:0AD8  8b365403          mov      si, word ptr [0x354]
+  0000:0ADC  b94100            mov      cx, 0x41
+  0000:0ADF  fc                cld
+  0000:0AE0  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+
+loc_0000_0AE2:
+  0000:0AE2  83c461            add      sp, 0x61
+  0000:0AE5  83c441            add      sp, 0x41
+  0000:0AE8  83c441            add      sp, 0x41
+  0000:0AEB  eb10              jmp      0xafd  ; -> loc_0000_0AFD
+
+loc_0000_0AED:
+  0000:0AED  1e                push     ds
+  0000:0AEE  07                pop      es
+  0000:0AEF  8b5e08            mov      bx, word ptr [bp + 8]
+  0000:0AF2  8b7606            mov      si, word ptr [bp + 6]
+  0000:0AF5  8b7e04            mov      di, word ptr [bp + 4]
+  0000:0AF8  b80306            mov      ax, 0x603
+  0000:0AFB  cde0              int      0xe0  ; INT E0h, AH=06h
+
+loc_0000_0AFD:
+  0000:0AFD  5a                pop      dx
+  0000:0AFE  59                pop      cx
+  0000:0AFF  5b                pop      bx
+  0000:0B00  5f                pop      di
+  0000:0B01  5e                pop      si
+  0000:0B02  07                pop      es
+  0000:0B03  1f                pop      ds
+  0000:0B04  5d                pop      bp
+  0000:0B05  c3                ret
+
+; --- alrminit_getModuleInfo ---
+; Get module information structure
+alrminit_getModuleInfo:  ; (sub_0000_0B06)
+  0000:0B06  b80406            mov      ax, 0x604
+  0000:0B09  e94d01            jmp      0xc59  ; -> loc_0000_0C59
+
+; --- alrminit_getVersion ---
+; Get ALRMINIT version string
+alrminit_getVersion:  ; (sub_0000_0B0C)
+  0000:0B0C  b8e910            mov      ax, 0x10e9
+  0000:0B0F  e98d01            jmp      0xc9f  ; -> loc_0000_0C9F
+
+; --- alrminit_hostCallback ---
+; INT E0h host callback dispatcher (called 10+ times)
+alrminit_hostCallback:  ; (sub_0000_0B12)
+  0000:0B12  55                push     bp
+  0000:0B13  8bec              mov      bp, sp
+  0000:0B15  83ec0c            sub      sp, 0xc
+  0000:0B18  56                push     si
+  0000:0B19  8b4604            mov      ax, word ptr [bp + 4]
+  0000:0B1C  a37e03            mov      word ptr [0x37e], ax
+  0000:0B1F  8b4606            mov      ax, word ptr [bp + 6]
+  0000:0B22  a38003            mov      word ptr [0x380], ax
+  0000:0B25  837e0400          cmp      word ptr [bp + 4], 0
+  0000:0B29  7505              jne      0xb30  ; -> loc_0000_0B30
+  0000:0B2B  b8cbff            mov      ax, 0xffcb
+  0000:0B2E  eb26              jmp      0xb56  ; -> loc_0000_0B56
+
+loc_0000_0B30:
+  0000:0B30  2bc0              sub      ax, ax
+  0000:0B32  50                push     ax
+  0000:0B33  50                push     ax
+  0000:0B34  b88603            mov      ax, 0x386
+  0000:0B37  1e                push     ds
+  0000:0B38  50                push     ax
+  0000:0B39  e87a04            call     0xfb6  ; -> sub_0000_0FB6  ; alrminit_ioctl
+  0000:0B3C  83c408            add      sp, 8
+  0000:0B3F  8bf0              mov      si, ax
+  0000:0B41  837e0433          cmp      word ptr [bp + 4], 0x33
+  0000:0B45  7406              je       0xb4d  ; -> loc_0000_0B4D
+  0000:0B47  837e0434          cmp      word ptr [bp + 4], 0x34
+  0000:0B4B  7507              jne      0xb54  ; -> loc_0000_0B54
+
+loc_0000_0B4D:
+  0000:0B4D  83fee9            cmp      si, -0x17
+  0000:0B50  7502              jne      0xb54  ; -> loc_0000_0B54
+  0000:0B52  2bf6              sub      si, si
+
+loc_0000_0B54:
+  0000:0B54  8bc6              mov      ax, si
+
+loc_0000_0B56:
+  0000:0B56  5e                pop      si
+  0000:0B57  8be5              mov      sp, bp
+  0000:0B59  5d                pop      bp
+  0000:0B5A  c3                ret
+  0000:0B5B  db 90                                              ; |.|
+
+; --- alrminit_resizeMemory ---
+; Resize memory block via INT 21h/4Ah
+alrminit_resizeMemory:  ; (sub_0000_0B5C)
+  0000:0B5C  b80006            mov      ax, 0x600
+  0000:0B5F  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:0B61  250080            and      ax, 0x8000
+  0000:0B64  7403              je       0xb69  ; -> loc_0000_0B69
+  0000:0B66  b80100            mov      ax, 1
+
+loc_0000_0B69:
+  0000:0B69  c3                ret
+
+; --- alrminit_getCurrentTime ---
+; Get current system time (date + time of day)
+alrminit_getCurrentTime:  ; (sub_0000_0B6A)
+  0000:0B6A  06                push     es
+  0000:0B6B  53                push     bx
+  0000:0B6C  51                push     cx
+  0000:0B6D  52                push     dx
+  0000:0B6E  b80000            mov      ax, 0
+  0000:0B71  50                push     ax
+  0000:0B72  b83400            mov      ax, 0x34
+  0000:0B75  50                push     ax
+  0000:0B76  e899ff            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:0B79  83c404            add      sp, 4
+  0000:0B7C  ba6003            mov      dx, 0x360
+  0000:0B7F  8cd8              mov      ax, ds
+  0000:0B81  8ec0              mov      es, ax
+  0000:0B83  b80702            mov      ax, 0x207
+  0000:0B86  cde0              int      0xe0  ; INT E0h, AH=02h
+  0000:0B88  b8550c            mov      ax, 0xc55
+  0000:0B8B  a38e03            mov      word ptr [0x38e], ax
+  0000:0B8E  8c0e9003          mov      word ptr [0x390], cs
+  0000:0B92  5a                pop      dx
+  0000:0B93  59                pop      cx
+  0000:0B94  5b                pop      bx
+  0000:0B95  07                pop      es
+  0000:0B96  c3                ret
+
+; --- alrminit_exitWithCode ---
+; Exit with return code via INT 21h/4Ch
+alrminit_exitWithCode:  ; (sub_0000_0B97)
+  0000:0B97  ba6003            mov      dx, 0x360
+  0000:0B9A  8cd8              mov      ax, ds
+  0000:0B9C  8ec0              mov      es, ax
+  0000:0B9E  b80702            mov      ax, 0x207
+  0000:0BA1  cde0              int      0xe0  ; INT E0h, AH=02h
+  0000:0BA3  c3                ret
+
+; --- alrminit_exitSuccess ---
+; Exit successfully (return code 0)
+alrminit_exitSuccess:  ; (sub_0000_0BA4)
+  0000:0BA4  ba6003            mov      dx, 0x360
+  0000:0BA7  8cd8              mov      ax, ds
+  0000:0BA9  8ec0              mov      es, ax
+  0000:0BAB  b80b02            mov      ax, 0x20b
+  0000:0BAE  cde0              int      0xe0  ; INT E0h, AH=02h
+  0000:0BB0  0bc0              or       ax, ax
+  0000:0BB2  b8c3ff            mov      ax, 0xffc3
+  0000:0BB5  740f              je       0xbc6  ; -> loc_0000_0BC6
+  0000:0BB7  ba6503            mov      dx, 0x365
+  0000:0BBA  8cd8              mov      ax, ds
+  0000:0BBC  8ec0              mov      es, ax
+  0000:0BBE  b80b02            mov      ax, 0x20b
+  0000:0BC1  cde0              int      0xe0  ; INT E0h, AH=02h
+  0000:0BC3  b80000            mov      ax, 0
+
+loc_0000_0BC6:
+  0000:0BC6  c3                ret
+
+; --- alrminit_allocMemory ---
+; Allocate memory via INT 21h/4Ah
+alrminit_allocMemory:  ; (sub_0000_0BC7)
+  0000:0BC7  e892ff            call     0xb5c  ; -> sub_0000_0B5C  ; alrminit_resizeMemory
+  0000:0BCA  50                push     ax
+  0000:0BCB  8cd8              mov      ax, ds
+  0000:0BCD  8ec0              mov      es, ax
+  0000:0BCF  bb8e03            mov      bx, 0x38e
+  0000:0BD2  ba6003            mov      dx, 0x360
+  0000:0BD5  58                pop      ax
+  0000:0BD6  0bc0              or       ax, ax
+  0000:0BD8  7f05              jg       0xbdf  ; -> loc_0000_0BDF
+  0000:0BDA  b80602            mov      ax, 0x206
+  0000:0BDD  eb03              jmp      0xbe2  ; -> loc_0000_0BE2
+
+loc_0000_0BDF:
+  0000:0BDF  b80c02            mov      ax, 0x20c
+
+loc_0000_0BE2:
+  0000:0BE2  cde0              int      0xe0  ; INT E0h, AH=02h
+  0000:0BE4  c3                ret
+
+; --- alrminit_setupDataSegment ---
+; Set up data segment and BSS initialization
+alrminit_setupDataSegment:  ; (sub_0000_0BE5)
+  0000:0BE5  55                push     bp
+  0000:0BE6  8bec              mov      bp, sp
+  0000:0BE8  53                push     bx
+  0000:0BE9  51                push     cx
+  0000:0BEA  52                push     dx
+  0000:0BEB  8a4604            mov      al, byte ptr [bp + 4]
+  0000:0BEE  a27003            mov      byte ptr [0x370], al
+
+loc_0000_0BF1:
+  0000:0BF1  e8d3ff            call     0xbc7  ; -> sub_0000_0BC7  ; alrminit_allocMemory
+  0000:0BF4  0bc0              or       ax, ax
+  0000:0BF6  b8ffff            mov      ax, 0xffff
+  0000:0BF9  7455              je       0xc50  ; -> loc_0000_0C50
+  0000:0BFB  b80000            mov      ax, 0
+  0000:0BFE  50                push     ax
+  0000:0BFF  b83300            mov      ax, 0x33
+  0000:0C02  50                push     ax
+  0000:0C03  e80cff            call     0xb12  ; -> sub_0000_0B12  ; alrminit_hostCallback
+  0000:0C06  83c404            add      sp, 4
+  0000:0C09  3d0000            cmp      ax, 0
+  0000:0C0C  7442              je       0xc50  ; -> loc_0000_0C50
+  0000:0C0E  3de9ff            cmp      ax, 0xffe9
+  0000:0C11  7409              je       0xc1c  ; -> loc_0000_0C1C
+  0000:0C13  8a1e7003          mov      bl, byte ptr [0x370]
+  0000:0C17  80fb05            cmp      bl, 5
+  0000:0C1A  7505              jne      0xc21  ; -> loc_0000_0C21
+
+loc_0000_0C1C:
+  0000:0C1C  b80000            mov      ax, 0
+  0000:0C1F  eb2f              jmp      0xc50  ; -> loc_0000_0C50
+
+loc_0000_0C21:
+  0000:0C21  3dc6ff            cmp      ax, 0xffc6
+  0000:0C24  7405              je       0xc2b  ; -> loc_0000_0C2B
+  0000:0C26  b8c6ff            mov      ax, 0xffc6
+  0000:0C29  eb25              jmp      0xc50  ; -> loc_0000_0C50
+
+loc_0000_0C2B:
+  0000:0C2B  e82eff            call     0xb5c  ; -> sub_0000_0B5C  ; alrminit_resizeMemory
+  0000:0C2E  0bc0              or       ax, ax
+  0000:0C30  741b              je       0xc4d  ; -> loc_0000_0C4D
+  0000:0C32  e862ff            call     0xb97  ; -> sub_0000_0B97  ; alrminit_exitWithCode
+  0000:0C35  e86cff            call     0xba4  ; -> sub_0000_0BA4  ; alrminit_exitSuccess
+  0000:0C38  3d0000            cmp      ax, 0
+  0000:0C3B  750d              jne      0xc4a  ; -> loc_0000_0C4A
+  0000:0C3D  fe067103          inc      byte ptr [0x371]
+  0000:0C41  803e710302        cmp      byte ptr [0x371], 2
+  0000:0C46  7d02              jge      0xc4a  ; -> loc_0000_0C4A
+  0000:0C48  eba7              jmp      0xbf1  ; -> loc_0000_0BF1
+
+loc_0000_0C4A:
+  0000:0C4A  e87aff            call     0xbc7  ; -> sub_0000_0BC7  ; alrminit_allocMemory
+
+loc_0000_0C4D:
+  0000:0C4D  b8c6ff            mov      ax, 0xffc6
+
+loc_0000_0C50:
+  0000:0C50  5a                pop      dx
+  0000:0C51  59                pop      cx
+  0000:0C52  5b                pop      bx
+  0000:0C53  5d                pop      bp
+  0000:0C54  c3                ret
+  0000:0C55  db B8 FF FF CB                                     ; |....|
+
+loc_0000_0C59:
+  0000:0C59  55                push     bp
+  0000:0C5A  8bec              mov      bp, sp
+  0000:0C5C  06                push     es
+  0000:0C5D  57                push     di
+  0000:0C5E  1e                push     ds
+  0000:0C5F  07                pop      es
+  0000:0C60  8b7e04            mov      di, word ptr [bp + 4]
+  0000:0C63  cde0              int      0xe0  ; INT E0h
+  0000:0C65  5f                pop      di
+  0000:0C66  07                pop      es
+  0000:0C67  5d                pop      bp
+  0000:0C68  c3                ret
+  0000:0C69  db 06 53 52 1E 07 BB 72 03 BA 76 03 B8 06 02 CD E0 ; |.SR...r..v......|
+  0000:0C79  db 9A DB 0F 00 00 5A 5B 07 C3 06 52 1E 07 BA 76 03 ; |.....Z[...R...v.| [RELOC->seg_0000]
+  0000:0C89  db B8 07 02 CD E0 5A 07 C3 E8 D5 FF E8 38 03 C3 E8 ; |.....Z......8...|
+  0000:0C99  db 3A 03 E8 E4 FF C3                               ; |:.....|
+
+loc_0000_0C9F:
+  0000:0C9F  55                push     bp
+  0000:0CA0  8bec              mov      bp, sp
+  0000:0CA2  83c504            add      bp, 4
+  0000:0CA5  9af80f0000        lcall    0, 0xff8  ; -> sub_0000_0000 | RELOC->seg_0000
+  0000:0CAA  3dffff            cmp      ax, 0xffff
+  0000:0CAD  7416              je       0xcc5  ; -> loc_0000_0CC5
+  0000:0CAF  3dfeff            cmp      ax, 0xfffe
+  0000:0CB2  7411              je       0xcc5  ; -> loc_0000_0CC5
+  0000:0CB4  9a16100000        lcall    0, 0x1016  ; -> sub_0000_0000 | RELOC->seg_0000
+  0000:0CB9  a37c03            mov      word ptr [0x37c], ax
+  0000:0CBC  ff1e7203          lcall    [0x372]
+  0000:0CC0  9a40100000        lcall    0, 0x1040  ; -> sub_0000_0000 | RELOC->seg_0000
+
+loc_0000_0CC5:
+  0000:0CC5  5d                pop      bp
+  0000:0CC6  c3                ret
+  0000:0CC7  db 56 57 C4 7E 06 89 3E 82 03 8C 06 84 03 8B 36 7E ; |VW.~..>.......6~|
+  0000:0CD7  db 03 26 89 35 83 C7 02 8A 84 9C 03 3C FF 74 67 8B ; |.&.5.......<.tg.|
+  0000:0CE7  db 36 80 03 3C FE 74 59 83 C7 02 8B CF 26 89 4D FE ; |6..<.tY.....&.M.|
+  0000:0CF7  db B9 01 00 E8 57 00 8B DF 2B 1E 82 03 A1 7E 03 3D ; |....W...+....~.=|
+  0000:0D07  db 0F 00 74 05 3D 10 00 75 3D 33 C0 8B 36 80 03 89 ; |..t.=..u=3..6...|
+  0000:0D17  db 44 0E A3 9A 03 8B 4C 0C 89 0E 92 03 BA BC 0B 2B ; |D.....L........+|
+  0000:0D27  db D3 8B 44 02 A3 96 03 03 C1 A3 98 03 3B D1 73 0A ; |..D.........;.s.|
+  0000:0D37  db 8B CA 8B 3E 82 03 26 89 55 10 89 0E 94 03 EB 06 ; |...>..&.U.......|
+  0000:0D47  db 26 89 35 BB 04 00 8B C3 32 D2 5F 5E CB          ; |&.5.....2._^.|
+
+; --- alrminit_crtStartup ---
+; MSC 5.x CRT startup code (recursive self-call pattern)
+alrminit_crtStartup:  ; (sub_0000_0D54)
+  0000:0D54  fc                cld
+  0000:0D55  3cfd              cmp      al, 0xfd
+  0000:0D57  750a              jne      0xd63  ; -> loc_0000_0D63
+  0000:0D59  b90004            mov      cx, 0x400
+
+loc_0000_0D5C:
+  0000:0D5C  ac                lodsb    al, byte ptr [si]
+  0000:0D5D  aa                stosb    byte ptr es:[di], al
+  0000:0D5E  0ac0              or       al, al
+  0000:0D60  75fa              jne      0xd5c  ; -> loc_0000_0D5C
+  0000:0D62  c3                ret
+
+loc_0000_0D63:
+  0000:0D63  55                push     bp
+  0000:0D64  8bec              mov      bp, sp
+  0000:0D66  57                push     di
+  0000:0D67  32e4              xor      ah, ah
+  0000:0D69  03c0              add      ax, ax
+  0000:0D6B  8bd8              mov      bx, ax
+  0000:0D6D  8b87d403          mov      ax, word ptr [bx + 0x3d4]
+  0000:0D71  8bd8              mov      bx, ax
+  0000:0D73  8a07              mov      al, byte ptr [bx]
+  0000:0D75  43                inc      bx
+  0000:0D76  53                push     bx
+  0000:0D77  51                push     cx
+  0000:0D78  32e4              xor      ah, ah
+  0000:0D7A  f7e1              mul      cx
+  0000:0D7C  8bc8              mov      cx, ax
+  0000:0D7E  56                push     si
+  0000:0D7F  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+  0000:0D81  5e                pop      si
+
+loc_0000_0D82:
+  0000:0D82  8a17              mov      dl, byte ptr [bx]
+  0000:0D84  80faff            cmp      dl, 0xff
+  0000:0D87  7446              je       0xdcf  ; -> loc_0000_0DCF
+  0000:0D89  8b4f01            mov      cx, word ptr [bx + 1]
+  0000:0D8C  83c303            add      bx, 3
+  0000:0D8F  53                push     bx
+  0000:0D90  32ff              xor      bh, bh
+  0000:0D92  80fdff            cmp      ch, 0xff
+  0000:0D95  7505              jne      0xd9c  ; -> loc_0000_0D9C
+  0000:0D97  b80100            mov      ax, 1
+  0000:0D9A  eb08              jmp      0xda4  ; -> loc_0000_0DA4
+
+loc_0000_0D9C:
+  0000:0D9C  8add              mov      bl, ch
+  0000:0D9E  8b00              mov      ax, word ptr [bx + si]
+  0000:0DA0  0bc0              or       ax, ax
+  0000:0DA2  7428              je       0xdcc  ; -> loc_0000_0DCC
+
+loc_0000_0DA4:
+  0000:0DA4  8ad9              mov      bl, cl
+  0000:0DA6  833800            cmp      word ptr [bx + si], 0
+  0000:0DA9  7419              je       0xdc4  ; -> loc_0000_0DC4
+  0000:0DAB  8bc8              mov      cx, ax
+  0000:0DAD  8bc7              mov      ax, di
+  0000:0DAF  8b7efe            mov      di, word ptr [bp - 2]
+  0000:0DB2  268901            mov      word ptr es:[bx + di], ax
+  0000:0DB5  8bf8              mov      di, ax
+  0000:0DB7  56                push     si
+  0000:0DB8  8b00              mov      ax, word ptr [bx + si]
+  0000:0DBA  8bf0              mov      si, ax
+  0000:0DBC  8ac2              mov      al, dl
+  0000:0DBE  e893ff            call     0xd54  ; -> sub_0000_0D54  ; alrminit_crtStartup
+  0000:0DC1  5e                pop      si
+  0000:0DC2  eb08              jmp      0xdcc  ; -> loc_0000_0DCC
+
+loc_0000_0DC4:
+  0000:0DC4  035efe            add      bx, word ptr [bp - 2]
+  0000:0DC7  26c7070000        mov      word ptr es:[bx], 0
+
+loc_0000_0DCC:
+  0000:0DCC  5b                pop      bx
+  0000:0DCD  ebb3              jmp      0xd82  ; -> loc_0000_0D82
+
+loc_0000_0DCF:
+  0000:0DCF  59                pop      cx
+  0000:0DD0  5b                pop      bx
+  0000:0DD1  5a                pop      dx
+  0000:0DD2  49                dec      cx
+  0000:0DD3  7502              jne      0xdd7  ; -> loc_0000_0DD7
+  0000:0DD5  5d                pop      bp
+  0000:0DD6  c3                ret
+
+loc_0000_0DD7:
+  0000:0DD7  8a47ff            mov      al, byte ptr [bx - 1]
+  0000:0DDA  32e4              xor      ah, ah
+  0000:0DDC  03f0              add      si, ax
+  0000:0DDE  03d0              add      dx, ax
+  0000:0DE0  52                push     dx
+  0000:0DE1  53                push     bx
+  0000:0DE2  51                push     cx
+  0000:0DE3  eb9d              jmp      0xd82  ; -> loc_0000_0D82
+  0000:0DE5  db 56 57 C4 36 82 03 8B 3E 80 03 8B 1E 7E 03 26 8B ; |VW.6...>....~.&.|
+  0000:0DF5  db 04 0B C0 7D 5E 3D F8 FF 74 59 3D F7 FF 74 54 3D ; |...}^=..tY=..tT=|
+  0000:0E05  db D9 FF 74 4F 3D D2 FF 74 4A 83 FB 0F 74 0D 83 FB ; |..tO=..tJ...t...|
+  0000:0E15  db 10 74 08 83 FB 0A 74 3B EB 47 90 33 C0 39 45 0E ; |.t....t;.G.3.9E.|
+  0000:0E25  db 74 03 26 89 04 EB 3C 90 8B 7D 04 26 8B 74 04 EB ; |t.&...<..}.&.t..|
+  0000:0E35  db 11 32 FF B3 0C 26 8B 00 89 45 0C 26 8B 74 02 8B ; |.2...&...E.&.t..|
+  0000:0E45  db 7D 02 B9 B8 0B B3 02 06 1E 07 1F AC AA 3A C3 75 ; |}............:.u|
+  0000:0E55  db FA EB 0E 83 C6 02 83 C6 02 8A 9F A7 04 FF A7 87 ; |................|
+  0000:0E65  db 04 33 C0 5F 5E CB 32 FF B3 06 26 8B 00 89 45 06 ; |.3._^.2...&...E.|
+  0000:0E75  db 26 8B 40 02 89 45 08 EB E8 32 FF B3 06 26 8B 00 ; |&.@..E...2...&..|
+  0000:0E85  db 89 45 06 26 8B 40 02 89 45 08 EB D5 26 8B 74 02 ; |.E.&.@..E...&.t.|
+  0000:0E95  db 8B 7D 02 B9 12 00 06 1E 07 1F F3 A4 EB C3 32 FF ; |.}............2.|
+  0000:0EA5  db B3 16 26 8A 00 88 45 16 B3 0E 26 8B 08 0B C9 74 ; |..&...E...&....t|
+  0000:0EB5  db B0 01 4D 0E 26 8B 40 02 89 45 10 B3 0C 26 8B 00 ; |..M.&.@..E...&..|
+  0000:0EC5  db 50 91 26 8B 74 02 56 8B 3E 96 03 06 1E 07 1F F3 ; |P.&.t.V.>.......|
+  0000:0ED5  db A4 06 1E 07 1F 5E 8B 0E 94 03 03 F1 8B 3E 98 03 ; |.....^.......>..|
+  0000:0EE5  db 8B C8 8B D0 8B 1E 9A 03 26 8B 44 FE 89 45 FE 26 ; |........&.D..E.&|
+  0000:0EF5  db 8B 44 FC 03 C3 89 45 FC 83 EE 04 83 EF 04 E2 E8 ; |.D....E.........|
+  0000:0F05  db 58 8B 36 82 03 26 8B 0C 0B C9 75 0A 8B 36 92 03 ; |X.6..&....u..6..|
+  0000:0F15  db 3B 36 94 03 75 03 E9 48 FF 89 3E 98 03 01 06 96 ; |;6..u..H..>.....|
+  0000:0F25  db 03 01 06 9A 03 92 B1 02 D3 E0 03 C2 8B CE 2B C8 ; |..............+.|
+  0000:0F35  db 89 0E 92 03 8B 36 82 03 26 C7 04 10 00 B8 CF FF ; |.....6..&.......|
+  0000:0F45  db 8B 16 94 03 3B CA 73 06 8B D1 89 16 94 03 26 89 ; |....;.s.......&.|
+  0000:0F55  db 54 10 E9 0E FF 32 FF B3 0D 26 8B 00 89 45 0D 26 ; |T....2...&...E.&|
+  0000:0F65  db 8B 40 02 89 45 0F E9 F8 FE 32 FF B3 08 26 8B 00 ; |.@..E....2...&..|
+  0000:0F75  db 89 45 08 26 8B 40 02 89 45 0A E9 E4 FE B9 25 00 ; |.E.&.@..E.....%.|
+  0000:0F85  db 06 1E 07 1F F3 A4 06 1E 07 1F E9 D4 FE 26 8B 44 ; |.............&.D|
+  0000:0F95  db 07 26 8B 74 09 8B 7D 09 06 1E 07 1F 83 C6 04 83 ; |.&.t..}.........|
+  0000:0FA5  db C7 04 B9 05 00 F3 A4 48 75 F2 06 1E 07 1F E9 B0 ; |.......Hu.......|
+  0000:0FB5  db FE                                              ; |.|
+
+; --- alrminit_ioctl ---
+; IOCTL call via INT 21h/44h
+alrminit_ioctl:  ; (sub_0000_0FB6)
+  0000:0FB6  55                push     bp
+  0000:0FB7  8bec              mov      bp, sp
+  0000:0FB9  06                push     es
+  0000:0FBA  53                push     bx
+  0000:0FBB  8cd3              mov      bx, ss
+  0000:0FBD  8ec3              mov      es, bx
+  0000:0FBF  8bdd              mov      bx, bp
+  0000:0FC1  83c304            add      bx, 4
+  0000:0FC4  ff1e8e03          lcall    [0x38e]
+  0000:0FC8  5b                pop      bx
+  0000:0FC9  07                pop      es
+  0000:0FCA  5d                pop      bp
+  0000:0FCB  c3                ret
+  0000:0FCC  db CD 28 C3 B8 D6 10 E9 CA FC B8 D7 10 E9 C4 FC 50 ; |.(.............P|
+  0000:0FDC  db C7 06 E0 04 FF FF B8 D5 10 25 FF 0F FF 1E 72 03 ; |.........%....r.|
+  0000:0FEC  db 3C 20 58 7F 06 C7 06 E0 04 FF 0F CB 83 3E E0 04 ; |< X..........>..|
+  0000:0FFC  db FF 75 01 CB 3D 0A 11 7F 05 23 06 E0 04 CB 3D 2D ; |.u..=....#....=-|
+  0000:100C  db 11 B8 FE FF 74 03 B8 FF FF CB 9C 3D 90 10 75 22 ; |....t......=..u"|
+  0000:101C  db 81 3E E0 04 FF 0F 74 1A 50 B8 D5 10 FF 1E 72 03 ; |.>....t.P.....r.|
+  0000:102C  db 3C 29 58 7F 0D 53 8B 5D 0E 8B 1F D1 E3 43 29 5D ; |<)X..S.].....C)]|
+  0000:103C  db 02 5B 9D CB 9C 81 3E 7C 03 90 10 74 0A 81 3E 7C ; |.[....>|...t..>||
+  0000:104C  db 03 17 11 74 02 9D CB 81 3E E0 04 FF 0F 74 69 50 ; |...t....>....tiP|
+  0000:105C  db B8 D5 10 FF 1E 72 03 3C 29 7F 18 81 3E 7C 03 17 ; |.....r.<)...>|..|
+  0000:106C  db 11 74 10 58 53 8B 5D 0E 8B 1F D1 E3 43 01 5D 02 ; |.t.XS.].....C.].|
+  0000:107C  db 5B EB                                           ; |[.|
+  0000:107E  db 45 3C 35 58                                     ; "E<5X"
+  0000:1082  db 7F 40 81 3E 7C 03 17 11                         ; |.@.>|...|
+  0000:108A  db 75 38 56 57 51 52                               ; "u8VWQR"
+  0000:1090  db 8B 76 00 83 C6 04 E8 2D 00 32 E4 B1 04 F6 E1 BF ; |.v.....-.2......|
+  0000:10A0  db E2 04 03 F8 B9 04 00 B8 00 00                   ; |..........|
+  0000:10AA  db 4E 4F 47 46                                     ; "NOGF"
+  0000:10AE  db 80 3C 00 74 0D 8A 15 38 14 75 04 E2 F1 EB 03 B8 ; |.<.t...8.u......|
+  0000:10BE  db FF FF                                           ; |..|
+  0000:10C0  db 5A 59 5F 5E                                     ; "ZY_^"
+  0000:10C4  db 9D CB 55 83 EC 0B 8B EC 1E 1E 07 16 1F 8D 46 00 ; |..U...........F.|
+  0000:10D4  db 55 50 8B EC B8 31 10 25 FF 0F 26 FF 1E 72 03 83 ; |UP...1.%..&..r..|
+  0000:10E4  db C4 02 5D 1F 8A 46 00 83 C4 0B 5D C3             ; |..]..F....].|
+
+; --- alrminit_writeFile ---
+; Write to file via INT 21h/40h
+alrminit_writeFile:  ; (sub_0000_10F0)
+  0000:10F0  55                push     bp
+  0000:10F1  8bec              mov      bp, sp
+  0000:10F3  b8fc00            mov      ax, 0xfc
+  0000:10F6  50                push     ax
+  0000:10F7  e80d02            call     0x1307  ; -> sub_0000_1307  ; alrminit_writeToStderr
+  0000:10FA  833e260500        cmp      word ptr [0x526], 0
+  0000:10FF  7404              je       0x1105  ; -> loc_0000_1105
+  0000:1101  ff162605          call     word ptr [0x526]
+
+loc_0000_1105:
+  0000:1105  b8ff00            mov      ax, 0xff
+  0000:1108  50                push     ax
+  0000:1109  e8fb01            call     0x1307  ; -> sub_0000_1307  ; alrminit_writeToStderr
+  0000:110C  8be5              mov      sp, bp
+  0000:110E  5d                pop      bp
+  0000:110F  c3                ret
+
+loc_0000_1110:
+  0000:1110  b80200            mov      ax, 2
+  0000:1113  e94df7            jmp      0x863  ; -> loc_0000_0863
+
+; --- alrminit_intE0hCall ---
+; INT E0h call wrapper (called from 23 locations)
+alrminit_intE0hCall:  ; (sub_0000_1116)
+  0000:1116  59                pop      cx
+  0000:1117  8bdc              mov      bx, sp
+  0000:1119  2bd8              sub      bx, ax
+  0000:111B  720a              jb       0x1127  ; -> loc_0000_1127
+  0000:111D  3b1e2805          cmp      bx, word ptr [0x528]
+  0000:1121  7204              jb       0x1127  ; -> loc_0000_1127
+  0000:1123  8be3              mov      sp, bx
+  0000:1125  ffe1              jmp      cx
+
+loc_0000_1127:
+  0000:1127  33c0              xor      ax, ax
+  0000:1129  e937f7            jmp      0x863  ; -> loc_0000_0863
+
+; --- alrminit_closeAndWrite ---
+; Close file and write final data
+alrminit_closeAndWrite:  ; (sub_0000_112C)
+  0000:112C  56                push     si
+  0000:112D  33f6              xor      si, si
+  0000:112F  b94200            mov      cx, 0x42
+  0000:1132  32e4              xor      ah, ah
+  0000:1134  fc                cld
+  0000:1135  ac                lodsb    al, byte ptr [si]
+  0000:1136  32e0              xor      ah, al
+  0000:1138  e2fb              loop     0x1135
+  0000:113A  80f455            xor      ah, 0x55
+  0000:113D  740d              je       0x114c  ; -> loc_0000_114C
+  0000:113F  e8aeff            call     0x10f0  ; -> sub_0000_10F0  ; alrminit_writeFile
+  0000:1142  b80100            mov      ax, 1
+  0000:1145  50                push     ax
+  0000:1146  e8be01            call     0x1307  ; -> sub_0000_1307  ; alrminit_writeToStderr
+  0000:1149  b80100            mov      ax, 1
+
+loc_0000_114C:
+  0000:114C  5e                pop      si
+  0000:114D  c3                ret
+  0000:114E  db 8F 06 2A 05 BA 02 00 38 16 27 03 74 29 8E 06 25 ; |..*....8.'.t)..%|
+  0000:115E  db 03 26 8E 06 2C 00 8C 06 4A 03 33 C0 99 B9 00 80 ; |.&..,...J.3.....|
+  0000:116E  db 33 FF F2 AE AE 75 FB 47 47 89 3E 48 03 B9 FF FF ; |3....u.GG.>H....|
+  0000:117E  db F2 AE F7 D1 8B D1 BF 01 00 BE 81 00 8E 1E 25 03 ; |..............%.|
+  0000:118E  db AC 3C 20 74 FB 3C 09 74 F7                      ; |.< t.<.t.|
+  0000:1197  db 3C 0D 74 6F 0A                                  ; "<\rto\n"
+  0000:119C  db C0                                              ; |.|
+  0000:119D  db 74 6B 47 4E                                     ; "tkGN"
+  0000:11A1  db AC 3C 20 74 E8 3C 09 74 E4                      ; |.< t.<.t.|
+  0000:11AA  db 3C 0D 74 5C 0A                                  ; "<\rt\\n"
+  0000:11AF  db C0                                              ; |.|
+  0000:11B0  db 74 58 3C 22 74 24 3C 5C 74                      ; "tX<"t$<\t"
+  0000:11B9  db 03 42 EB E4 33 C9 41 AC 3C 5C 74 FA 3C 22 74 04 ; |.B..3.A.<\t.<"t.|
+  0000:11C9  db 03 D1 EB D3 8B C1 D1 E9 13 D1 A8 01 75 CA EB 01 ; |............u...|
+  0000:11D9  db 4E AC                                           ; |N.|
+  0000:11DB  db 3C 0D 74 2B 0A                                  ; "<\rt+\n"
+  0000:11E0  db C0                                              ; |.|
+  0000:11E1  db 74 27 3C 22 74                                  ; "t'<"t"
+  0000:11E6  db BA 3C 5C 74 03 42 EB EC 33 C9 41 AC 3C 5C 74 FA ; |.<\t.B..3.A.<\t.|
+  0000:11F6  db 3C 22 74 04 03 D1 EB DB 8B C1 D1 E9 13 D1 A8 01 ; |<"t.............|
+  0000:1206  db 75 D2 EB 97 16 1F 89 3E 42 03 03 D7 47 D1 E7 03 ; |u......>B...G...|
+  0000:1216  db D7 80 E2 FE 2B E2 8B C4 A3 44 03 8B D8 03 FB 16 ; |....+....D......|
+  0000:1226  db 07 36 89 3F 43 43 C5 36 48 03 AC AA 0A C0 75 FA ; |.6.?CC.6H.....u.|
+  0000:1236  db BE 81 00 36 8E 1E 25 03 EB 03 33 C0 AA AC 3C 20 ; |...6..%...3...< |
+  0000:1246  db 74 FB 3C 09 74 F7 3C 0D 75 03 E9 7F 00 0A C0 75 ; |t.<.t.<.u......u|
+  0000:1256  db 03 EB 79 90 36 89                               ; |..y.6.|
+  0000:125C  db 3F 43 43 4E                                     ; "?CCN"
+  0000:1260  db AC 3C 20 74 DB 3C 09 74 D7                      ; |.< t.<.t.|
+  0000:1269  db 3C 0D 74 62 0A                                  ; "<\rtb\n"
+  0000:126E  db C0                                              ; |.|
+  0000:126F  db 74 5E 3C 22 74 27 3C 5C 74                      ; "t^<"t'<\t"
+  0000:1278  db 03 AA EB E4 33 C9 41 AC 3C 5C 74 FA 3C 22 74 06 ; |....3.A.<\t.<"t.|
+  0000:1288  db B0 5C F3 AA EB D1 B0 5C D1 E9 F3 AA 73 06 B0 22 ; |.\.....\....s.."|
+  0000:1298  db AA EB C5 4E AC                                  ; |...N.|
+  0000:129D  db 3C 0D 74 2E 0A                                  ; "<\rt.\n"
+  0000:12A2  db C0                                              ; |.|
+  0000:12A3  db 74 2A 3C 22 74                                  ; "t*<"t"
+  0000:12A8  db B7 3C 5C 74 03 AA EB EC 33 C9 41 AC 3C 5C 74 FA ; |.<\t....3.A.<\t.|
+  0000:12B8  db 3C 22 74 06 B0 5C F3 AA EB D9 B0 5C D1 E9 F3 AA ; |<"t..\.....\....|
+  0000:12C8  db 73 96 B0 22 AA EB CD 33 C0 AA 16 1F C7 07 00 00 ; |s.."...3........|
+  0000:12D8  db FF 26 2A 05                                     ; |.&*.|
+
+; --- alrminit_lookupMessage ---
+; Look up error message by ID
+alrminit_lookupMessage:  ; (sub_0000_12DC)
+  0000:12DC  55                push     bp
+  0000:12DD  8bec              mov      bp, sp
+  0000:12DF  56                push     si
+  0000:12E0  57                push     di
+  0000:12E1  1e                push     ds
+  0000:12E2  07                pop      es
+  0000:12E3  8b5604            mov      dx, word ptr [bp + 4]
+  0000:12E6  bef006            mov      si, 0x6f0
+
+loc_0000_12E9:
+  0000:12E9  ad                lodsw    ax, word ptr [si]
+  0000:12EA  3bc2              cmp      ax, dx
+  0000:12EC  7410              je       0x12fe  ; -> loc_0000_12FE
+  0000:12EE  40                inc      ax
+  0000:12EF  96                xchg     si, ax
+  0000:12F0  740c              je       0x12fe  ; -> loc_0000_12FE
+  0000:12F2  97                xchg     di, ax
+  0000:12F3  33c0              xor      ax, ax
+  0000:12F5  b9ffff            mov      cx, 0xffff
+  0000:12F8  f2ae              repne scasb al, byte ptr es:[di]
+  0000:12FA  8bf7              mov      si, di
+  0000:12FC  ebeb              jmp      0x12e9  ; -> loc_0000_12E9
+
+loc_0000_12FE:
+  0000:12FE  96                xchg     si, ax
+  0000:12FF  5f                pop      di
+  0000:1300  5e                pop      si
+  0000:1301  8be5              mov      sp, bp
+  0000:1303  5d                pop      bp
+  0000:1304  c20200            ret      2
+
+; --- alrminit_writeToStderr ---
+; Write message to stderr (handle 2)
+alrminit_writeToStderr:  ; (sub_0000_1307)
+  0000:1307  55                push     bp
+  0000:1308  8bec              mov      bp, sp
+  0000:130A  57                push     di
+  0000:130B  ff7604            push     word ptr [bp + 4]
+  0000:130E  e8cbff            call     0x12dc  ; -> sub_0000_12DC  ; alrminit_lookupMessage
+  0000:1311  0bc0              or       ax, ax
+  0000:1313  7414              je       0x1329  ; -> loc_0000_1329
+  0000:1315  92                xchg     dx, ax
+  0000:1316  8bfa              mov      di, dx
+  0000:1318  33c0              xor      ax, ax
+  0000:131A  b9ffff            mov      cx, 0xffff
+  0000:131D  f2ae              repne scasb al, byte ptr es:[di]
+  0000:131F  f7d1              not      cx
+  0000:1321  49                dec      cx
+  0000:1322  bb0200            mov      bx, 2
+  0000:1325  b440              mov      ah, 0x40
+  0000:1327  cd21              int      0x21  ; INT 21h/40h: Write file
+
+loc_0000_1329:
+  0000:1329  5f                pop      di
+  0000:132A  8be5              mov      sp, bp
+  0000:132C  5d                pop      bp
+  0000:132D  c20200            ret      2
+
+; --- alrminit_seekFile ---
+; Seek file position via INT 21h/42h
+alrminit_seekFile:  ; (sub_0000_1330)
+  0000:1330  8bd0              mov      dx, ax
+  0000:1332  0306b402          add      ax, word ptr [0x2b4]
+  0000:1336  7235              jb       0x136d  ; -> loc_0000_136D
+  0000:1338  3906ae02          cmp      word ptr [0x2ae], ax
+  0000:133C  7325              jae      0x1363  ; -> loc_0000_1363
+  0000:133E  050f00            add      ax, 0xf
+  0000:1341  50                push     ax
+  0000:1342  d1d8              rcr      ax, 1
+  0000:1344  b103              mov      cl, 3
+  0000:1346  d3e8              shr      ax, cl
+  0000:1348  8cd9              mov      cx, ds
+  0000:134A  8b1e2503          mov      bx, word ptr [0x325]
+  0000:134E  2bcb              sub      cx, bx
+  0000:1350  03c1              add      ax, cx
+  0000:1352  8ec3              mov      es, bx
+  0000:1354  8bd8              mov      bx, ax
+  0000:1356  b44a              mov      ah, 0x4a
+  0000:1358  cd21              int      0x21  ; INT 21h/4Ah: Resize memory block
+  0000:135A  58                pop      ax
+  0000:135B  7210              jb       0x136d  ; -> loc_0000_136D
+  0000:135D  24f0              and      al, 0xf0
+  0000:135F  48                dec      ax
+  0000:1360  a3ae02            mov      word ptr [0x2ae], ax
+
+loc_0000_1363:
+  0000:1363  95                xchg     bp, ax
+  0000:1364  8b2eb402          mov      bp, word ptr [0x2b4]
+  0000:1368  0116b402          add      word ptr [0x2b4], dx
+  0000:136C  c3                ret
+
+loc_0000_136D:
+  0000:136D  8bc7              mov      ax, di
+  0000:136F  e9f1f4            jmp      0x863  ; -> loc_0000_0863
+
+; --- alrminit_getEnvValue ---
+; Get environment variable value
+alrminit_getEnvValue:  ; (sub_0000_1372)
+  0000:1372  55                push     bp
+  0000:1373  8bec              mov      bp, sp
+  0000:1375  8bd7              mov      dx, di
+  0000:1377  8bde              mov      bx, si
+  0000:1379  8cd8              mov      ax, ds
+  0000:137B  8ec0              mov      es, ax
+  0000:137D  8b7e04            mov      di, word ptr [bp + 4]
+  0000:1380  33c0              xor      ax, ax
+  0000:1382  b9ffff            mov      cx, 0xffff
+  0000:1385  f2ae              repne scasb al, byte ptr es:[di]
+  0000:1387  8d75ff            lea      si, [di - 1]
+  0000:138A  8b7e06            mov      di, word ptr [bp + 6]
+  0000:138D  b9ffff            mov      cx, 0xffff
+  0000:1390  f2ae              repne scasb al, byte ptr es:[di]
+  0000:1392  f7d1              not      cx
+  0000:1394  2bf9              sub      di, cx
+  0000:1396  87fe              xchg     si, di
+  0000:1398  8b4604            mov      ax, word ptr [bp + 4]
+  0000:139B  f7c60100          test     si, 1
+  0000:139F  7402              je       0x13a3  ; -> loc_0000_13A3
+  0000:13A1  a4                movsb    byte ptr es:[di], byte ptr [si]
+  0000:13A2  49                dec      cx
+
+loc_0000_13A3:
+  0000:13A3  d1e9              shr      cx, 1
+  0000:13A5  f3a5              rep movsw word ptr es:[di], word ptr [si]
+  0000:13A7  13c9              adc      cx, cx
+  0000:13A9  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+  0000:13AB  8bf3              mov      si, bx
+  0000:13AD  8bfa              mov      di, dx
+  0000:13AF  5d                pop      bp
+  0000:13B0  c3                ret
+  0000:13B1  db 00                                              ; |.|
+
+; --- alrminit_getConfigPath ---
+; Get DESKMATE config directory path
+alrminit_getConfigPath:  ; (sub_0000_13B2)
+  0000:13B2  55                push     bp
+  0000:13B3  8bec              mov      bp, sp
+  0000:13B5  8bd7              mov      dx, di
+  0000:13B7  8bde              mov      bx, si
+  0000:13B9  8b7606            mov      si, word ptr [bp + 6]
+  0000:13BC  8bfe              mov      di, si
+  0000:13BE  8cd8              mov      ax, ds
+  0000:13C0  8ec0              mov      es, ax
+  0000:13C2  33c0              xor      ax, ax
+  0000:13C4  b9ffff            mov      cx, 0xffff
+  0000:13C7  f2ae              repne scasb al, byte ptr es:[di]
+  0000:13C9  f7d1              not      cx
+  0000:13CB  8b7e04            mov      di, word ptr [bp + 4]
+  0000:13CE  8bc7              mov      ax, di
+  0000:13D0  a801              test     al, 1
+  0000:13D2  7402              je       0x13d6  ; -> loc_0000_13D6
+  0000:13D4  a4                movsb    byte ptr es:[di], byte ptr [si]
+  0000:13D5  49                dec      cx
+
+loc_0000_13D6:
+  0000:13D6  d1e9              shr      cx, 1
+  0000:13D8  f3a5              rep movsw word ptr es:[di], word ptr [si]
+  0000:13DA  13c9              adc      cx, cx
+  0000:13DC  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+  0000:13DE  8bf3              mov      si, bx
+  0000:13E0  8bfa              mov      di, dx
+  0000:13E2  5d                pop      bp
+  0000:13E3  c3                ret
+
+; --- alrminit_buildFilePath ---
+; Build full file path from config dir + filename
+alrminit_buildFilePath:  ; (sub_0000_13E4)
+  0000:13E4  55                push     bp
+  0000:13E5  8bec              mov      bp, sp
+  0000:13E7  8bd7              mov      dx, di
+  0000:13E9  8cd8              mov      ax, ds
+  0000:13EB  8ec0              mov      es, ax
+  0000:13ED  8b7e04            mov      di, word ptr [bp + 4]
+  0000:13F0  33c0              xor      ax, ax
+  0000:13F2  b9ffff            mov      cx, 0xffff
+  0000:13F5  f2ae              repne scasb al, byte ptr es:[di]
+  0000:13F7  f7d1              not      cx
+  0000:13F9  49                dec      cx
+  0000:13FA  91                xchg     cx, ax
+  0000:13FB  8bfa              mov      di, dx
+  0000:13FD  5d                pop      bp
+  0000:13FE  c3                ret
+  0000:13FF  db 00                                              ; |.|
+
+; --- alrminit_parseEnvironment ---
+; Parse environment block for PATH= entries
+alrminit_parseEnvironment:  ; (sub_0000_1400)
+  0000:1400  55                push     bp
+  0000:1401  8bec              mov      bp, sp
+  0000:1403  56                push     si
+  0000:1404  57                push     di
+  0000:1405  1e                push     ds
+  0000:1406  83ec0a            sub      sp, 0xa
+  0000:1409  c646f4cd          mov      byte ptr [bp - 0xc], 0xcd
+  0000:140D  8b4604            mov      ax, word ptr [bp + 4]
+  0000:1410  8846f5            mov      byte ptr [bp - 0xb], al
+  0000:1413  3c25              cmp      al, 0x25
+  0000:1415  740a              je       0x1421  ; -> loc_0000_1421
+  0000:1417  3c26              cmp      al, 0x26
+  0000:1419  7406              je       0x1421  ; -> loc_0000_1421
+  0000:141B  c646f6cb          mov      byte ptr [bp - 0xa], 0xcb
+  0000:141F  eb0c              jmp      0x142d  ; -> loc_0000_142D
+
+loc_0000_1421:
+  0000:1421  c646f8cb          mov      byte ptr [bp - 8], 0xcb
+  0000:1425  c646f744          mov      byte ptr [bp - 9], 0x44
+  0000:1429  c646f644          mov      byte ptr [bp - 0xa], 0x44
+
+loc_0000_142D:
+  0000:142D  8c56f2            mov      word ptr [bp - 0xe], ss
+  0000:1430  8d46f4            lea      ax, [bp - 0xc]
+  0000:1433  8946f0            mov      word ptr [bp - 0x10], ax
+  0000:1436  8b7e06            mov      di, word ptr [bp + 6]
+  0000:1439  8b05              mov      ax, word ptr [di]
+  0000:143B  8b5d02            mov      bx, word ptr [di + 2]
+  0000:143E  8b4d04            mov      cx, word ptr [di + 4]
+  0000:1441  8b5506            mov      dx, word ptr [di + 6]
+  0000:1444  8b7508            mov      si, word ptr [di + 8]
+  0000:1447  ff750a            push     word ptr [di + 0xa]
+  0000:144A  8b7e0a            mov      di, word ptr [bp + 0xa]
+  0000:144D  8e05              mov      es, word ptr [di]
+  0000:144F  8e5d06            mov      ds, word ptr [di + 6]
+  0000:1452  5f                pop      di
+  0000:1453  55                push     bp
+  0000:1454  ff5ef0            lcall    [bp - 0x10]
+  0000:1457  5d                pop      bp
+  0000:1458  fc                cld
+  0000:1459  57                push     di
+  0000:145A  1e                push     ds
+  0000:145B  16                push     ss
+  0000:145C  1f                pop      ds
+  0000:145D  8b7e0a            mov      di, word ptr [bp + 0xa]
+  0000:1460  8c05              mov      word ptr [di], es
+  0000:1462  8f4506            pop      word ptr [di + 6]
+  0000:1465  8b7e08            mov      di, word ptr [bp + 8]
+  0000:1468  8905              mov      word ptr [di], ax
+  0000:146A  895d02            mov      word ptr [di + 2], bx
+  0000:146D  894d04            mov      word ptr [di + 4], cx
+  0000:1470  895506            mov      word ptr [di + 6], dx
+  0000:1473  897508            mov      word ptr [di + 8], si
+  0000:1476  8f450a            pop      word ptr [di + 0xa]
+  0000:1479  7204              jb       0x147f  ; -> loc_0000_147F
+  0000:147B  33f6              xor      si, si
+  0000:147D  eb08              jmp      0x1487  ; -> loc_0000_1487
+
+loc_0000_147F:
+  0000:147F  e86c01            call     0x15ee  ; -> sub_0000_15EE  ; alrminit_exitCleanup
+  0000:1482  be0100            mov      si, 1
+  0000:1485  8b05              mov      ax, word ptr [di]
+
+loc_0000_1487:
+  0000:1487  89750c            mov      word ptr [di + 0xc], si
+  0000:148A  83c40a            add      sp, 0xa
+  0000:148D  1f                pop      ds
+  0000:148E  5f                pop      di
+  0000:148F  5e                pop      si
+  0000:1490  8be5              mov      sp, bp
+  0000:1492  5d                pop      bp
+  0000:1493  c3                ret
+
+; --- alrminit_dateToTicks ---
+; Convert date components to tick count
+alrminit_dateToTicks:  ; (sub_0000_1494)
+  0000:1494  55                push     bp
+  0000:1495  8bec              mov      bp, sp
+  0000:1497  83ec06            sub      sp, 6
+  0000:149A  56                push     si
+  0000:149B  e82e03            call     0x17cc  ; -> sub_0000_17CC  ; alrminit_mulUnsigned32
+  0000:149E  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:14A1  8b07              mov      ax, word ptr [bx]
+  0000:14A3  8b5702            mov      dx, word ptr [bx + 2]
+  0000:14A6  2b065e05          sub      ax, word ptr [0x55e]
+  0000:14AA  1b166005          sbb      dx, word ptr [0x560]
+  0000:14AE  8946fa            mov      word ptr [bp - 6], ax
+  0000:14B1  8956fc            mov      word ptr [bp - 4], dx
+  0000:14B4  8d46fa            lea      ax, [bp - 6]
+  0000:14B7  50                push     ax
+  0000:14B8  e86701            call     0x1622  ; -> sub_0000_1622  ; alrminit_formatDateTime
+  0000:14BB  83c402            add      sp, 2
+  0000:14BE  8bf0              mov      si, ax
+  0000:14C0  0bf6              or       si, si
+  0000:14C2  7504              jne      0x14c8  ; -> loc_0000_14C8
+  0000:14C4  2bc0              sub      ax, ax
+  0000:14C6  eb2e              jmp      0x14f6  ; -> loc_0000_14F6
+
+loc_0000_14C8:
+  0000:14C8  833e620500        cmp      word ptr [0x562], 0
+  0000:14CD  7425              je       0x14f4  ; -> loc_0000_14F4
+  0000:14CF  56                push     si
+  0000:14D0  e8b903            call     0x188c  ; -> sub_0000_188C  ; alrminit_divUnsigned32
+  0000:14D3  83c402            add      sp, 2
+  0000:14D6  0bc0              or       ax, ax
+  0000:14D8  741a              je       0x14f4  ; -> loc_0000_14F4
+  0000:14DA  8146fa100e        add      word ptr [bp - 6], 0xe10
+  0000:14DF  8356fc00          adc      word ptr [bp - 4], 0
+  0000:14E3  8d46fa            lea      ax, [bp - 6]
+  0000:14E6  50                push     ax
+  0000:14E7  e83801            call     0x1622  ; -> sub_0000_1622  ; alrminit_formatDateTime
+  0000:14EA  83c402            add      sp, 2
+  0000:14ED  8bf0              mov      si, ax
+  0000:14EF  c744100100        mov      word ptr [si + 0x10], 1
+
+loc_0000_14F4:
+  0000:14F4  8bc6              mov      ax, si
+
+loc_0000_14F6:
+  0000:14F6  5e                pop      si
+  0000:14F7  8be5              mov      sp, bp
+  0000:14F9  5d                pop      bp
+  0000:14FA  c3                ret
+  0000:14FB  db 90                                              ; |.|
+
+; --- alrminit_timeToTicks ---
+; Convert time components (H:M:S) to tick count
+alrminit_timeToTicks:  ; (sub_0000_14FC)
+  0000:14FC  55                push     bp
+  0000:14FD  8bec              mov      bp, sp
+  0000:14FF  56                push     si
+  0000:1500  b42a              mov      ah, 0x2a
+  0000:1502  cd21              int      0x21  ; INT 21h/2Ah: Get date
+  0000:1504  8bda              mov      bx, dx
+  0000:1506  8bf1              mov      si, cx
+  0000:1508  b42c              mov      ah, 0x2c
+  0000:150A  cd21              int      0x21  ; INT 21h/2Ch: Get time
+  0000:150C  b400              mov      ah, 0
+  0000:150E  8ac6              mov      al, dh
+  0000:1510  50                push     ax
+  0000:1511  8ac1              mov      al, cl
+  0000:1513  50                push     ax
+  0000:1514  8ac5              mov      al, ch
+  0000:1516  50                push     ax
+  0000:1517  50                push     ax
+  0000:1518  b42a              mov      ah, 0x2a
+  0000:151A  cd21              int      0x21  ; INT 21h/2Ah: Get date
+  0000:151C  3bda              cmp      bx, dx
+  0000:151E  58                pop      ax
+  0000:151F  7408              je       0x1529  ; -> loc_0000_1529
+  0000:1521  3c17              cmp      al, 0x17
+  0000:1523  7504              jne      0x1529  ; -> loc_0000_1529
+  0000:1525  8bd3              mov      dx, bx
+  0000:1527  8bce              mov      cx, si
+
+loc_0000_1529:
+  0000:1529  b400              mov      ah, 0
+  0000:152B  8ac2              mov      al, dl
+  0000:152D  50                push     ax
+  0000:152E  8ac6              mov      al, dh
+  0000:1530  50                push     ax
+  0000:1531  81e9bc07          sub      cx, 0x7bc
+  0000:1535  51                push     cx
+  0000:1536  e81d04            call     0x1956  ; -> sub_0000_1956  ; alrminit_ticksToTime
+  0000:1539  83c40c            add      sp, 0xc
+  0000:153C  837e0400          cmp      word ptr [bp + 4], 0
+  0000:1540  7408              je       0x154a  ; -> loc_0000_154A
+  0000:1542  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:1545  895702            mov      word ptr [bx + 2], dx
+  0000:1548  8907              mov      word ptr [bx], ax
+
+loc_0000_154A:
+  0000:154A  5e                pop      si
+  0000:154B  5d                pop      bp
+  0000:154C  c3                ret
+  0000:154D  db 00                                              ; |.|
+
+; --- alrminit_strcat ---
+; String concatenation
+alrminit_strcat:  ; (sub_0000_154E)
+  0000:154E  55                push     bp
+  0000:154F  8bec              mov      bp, sp
+  0000:1551  8bd6              mov      dx, si
+  0000:1553  8b7606            mov      si, word ptr [bp + 6]
+  0000:1556  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:1559  b0ff              mov      al, 0xff
+
+loc_0000_155B:
+  0000:155B  0ac0              or       al, al
+  0000:155D  742c              je       0x158b  ; -> loc_0000_158B
+  0000:155F  ac                lodsb    al, byte ptr [si]
+  0000:1560  8a27              mov      ah, byte ptr [bx]
+  0000:1562  43                inc      bx
+  0000:1563  3ae0              cmp      ah, al
+  0000:1565  74f4              je       0x155b  ; -> loc_0000_155B
+  0000:1567  2c41              sub      al, 0x41
+  0000:1569  3c1a              cmp      al, 0x1a
+  0000:156B  1ac9              sbb      cl, cl
+  0000:156D  80e120            and      cl, 0x20
+  0000:1570  02c1              add      al, cl
+  0000:1572  0441              add      al, 0x41
+  0000:1574  86e0              xchg     al, ah
+  0000:1576  2c41              sub      al, 0x41
+  0000:1578  3c1a              cmp      al, 0x1a
+  0000:157A  1ac9              sbb      cl, cl
+  0000:157C  80e120            and      cl, 0x20
+  0000:157F  02c1              add      al, cl
+  0000:1581  0441              add      al, 0x41
+  0000:1583  3ac4              cmp      al, ah
+  0000:1585  74d4              je       0x155b  ; -> loc_0000_155B
+  0000:1587  1ac0              sbb      al, al
+  0000:1589  1cff              sbb      al, 0xff
+
+loc_0000_158B:
+  0000:158B  98                cwde
+  0000:158C  8bf2              mov      si, dx
+  0000:158E  5d                pop      bp
+  0000:158F  c3                ret
+
+; --- alrminit_parseTimeField ---
+; Parse time field from config string
+alrminit_parseTimeField:  ; (sub_0000_1590)
+  0000:1590  55                push     bp
+  0000:1591  8bec              mov      bp, sp
+  0000:1593  8bd7              mov      dx, di
+  0000:1595  8bde              mov      bx, si
+  0000:1597  8cd8              mov      ax, ds
+  0000:1599  8ec0              mov      es, ax
+  0000:159B  8b7606            mov      si, word ptr [bp + 6]
+  0000:159E  8b7e04            mov      di, word ptr [bp + 4]
+  0000:15A1  8bc7              mov      ax, di
+  0000:15A3  8b4e08            mov      cx, word ptr [bp + 8]
+  0000:15A6  e30e              jcxz     0x15b6  ; -> loc_0000_15B6
+  0000:15A8  a801              test     al, 1
+  0000:15AA  7402              je       0x15ae  ; -> loc_0000_15AE
+  0000:15AC  a4                movsb    byte ptr es:[di], byte ptr [si]
+  0000:15AD  49                dec      cx
+
+loc_0000_15AE:
+  0000:15AE  d1e9              shr      cx, 1
+  0000:15B0  f3a5              rep movsw word ptr es:[di], word ptr [si]
+  0000:15B2  13c9              adc      cx, cx
+  0000:15B4  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+
+loc_0000_15B6:
+  0000:15B6  8bf3              mov      si, bx
+  0000:15B8  8bfa              mov      di, dx
+  0000:15BA  5d                pop      bp
+  0000:15BB  c3                ret
+
+; --- alrminit_getDateTime ---
+; Get current date and time via DOS
+alrminit_getDateTime:  ; (sub_0000_15BC)
+  0000:15BC  55                push     bp
+  0000:15BD  8bec              mov      bp, sp
+  0000:15BF  8b4604            mov      ax, word ptr [bp + 4]
+  0000:15C2  8b5606            mov      dx, word ptr [bp + 6]
+  0000:15C5  b431              mov      ah, 0x31
+  0000:15C7  cd21              int      0x21  ; INT 21h/31h: TSR (keep process)
+  0000:15C9  8be5              mov      sp, bp
+  0000:15CB  5d                pop      bp
+  0000:15CC  c3                ret
+  0000:15CD  db 00 72 13 33 C0 8B E5 5D C3 73 F8 50 E8 18 00 58 ; |.r.3...].s.P...X|
+  0000:15DD  db 8B E5 5D C3 73 07 E8 0E 00 B8 FF FF 99 8B E5 5D ; |..].s..........]|
+  0000:15ED  db C3                                              ; |.|
+
+; --- alrminit_exitCleanup ---
+; Exit cleanup - restore vectors, free memory
+alrminit_exitCleanup:  ; (sub_0000_15EE)
+  0000:15EE  32e4              xor      ah, ah
+  0000:15F0  e80100            call     0x15f4  ; -> sub_0000_15F4  ; alrminit_terminateResident
+  0000:15F3  c3                ret
+
+; --- alrminit_terminateResident ---
+; Go TSR via INT 21h/31h
+alrminit_terminateResident:  ; (sub_0000_15F4)
+  0000:15F4  a22a03            mov      byte ptr [0x32a], al
+  0000:15F7  0ae4              or       ah, ah
+  0000:15F9  7523              jne      0x161e  ; -> loc_0000_161E
+  0000:15FB  803e270303        cmp      byte ptr [0x327], 3
+  0000:1600  720d              jb       0x160f  ; -> loc_0000_160F
+  0000:1602  3c22              cmp      al, 0x22
+  0000:1604  730d              jae      0x1613  ; -> loc_0000_1613
+  0000:1606  3c20              cmp      al, 0x20
+  0000:1608  7205              jb       0x160f  ; -> loc_0000_160F
+  0000:160A  b005              mov      al, 5
+  0000:160C  eb07              jmp      0x1615  ; -> loc_0000_1615
+  0000:160E  db 90                                              ; |.|
+
+loc_0000_160F:
+  0000:160F  3c13              cmp      al, 0x13
+  0000:1611  7602              jbe      0x1615  ; -> loc_0000_1615
+
+loc_0000_1613:
+  0000:1613  b013              mov      al, 0x13
+
+loc_0000_1615:
+  0000:1615  bb2c05            mov      bx, 0x52c
+  0000:1618  d7                xlatb
+
+loc_0000_1619:
+  0000:1619  98                cwde
+  0000:161A  a31f03            mov      word ptr [0x31f], ax
+  0000:161D  c3                ret
+
+loc_0000_161E:
+  0000:161E  8ac4              mov      al, ah
+  0000:1620  ebf7              jmp      0x1619  ; -> loc_0000_1619
+
+; --- alrminit_formatDateTime ---
+; Format date/time components for output
+alrminit_formatDateTime:  ; (sub_0000_1622)
+  0000:1622  55                push     bp
+  0000:1623  8bec              mov      bp, sp
+  0000:1625  83ec0c            sub      sp, 0xc
+  0000:1628  57                push     di
+  0000:1629  56                push     si
+  0000:162A  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:162D  817f02ce12        cmp      word ptr [bx + 2], 0x12ce
+  0000:1632  7f0e              jg       0x1642  ; -> loc_0000_1642
+  0000:1634  7c06              jl       0x163c  ; -> loc_0000_163C
+  0000:1636  813f00a6          cmp      word ptr [bx], 0xa600
+  0000:163A  7306              jae      0x1642  ; -> loc_0000_1642
+
+loc_0000_163C:
+  0000:163C  2bc0              sub      ax, ax
+  0000:163E  e98501            jmp      0x17c6  ; -> loc_0000_17C6
+  0000:1641  db 90                                              ; |.|
+
+loc_0000_1642:
+  0000:1642  b88033            mov      ax, 0x3380
+  0000:1645  bae101            mov      dx, 0x1e1
+  0000:1648  52                push     dx
+  0000:1649  50                push     ax
+  0000:164A  ff7702            push     word ptr [bx + 2]
+  0000:164D  ff37              push     word ptr [bx]
+  0000:164F  e84604            call     0x1a98  ; -> sub_0000_1A98  ; alrminit_divSigned32
+  0000:1652  a34a05            mov      word ptr [0x54a], ax
+  0000:1655  b88051            mov      ax, 0x5180
+  0000:1658  ba0100            mov      dx, 1
+  0000:165B  52                push     dx
+  0000:165C  50                push     ax
+  0000:165D  a14a05            mov      ax, word ptr [0x54a]
+  0000:1660  40                inc      ax
+  0000:1661  99                cdq
+  0000:1662  33c2              xor      ax, dx
+  0000:1664  2bc2              sub      ax, dx
+  0000:1666  b90200            mov      cx, 2
+  0000:1669  d3f8              sar      ax, cl
+  0000:166B  33c2              xor      ax, dx
+  0000:166D  2bc2              sub      ax, dx
+  0000:166F  8bf8              mov      di, ax
+  0000:1671  99                cdq
+  0000:1672  52                push     dx
+  0000:1673  50                push     ax
+  0000:1674  e8bd04            call     0x1b34  ; -> sub_0000_1B34  ; alrminit_modUnsigned32
+  0000:1677  b98033            mov      cx, 0x3380
+  0000:167A  bbe101            mov      bx, 0x1e1
+  0000:167D  53                push     bx
+  0000:167E  51                push     cx
+  0000:167F  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:1682  ff7702            push     word ptr [bx + 2]
+  0000:1685  ff37              push     word ptr [bx]
+  0000:1687  8946f4            mov      word ptr [bp - 0xc], ax
+  0000:168A  8956f6            mov      word ptr [bp - 0xa], dx
+  0000:168D  e8d804            call     0x1b68  ; -> sub_0000_1B68  ; alrminit_formatNumber
+  0000:1690  2b46f4            sub      ax, word ptr [bp - 0xc]
+  0000:1693  1b56f6            sbb      dx, word ptr [bp - 0xa]
+  0000:1696  8946fa            mov      word ptr [bp - 6], ax
+  0000:1699  8956fc            mov      word ptr [bp - 4], dx
+  0000:169C  eb26              jmp      0x16c4  ; -> loc_0000_16C4
+
+loc_0000_169E:
+  0000:169E  8146fa8033        add      word ptr [bp - 6], 0x3380
+  0000:16A3  8156fce101        adc      word ptr [bp - 4], 0x1e1
+  0000:16A8  a14a05            mov      ax, word ptr [0x54a]
+  0000:16AB  40                inc      ax
+  0000:16AC  99                cdq
+  0000:16AD  b90400            mov      cx, 4
+  0000:16B0  f7f9              idiv     cx
+  0000:16B2  0bd2              or       dx, dx
+  0000:16B4  750a              jne      0x16c0  ; -> loc_0000_16C0
+  0000:16B6  8146fa8051        add      word ptr [bp - 6], 0x5180
+  0000:16BB  8356fc01          adc      word ptr [bp - 4], 1
+  0000:16BF  4f                dec      di
+
+loc_0000_16C0:
+  0000:16C0  ff0e4a05          dec      word ptr [0x54a]
+
+loc_0000_16C4:
+  0000:16C4  837efc00          cmp      word ptr [bp - 4], 0
+  0000:16C8  7cd4              jl       0x169e  ; -> loc_0000_169E
+  0000:16CA  81064a05b207      add      word ptr [0x54a], 0x7b2
+  0000:16D0  a14a05            mov      ax, word ptr [0x54a]
+  0000:16D3  99                cdq
+  0000:16D4  b90400            mov      cx, 4
+  0000:16D7  f7f9              idiv     cx
+  0000:16D9  0bd2              or       dx, dx
+  0000:16DB  751f              jne      0x16fc  ; -> loc_0000_16FC
+  0000:16DD  a14a05            mov      ax, word ptr [0x54a]
+  0000:16E0  99                cdq
+  0000:16E1  b96400            mov      cx, 0x64
+  0000:16E4  f7f9              idiv     cx
+  0000:16E6  0bd2              or       dx, dx
+  0000:16E8  750d              jne      0x16f7  ; -> loc_0000_16F7
+  0000:16EA  a14a05            mov      ax, word ptr [0x54a]
+  0000:16ED  99                cdq
+  0000:16EE  b99001            mov      cx, 0x190
+  0000:16F1  f7f9              idiv     cx
+  0000:16F3  0bd2              or       dx, dx
+  0000:16F5  7505              jne      0x16fc  ; -> loc_0000_16FC
+
+loc_0000_16F7:
+  0000:16F7  bea606            mov      si, 0x6a6
+  0000:16FA  eb03              jmp      0x16ff  ; -> loc_0000_16FF
+
+loc_0000_16FC:
+  0000:16FC  bec006            mov      si, 0x6c0
+
+loc_0000_16FF:
+  0000:16FF  812e4a056c07      sub      word ptr [0x54a], 0x76c
+  0000:1705  b88051            mov      ax, 0x5180
+  0000:1708  ba0100            mov      dx, 1
+  0000:170B  52                push     dx
+  0000:170C  50                push     ax
+  0000:170D  ff76fc            push     word ptr [bp - 4]
+  0000:1710  ff76fa            push     word ptr [bp - 6]
+  0000:1713  e88203            call     0x1a98  ; -> sub_0000_1A98  ; alrminit_divSigned32
+  0000:1716  a34e05            mov      word ptr [0x54e], ax
+  0000:1719  b88051            mov      ax, 0x5180
+  0000:171C  ba0100            mov      dx, 1
+  0000:171F  52                push     dx
+  0000:1720  50                push     ax
+  0000:1721  8d46fa            lea      ax, [bp - 6]
+  0000:1724  50                push     ax
+  0000:1725  e8e204            call     0x1c0a  ; -> sub_0000_1C0A  ; alrminit_formatField
+  0000:1728  c70648050100      mov      word ptr [0x548], 1
+  0000:172E  a14e05            mov      ax, word ptr [0x54e]
+  0000:1731  394402            cmp      word ptr [si + 2], ax
+  0000:1734  7d18              jge      0x174e  ; -> loc_0000_174E
+  0000:1736  8d4402            lea      ax, [si + 2]
+  0000:1739  8946f4            mov      word ptr [bp - 0xc], ax
+
+loc_0000_173C:
+  0000:173C  8346f402          add      word ptr [bp - 0xc], 2
+  0000:1740  ff064805          inc      word ptr [0x548]
+  0000:1744  8b5ef4            mov      bx, word ptr [bp - 0xc]
+  0000:1747  a14e05            mov      ax, word ptr [0x54e]
+  0000:174A  3907              cmp      word ptr [bx], ax
+  0000:174C  7cee              jl       0x173c  ; -> loc_0000_173C
+
+loc_0000_174E:
+  0000:174E  a14e05            mov      ax, word ptr [0x54e]
+  0000:1751  ff0e4805          dec      word ptr [0x548]
+  0000:1755  8b1e4805          mov      bx, word ptr [0x548]
+  0000:1759  d1e3              shl      bx, 1
+  0000:175B  2b00              sub      ax, word ptr [bx + si]
+  0000:175D  a34605            mov      word ptr [0x546], ax
+  0000:1760  b8100e            mov      ax, 0xe10
+  0000:1763  99                cdq
+  0000:1764  52                push     dx
+  0000:1765  50                push     ax
+  0000:1766  ff76fc            push     word ptr [bp - 4]
+  0000:1769  ff76fa            push     word ptr [bp - 6]
+  0000:176C  e82903            call     0x1a98  ; -> sub_0000_1A98  ; alrminit_divSigned32
+  0000:176F  a34405            mov      word ptr [0x544], ax
+  0000:1772  b8100e            mov      ax, 0xe10
+  0000:1775  99                cdq
+  0000:1776  52                push     dx
+  0000:1777  50                push     ax
+  0000:1778  8d46fa            lea      ax, [bp - 6]
+  0000:177B  50                push     ax
+  0000:177C  e88b04            call     0x1c0a  ; -> sub_0000_1C0A  ; alrminit_formatField
+  0000:177F  b83c00            mov      ax, 0x3c
+  0000:1782  99                cdq
+  0000:1783  52                push     dx
+  0000:1784  50                push     ax
+  0000:1785  ff76fc            push     word ptr [bp - 4]
+  0000:1788  ff76fa            push     word ptr [bp - 6]
+  0000:178B  e80a03            call     0x1a98  ; -> sub_0000_1A98  ; alrminit_divSigned32
+  0000:178E  a34205            mov      word ptr [0x542], ax
+  0000:1791  b83c00            mov      ax, 0x3c
+  0000:1794  99                cdq
+  0000:1795  52                push     dx
+  0000:1796  50                push     ax
+  0000:1797  ff76fc            push     word ptr [bp - 4]
+  0000:179A  ff76fa            push     word ptr [bp - 6]
+  0000:179D  e8c803            call     0x1b68  ; -> sub_0000_1B68  ; alrminit_formatNumber
+  0000:17A0  a34005            mov      word ptr [0x540], ax
+  0000:17A3  b86d01            mov      ax, 0x16d
+  0000:17A6  f72e4a05          imul     word ptr [0x54a]
+  0000:17AA  03064e05          add      ax, word ptr [0x54e]
+  0000:17AE  03c7              add      ax, di
+  0000:17B0  2dca63            sub      ax, 0x63ca
+  0000:17B3  99                cdq
+  0000:17B4  b90700            mov      cx, 7
+  0000:17B7  f7f9              idiv     cx
+  0000:17B9  89164c05          mov      word ptr [0x54c], dx
+  0000:17BD  c70650050000      mov      word ptr [0x550], 0
+  0000:17C3  b84005            mov      ax, 0x540
+
+loc_0000_17C6:
+  0000:17C6  5e                pop      si
+  0000:17C7  5f                pop      di
+  0000:17C8  8be5              mov      sp, bp
+  0000:17CA  5d                pop      bp
+  0000:17CB  c3                ret
+
+; --- alrminit_mulUnsigned32 ---
+; Unsigned 32-bit multiply
+alrminit_mulUnsigned32:  ; (sub_0000_17CC)
+  0000:17CC  833e120800        cmp      word ptr [0x812], 0
+  0000:17D1  7507              jne      0x17da  ; -> loc_0000_17DA
+  0000:17D3  e80600            call     0x17dc  ; -> sub_0000_17DC  ; alrminit_dateToDayCount
+  0000:17D6  ff061208          inc      word ptr [0x812]
+
+loc_0000_17DA:
+  0000:17DA  c3                ret
+  0000:17DB  db 90                                              ; |.|
+
+; --- alrminit_dateToDayCount ---
+; Convert date to absolute day count
+alrminit_dateToDayCount:  ; (sub_0000_17DC)
+  0000:17DC  55                push     bp
+  0000:17DD  8bec              mov      bp, sp
+  0000:17DF  83ec04            sub      sp, 4
+  0000:17E2  57                push     di
+  0000:17E3  56                push     si
+  0000:17E4  b85205            mov      ax, 0x552
+  0000:17E7  50                push     ax
+  0000:17E8  e8aaee            call     0x695  ; -> sub_0000_0695  ; alrminit_entryPoint
+  0000:17EB  83c402            add      sp, 2
+  0000:17EE  8bf0              mov      si, ax
+  0000:17F0  0bf6              or       si, si
+  0000:17F2  7503              jne      0x17f7  ; -> loc_0000_17F7
+  0000:17F4  e98f00            jmp      0x1886  ; -> loc_0000_1886
+
+loc_0000_17F7:
+  0000:17F7  803c00            cmp      byte ptr [si], 0
+  0000:17FA  7503              jne      0x17ff  ; -> loc_0000_17FF
+  0000:17FC  e98700            jmp      0x1886  ; -> loc_0000_1886
+
+loc_0000_17FF:
+  0000:17FF  b80300            mov      ax, 3
+  0000:1802  50                push     ax
+  0000:1803  56                push     si
+  0000:1804  ff366405          push     word ptr [0x564]
+  0000:1808  e86102            call     0x1a6c  ; -> sub_0000_1A6C  ; alrminit_daysInMonth
+  0000:180B  83c406            add      sp, 6
+  0000:180E  b8100e            mov      ax, 0xe10
+  0000:1811  99                cdq
+  0000:1812  52                push     dx
+  0000:1813  50                push     ax
+  0000:1814  83c603            add      si, 3
+  0000:1817  56                push     si
+  0000:1818  e87902            call     0x1a94  ; -> sub_0000_1A94  ; alrminit_isLeapYear
+  0000:181B  83c402            add      sp, 2
+  0000:181E  52                push     dx
+  0000:181F  50                push     ax
+  0000:1820  e81103            call     0x1b34  ; -> sub_0000_1B34  ; alrminit_modUnsigned32
+  0000:1823  a35e05            mov      word ptr [0x55e], ax
+  0000:1826  89166005          mov      word ptr [0x560], dx
+  0000:182A  2bff              sub      di, di
+
+loc_0000_182C:
+  0000:182C  8bdf              mov      bx, di
+  0000:182E  03de              add      bx, si
+  0000:1830  803f00            cmp      byte ptr [bx], 0
+  0000:1833  741f              je       0x1854  ; -> loc_0000_1854
+  0000:1835  8bdf              mov      bx, di
+  0000:1837  03de              add      bx, si
+  0000:1839  8a07              mov      al, byte ptr [bx]
+  0000:183B  98                cwde
+  0000:183C  8bd8              mov      bx, ax
+  0000:183E  f687a50504        test     byte ptr [bx + 0x5a5], 4
+  0000:1843  7509              jne      0x184e  ; -> loc_0000_184E
+  0000:1845  8bdf              mov      bx, di
+  0000:1847  03de              add      bx, si
+  0000:1849  803f2d            cmp      byte ptr [bx], 0x2d
+  0000:184C  7506              jne      0x1854  ; -> loc_0000_1854
+
+loc_0000_184E:
+  0000:184E  47                inc      di
+  0000:184F  83ff03            cmp      di, 3
+  0000:1852  7cd8              jl       0x182c  ; -> loc_0000_182C
+
+loc_0000_1854:
+  0000:1854  8bdf              mov      bx, di
+  0000:1856  03de              add      bx, si
+  0000:1858  803f00            cmp      byte ptr [bx], 0
+  0000:185B  7415              je       0x1872  ; -> loc_0000_1872
+  0000:185D  b80300            mov      ax, 3
+  0000:1860  50                push     ax
+  0000:1861  8bc7              mov      ax, di
+  0000:1863  03c6              add      ax, si
+  0000:1865  50                push     ax
+  0000:1866  ff366605          push     word ptr [0x566]
+  0000:186A  e8ff01            call     0x1a6c  ; -> sub_0000_1A6C  ; alrminit_daysInMonth
+  0000:186D  83c406            add      sp, 6
+  0000:1870  eb07              jmp      0x1879  ; -> loc_0000_1879
+
+loc_0000_1872:
+  0000:1872  8b1e6605          mov      bx, word ptr [0x566]
+  0000:1876  c60700            mov      byte ptr [bx], 0
+
+loc_0000_1879:
+  0000:1879  8b1e6605          mov      bx, word ptr [0x566]
+  0000:187D  803f01            cmp      byte ptr [bx], 1
+  0000:1880  1bc0              sbb      ax, ax
+  0000:1882  40                inc      ax
+  0000:1883  a36205            mov      word ptr [0x562], ax
+
+loc_0000_1886:
+  0000:1886  5e                pop      si
+  0000:1887  5f                pop      di
+  0000:1888  8be5              mov      sp, bp
+  0000:188A  5d                pop      bp
+  0000:188B  c3                ret
+
+; --- alrminit_divUnsigned32 ---
+; Unsigned 32-bit divide
+alrminit_divUnsigned32:  ; (sub_0000_188C)
+  0000:188C  55                push     bp
+  0000:188D  8bec              mov      bp, sp
+  0000:188F  83ec06            sub      sp, 6
+  0000:1892  57                push     di
+  0000:1893  56                push     si
+  0000:1894  8b7604            mov      si, word ptr [bp + 4]
+  0000:1897  837c0803          cmp      word ptr [si + 8], 3
+  0000:189B  7d03              jge      0x18a0  ; -> loc_0000_18A0
+  0000:189D  e9ae00            jmp      0x194e  ; -> loc_0000_194E
+
+loc_0000_18A0:
+  0000:18A0  837c0809          cmp      word ptr [si + 8], 9
+  0000:18A4  7e03              jle      0x18a9  ; -> loc_0000_18A9
+  0000:18A6  e9a500            jmp      0x194e  ; -> loc_0000_194E
+
+loc_0000_18A9:
+  0000:18A9  837c0803          cmp      word ptr [si + 8], 3
+  0000:18AD  7e09              jle      0x18b8  ; -> loc_0000_18B8
+  0000:18AF  837c0809          cmp      word ptr [si + 8], 9
+  0000:18B3  7d03              jge      0x18b8  ; -> loc_0000_18B8
+  0000:18B5  e98000            jmp      0x1938  ; -> loc_0000_1938
+
+loc_0000_18B8:
+  0000:18B8  8b7c0a            mov      di, word ptr [si + 0xa]
+  0000:18BB  81c76c07          add      di, 0x76c
+  0000:18BF  81ffc207          cmp      di, 0x7c2
+  0000:18C3  7e15              jle      0x18da  ; -> loc_0000_18DA
+  0000:18C5  837c0803          cmp      word ptr [si + 8], 3
+  0000:18C9  750f              jne      0x18da  ; -> loc_0000_18DA
+  0000:18CB  8b5c08            mov      bx, word ptr [si + 8]
+  0000:18CE  d1e3              shl      bx, 1
+  0000:18D0  8b87c006          mov      ax, word ptr [bx + 0x6c0]
+  0000:18D4  050700            add      ax, 7
+  0000:18D7  eb0a              jmp      0x18e3  ; -> loc_0000_18E3
+  0000:18D9  db 90                                              ; |.|
+
+loc_0000_18DA:
+  0000:18DA  8b5c08            mov      bx, word ptr [si + 8]
+  0000:18DD  d1e3              shl      bx, 1
+  0000:18DF  8b87c206          mov      ax, word ptr [bx + 0x6c2]
+
+loc_0000_18E3:
+  0000:18E3  8946fa            mov      word ptr [bp - 6], ax
+  0000:18E6  f7c70300          test     di, 3
+  0000:18EA  7503              jne      0x18ef  ; -> loc_0000_18EF
+  0000:18EC  ff46fa            inc      word ptr [bp - 6]
+
+loc_0000_18EF:
+  0000:18EF  8b7c0a            mov      di, word ptr [si + 0xa]
+  0000:18F2  83ef46            sub      di, 0x46
+  0000:18F5  b86d01            mov      ax, 0x16d
+  0000:18F8  f7ef              imul     di
+  0000:18FA  8bc8              mov      cx, ax
+  0000:18FC  8d4501            lea      ax, [di + 1]
+  0000:18FF  8bd9              mov      bx, cx
+  0000:1901  99                cdq
+  0000:1902  33c2              xor      ax, dx
+  0000:1904  2bc2              sub      ax, dx
+  0000:1906  b90200            mov      cx, 2
+  0000:1909  d3f8              sar      ax, cl
+  0000:190B  33c2              xor      ax, dx
+  0000:190D  2bc2              sub      ax, dx
+  0000:190F  0346fa            add      ax, word ptr [bp - 6]
+  0000:1912  03c3              add      ax, bx
+  0000:1914  050400            add      ax, 4
+  0000:1917  99                cdq
+  0000:1918  b90700            mov      cx, 7
+  0000:191B  f7f9              idiv     cx
+  0000:191D  8b46fa            mov      ax, word ptr [bp - 6]
+  0000:1920  2bc2              sub      ax, dx
+  0000:1922  8946fe            mov      word ptr [bp - 2], ax
+  0000:1925  837c0803          cmp      word ptr [si + 8], 3
+  0000:1929  7513              jne      0x193e  ; -> loc_0000_193E
+  0000:192B  39440e            cmp      word ptr [si + 0xe], ax
+  0000:192E  7f08              jg       0x1938  ; -> loc_0000_1938
+  0000:1930  751c              jne      0x194e  ; -> loc_0000_194E
+  0000:1932  837c0402          cmp      word ptr [si + 4], 2
+  0000:1936  7c16              jl       0x194e  ; -> loc_0000_194E
+
+loc_0000_1938:
+  0000:1938  b80100            mov      ax, 1
+  0000:193B  eb13              jmp      0x1950  ; -> loc_0000_1950
+  0000:193D  db 90                                              ; |.|
+
+loc_0000_193E:
+  0000:193E  8b46fe            mov      ax, word ptr [bp - 2]
+  0000:1941  39440e            cmp      word ptr [si + 0xe], ax
+  0000:1944  7cf2              jl       0x1938  ; -> loc_0000_1938
+  0000:1946  7506              jne      0x194e  ; -> loc_0000_194E
+  0000:1948  837c0401          cmp      word ptr [si + 4], 1
+  0000:194C  7cea              jl       0x1938  ; -> loc_0000_1938
+
+loc_0000_194E:
+  0000:194E  2bc0              sub      ax, ax
+
+loc_0000_1950:
+  0000:1950  5e                pop      si
+  0000:1951  5f                pop      di
+  0000:1952  8be5              mov      sp, bp
+  0000:1954  5d                pop      bp
+  0000:1955  c3                ret
+
+; --- alrminit_ticksToTime ---
+; Convert tick count back to time components
+alrminit_ticksToTime:  ; (sub_0000_1956)
+  0000:1956  55                push     bp
+  0000:1957  8bec              mov      bp, sp
+  0000:1959  83ec20            sub      sp, 0x20
+  0000:195C  57                push     di
+  0000:195D  56                push     si
+  0000:195E  8b7604            mov      si, word ptr [bp + 4]
+  0000:1961  b88051            mov      ax, 0x5180
+  0000:1964  ba0100            mov      dx, 1
+  0000:1967  52                push     dx
+  0000:1968  50                push     ax
+  0000:1969  8d4403            lea      ax, [si + 3]
+  0000:196C  99                cdq
+  0000:196D  33c2              xor      ax, dx
+  0000:196F  2bc2              sub      ax, dx
+  0000:1971  b90200            mov      cx, 2
+  0000:1974  d3f8              sar      ax, cl
+  0000:1976  33c2              xor      ax, dx
+  0000:1978  2bc2              sub      ax, dx
+  0000:197A  99                cdq
+  0000:197B  52                push     dx
+  0000:197C  50                push     ax
+  0000:197D  e8b401            call     0x1b34  ; -> sub_0000_1B34  ; alrminit_modUnsigned32
+  0000:1980  8946ea            mov      word ptr [bp - 0x16], ax
+  0000:1983  8956ec            mov      word ptr [bp - 0x14], dx
+  0000:1986  8b5e06            mov      bx, word ptr [bp + 6]
+  0000:1989  d1e3              shl      bx, 1
+  0000:198B  8bbfbe06          mov      di, word ptr [bx + 0x6be]
+  0000:198F  8bc6              mov      ax, si
+  0000:1991  99                cdq
+  0000:1992  b90400            mov      cx, 4
+  0000:1995  f7f9              idiv     cx
+  0000:1997  0bd2              or       dx, dx
+  0000:1999  7507              jne      0x19a2  ; -> loc_0000_19A2
+  0000:199B  837e0602          cmp      word ptr [bp + 6], 2
+  0000:199F  7e01              jle      0x19a2  ; -> loc_0000_19A2
+  0000:19A1  47                inc      di
+
+loc_0000_19A2:
+  0000:19A2  b83c00            mov      ax, 0x3c
+  0000:19A5  99                cdq
+  0000:19A6  52                push     dx
+  0000:19A7  50                push     ax
+  0000:19A8  8b460c            mov      ax, word ptr [bp + 0xc]
+  0000:19AB  99                cdq
+  0000:19AC  52                push     dx
+  0000:19AD  50                push     ax
+  0000:19AE  e88301            call     0x1b34  ; -> sub_0000_1B34  ; alrminit_modUnsigned32
+  0000:19B1  b9100e            mov      cx, 0xe10
+  0000:19B4  2bdb              sub      bx, bx
+  0000:19B6  53                push     bx
+  0000:19B7  51                push     cx
+  0000:19B8  8bc8              mov      cx, ax
+  0000:19BA  8b460a            mov      ax, word ptr [bp + 0xa]
+  0000:19BD  8bda              mov      bx, dx
+  0000:19BF  99                cdq
+  0000:19C0  52                push     dx
+  0000:19C1  50                push     ax
+  0000:19C2  894ee4            mov      word ptr [bp - 0x1c], cx
+  0000:19C5  895ee6            mov      word ptr [bp - 0x1a], bx
+  0000:19C8  e86901            call     0x1b34  ; -> sub_0000_1B34  ; alrminit_modUnsigned32
+  0000:19CB  b98051            mov      cx, 0x5180
+  0000:19CE  bb0100            mov      bx, 1
+  0000:19D1  53                push     bx
+  0000:19D2  51                push     cx
+  0000:19D3  8bc8              mov      cx, ax
+  0000:19D5  b86d01            mov      ax, 0x16d
+  0000:19D8  8bda              mov      bx, dx
+  0000:19DA  f7ee              imul     si
+  0000:19DC  8bd0              mov      dx, ax
+  0000:19DE  8b4608            mov      ax, word ptr [bp + 8]
+  0000:19E1  03c2              add      ax, dx
+  0000:19E3  03c7              add      ax, di
+  0000:19E5  99                cdq
+  0000:19E6  52                push     dx
+  0000:19E7  50                push     ax
+  0000:19E8  894ee0            mov      word ptr [bp - 0x20], cx
+  0000:19EB  895ee2            mov      word ptr [bp - 0x1e], bx
+  0000:19EE  e84301            call     0x1b34  ; -> sub_0000_1B34  ; alrminit_modUnsigned32
+  0000:19F1  0346e0            add      ax, word ptr [bp - 0x20]
+  0000:19F4  1356e2            adc      dx, word ptr [bp - 0x1e]
+  0000:19F7  0346e4            add      ax, word ptr [bp - 0x1c]
+  0000:19FA  1356e6            adc      dx, word ptr [bp - 0x1a]
+  0000:19FD  8bc8              mov      cx, ax
+  0000:19FF  8b460e            mov      ax, word ptr [bp + 0xe]
+  0000:1A02  8bda              mov      bx, dx
+  0000:1A04  99                cdq
+  0000:1A05  03c8              add      cx, ax
+  0000:1A07  13da              adc      bx, dx
+  0000:1A09  81c100a6          add      cx, 0xa600
+  0000:1A0D  81d3ce12          adc      bx, 0x12ce
+  0000:1A11  014eea            add      word ptr [bp - 0x16], cx
+  0000:1A14  115eec            adc      word ptr [bp - 0x14], bx
+  0000:1A17  8b4608            mov      ax, word ptr [bp + 8]
+  0000:1A1A  03c7              add      ax, di
+  0000:1A1C  8946fc            mov      word ptr [bp - 4], ax
+  0000:1A1F  e8aafd            call     0x17cc  ; -> sub_0000_17CC  ; alrminit_mulUnsigned32
+  0000:1A22  a15e05            mov      ax, word ptr [0x55e]
+  0000:1A25  8b166005          mov      dx, word ptr [0x560]
+  0000:1A29  0146ea            add      word ptr [bp - 0x16], ax
+  0000:1A2C  1156ec            adc      word ptr [bp - 0x14], dx
+  0000:1A2F  8d4450            lea      ax, [si + 0x50]
+  0000:1A32  8946f8            mov      word ptr [bp - 8], ax
+  0000:1A35  8b4606            mov      ax, word ptr [bp + 6]
+  0000:1A38  48                dec      ax
+  0000:1A39  8946f6            mov      word ptr [bp - 0xa], ax
+  0000:1A3C  8b460a            mov      ax, word ptr [bp + 0xa]
+  0000:1A3F  8946f2            mov      word ptr [bp - 0xe], ax
+  0000:1A42  833e620500        cmp      word ptr [0x562], 0
+  0000:1A47  7417              je       0x1a60  ; -> loc_0000_1A60
+  0000:1A49  8d46ee            lea      ax, [bp - 0x12]
+  0000:1A4C  50                push     ax
+  0000:1A4D  e83cfe            call     0x188c  ; -> sub_0000_188C  ; alrminit_divUnsigned32
+  0000:1A50  83c402            add      sp, 2
+  0000:1A53  0bc0              or       ax, ax
+  0000:1A55  7409              je       0x1a60  ; -> loc_0000_1A60
+  0000:1A57  816eea100e        sub      word ptr [bp - 0x16], 0xe10
+  0000:1A5C  835eec00          sbb      word ptr [bp - 0x14], 0
+
+loc_0000_1A60:
+  0000:1A60  8b46ea            mov      ax, word ptr [bp - 0x16]
+  0000:1A63  8b56ec            mov      dx, word ptr [bp - 0x14]
+  0000:1A66  5e                pop      si
+  0000:1A67  5f                pop      di
+  0000:1A68  8be5              mov      sp, bp
+  0000:1A6A  5d                pop      bp
+  0000:1A6B  c3                ret
+
+; --- alrminit_daysInMonth ---
+; Get days in month (leap year aware)
+alrminit_daysInMonth:  ; (sub_0000_1A6C)
+  0000:1A6C  55                push     bp
+  0000:1A6D  8bec              mov      bp, sp
+  0000:1A6F  57                push     di
+  0000:1A70  56                push     si
+  0000:1A71  1e                push     ds
+  0000:1A72  07                pop      es
+  0000:1A73  8b7e04            mov      di, word ptr [bp + 4]
+  0000:1A76  8b7606            mov      si, word ptr [bp + 6]
+  0000:1A79  8bdf              mov      bx, di
+  0000:1A7B  8b4e08            mov      cx, word ptr [bp + 8]
+  0000:1A7E  e30c              jcxz     0x1a8c  ; -> loc_0000_1A8C
+  0000:1A80  ac                lodsb    al, byte ptr [si]
+  0000:1A81  0ac0              or       al, al
+  0000:1A83  7403              je       0x1a88  ; -> loc_0000_1A88
+  0000:1A85  aa                stosb    byte ptr es:[di], al
+  0000:1A86  e2f8              loop     0x1a80
+
+loc_0000_1A88:
+  0000:1A88  32c0              xor      al, al
+  0000:1A8A  f3aa              rep stosb byte ptr es:[di], al
+
+loc_0000_1A8C:
+  0000:1A8C  8bc3              mov      ax, bx
+  0000:1A8E  5e                pop      si
+  0000:1A8F  5f                pop      di
+  0000:1A90  8be5              mov      sp, bp
+  0000:1A92  5d                pop      bp
+  0000:1A93  c3                ret
+
+; --- alrminit_isLeapYear ---
+; Check if year is leap year
+alrminit_isLeapYear:  ; (sub_0000_1A94)
+  0000:1A94  e99501            jmp      0x1c2c  ; -> loc_0000_1C2C
+  0000:1A97  db 00                                              ; |.|
+
+; --- alrminit_divSigned32 ---
+; Signed 32-bit divide (called from 4 locations)
+alrminit_divSigned32:  ; (sub_0000_1A98)
+  0000:1A98  55                push     bp
+  0000:1A99  8bec              mov      bp, sp
+  0000:1A9B  57                push     di
+  0000:1A9C  56                push     si
+  0000:1A9D  53                push     bx
+  0000:1A9E  33ff              xor      di, di
+  0000:1AA0  8b4606            mov      ax, word ptr [bp + 6]
+  0000:1AA3  0bc0              or       ax, ax
+  0000:1AA5  7d11              jge      0x1ab8  ; -> loc_0000_1AB8
+  0000:1AA7  47                inc      di
+  0000:1AA8  8b5604            mov      dx, word ptr [bp + 4]
+  0000:1AAB  f7d8              neg      ax
+  0000:1AAD  f7da              neg      dx
+  0000:1AAF  1d0000            sbb      ax, 0
+  0000:1AB2  894606            mov      word ptr [bp + 6], ax
+  0000:1AB5  895604            mov      word ptr [bp + 4], dx
+
+loc_0000_1AB8:
+  0000:1AB8  8b460a            mov      ax, word ptr [bp + 0xa]
+  0000:1ABB  0bc0              or       ax, ax
+  0000:1ABD  7d11              jge      0x1ad0  ; -> loc_0000_1AD0
+  0000:1ABF  47                inc      di
+  0000:1AC0  8b5608            mov      dx, word ptr [bp + 8]
+  0000:1AC3  f7d8              neg      ax
+  0000:1AC5  f7da              neg      dx
+  0000:1AC7  1d0000            sbb      ax, 0
+  0000:1ACA  89460a            mov      word ptr [bp + 0xa], ax
+  0000:1ACD  895608            mov      word ptr [bp + 8], dx
+
+loc_0000_1AD0:
+  0000:1AD0  0bc0              or       ax, ax
+  0000:1AD2  7515              jne      0x1ae9  ; -> loc_0000_1AE9
+  0000:1AD4  8b4e08            mov      cx, word ptr [bp + 8]
+  0000:1AD7  8b4606            mov      ax, word ptr [bp + 6]
+  0000:1ADA  33d2              xor      dx, dx
+  0000:1ADC  f7f1              div      cx
+  0000:1ADE  8bd8              mov      bx, ax
+  0000:1AE0  8b4604            mov      ax, word ptr [bp + 4]
+  0000:1AE3  f7f1              div      cx
+  0000:1AE5  8bd3              mov      dx, bx
+  0000:1AE7  eb38              jmp      0x1b21  ; -> loc_0000_1B21
+
+loc_0000_1AE9:
+  0000:1AE9  8bd8              mov      bx, ax
+  0000:1AEB  8b4e08            mov      cx, word ptr [bp + 8]
+  0000:1AEE  8b5606            mov      dx, word ptr [bp + 6]
+  0000:1AF1  8b4604            mov      ax, word ptr [bp + 4]
+
+loc_0000_1AF4:
+  0000:1AF4  d1eb              shr      bx, 1
+  0000:1AF6  d1d9              rcr      cx, 1
+  0000:1AF8  d1ea              shr      dx, 1
+  0000:1AFA  d1d8              rcr      ax, 1
+  0000:1AFC  0bdb              or       bx, bx
+  0000:1AFE  75f4              jne      0x1af4  ; -> loc_0000_1AF4
+  0000:1B00  f7f1              div      cx
+  0000:1B02  8bf0              mov      si, ax
+  0000:1B04  f7660a            mul      word ptr [bp + 0xa]
+  0000:1B07  91                xchg     cx, ax
+  0000:1B08  8b4608            mov      ax, word ptr [bp + 8]
+  0000:1B0B  f7e6              mul      si
+  0000:1B0D  03d1              add      dx, cx
+  0000:1B0F  720c              jb       0x1b1d  ; -> loc_0000_1B1D
+  0000:1B11  3b5606            cmp      dx, word ptr [bp + 6]
+  0000:1B14  7707              ja       0x1b1d  ; -> loc_0000_1B1D
+  0000:1B16  7206              jb       0x1b1e  ; -> loc_0000_1B1E
+  0000:1B18  3b4604            cmp      ax, word ptr [bp + 4]
+  0000:1B1B  7601              jbe      0x1b1e  ; -> loc_0000_1B1E
+
+loc_0000_1B1D:
+  0000:1B1D  4e                dec      si
+
+loc_0000_1B1E:
+  0000:1B1E  33d2              xor      dx, dx
+  0000:1B20  96                xchg     si, ax
+
+loc_0000_1B21:
+  0000:1B21  4f                dec      di
+  0000:1B22  7507              jne      0x1b2b  ; -> loc_0000_1B2B
+  0000:1B24  f7da              neg      dx
+  0000:1B26  f7d8              neg      ax
+  0000:1B28  83da00            sbb      dx, 0
+
+loc_0000_1B2B:
+  0000:1B2B  5b                pop      bx
+  0000:1B2C  5e                pop      si
+  0000:1B2D  5f                pop      di
+  0000:1B2E  8be5              mov      sp, bp
+  0000:1B30  5d                pop      bp
+  0000:1B31  c20800            ret      8
+
+; --- alrminit_modUnsigned32 ---
+; Unsigned 32-bit modulo
+alrminit_modUnsigned32:  ; (sub_0000_1B34)
+  0000:1B34  55                push     bp
+  0000:1B35  8bec              mov      bp, sp
+  0000:1B37  8b4606            mov      ax, word ptr [bp + 6]
+  0000:1B3A  8b5e0a            mov      bx, word ptr [bp + 0xa]
+  0000:1B3D  0bd8              or       bx, ax
+  0000:1B3F  8b5e08            mov      bx, word ptr [bp + 8]
+  0000:1B42  750b              jne      0x1b4f  ; -> loc_0000_1B4F
+  0000:1B44  8b4604            mov      ax, word ptr [bp + 4]
+  0000:1B47  f7e3              mul      bx
+  0000:1B49  8be5              mov      sp, bp
+  0000:1B4B  5d                pop      bp
+  0000:1B4C  c20800            ret      8
+
+loc_0000_1B4F:
+  0000:1B4F  f7e3              mul      bx
+  0000:1B51  8bc8              mov      cx, ax
+  0000:1B53  8b4604            mov      ax, word ptr [bp + 4]
+  0000:1B56  f7660a            mul      word ptr [bp + 0xa]
+  0000:1B59  03c8              add      cx, ax
+  0000:1B5B  8b4604            mov      ax, word ptr [bp + 4]
+  0000:1B5E  f7e3              mul      bx
+  0000:1B60  03d1              add      dx, cx
+  0000:1B62  8be5              mov      sp, bp
+  0000:1B64  5d                pop      bp
+  0000:1B65  c20800            ret      8
+
+; --- alrminit_formatNumber ---
+; Format number as decimal string
+alrminit_formatNumber:  ; (sub_0000_1B68)
+  0000:1B68  55                push     bp
+  0000:1B69  8bec              mov      bp, sp
+  0000:1B6B  53                push     bx
+  0000:1B6C  57                push     di
+  0000:1B6D  33ff              xor      di, di
+  0000:1B6F  8b4606            mov      ax, word ptr [bp + 6]
+  0000:1B72  0bc0              or       ax, ax
+  0000:1B74  7d11              jge      0x1b87  ; -> loc_0000_1B87
+  0000:1B76  47                inc      di
+  0000:1B77  8b5604            mov      dx, word ptr [bp + 4]
+  0000:1B7A  f7d8              neg      ax
+  0000:1B7C  f7da              neg      dx
+  0000:1B7E  1d0000            sbb      ax, 0
+  0000:1B81  894606            mov      word ptr [bp + 6], ax
+  0000:1B84  895604            mov      word ptr [bp + 4], dx
+
+loc_0000_1B87:
+  0000:1B87  8b460a            mov      ax, word ptr [bp + 0xa]
+  0000:1B8A  0bc0              or       ax, ax
+  0000:1B8C  7d10              jge      0x1b9e  ; -> loc_0000_1B9E
+  0000:1B8E  8b5608            mov      dx, word ptr [bp + 8]
+  0000:1B91  f7d8              neg      ax
+  0000:1B93  f7da              neg      dx
+  0000:1B95  1d0000            sbb      ax, 0
+  0000:1B98  89460a            mov      word ptr [bp + 0xa], ax
+  0000:1B9B  895608            mov      word ptr [bp + 8], dx
+
+loc_0000_1B9E:
+  0000:1B9E  0bc0              or       ax, ax
+  0000:1BA0  7518              jne      0x1bba  ; -> loc_0000_1BBA
+  0000:1BA2  8b4e08            mov      cx, word ptr [bp + 8]
+  0000:1BA5  8b4606            mov      ax, word ptr [bp + 6]
+  0000:1BA8  33d2              xor      dx, dx
+  0000:1BAA  f7f1              div      cx
+  0000:1BAC  8b4604            mov      ax, word ptr [bp + 4]
+  0000:1BAF  f7f1              div      cx
+  0000:1BB1  8bc2              mov      ax, dx
+  0000:1BB3  33d2              xor      dx, dx
+  0000:1BB5  4f                dec      di
+  0000:1BB6  7943              jns      0x1bfb  ; -> loc_0000_1BFB
+  0000:1BB8  eb48              jmp      0x1c02  ; -> loc_0000_1C02
+
+loc_0000_1BBA:
+  0000:1BBA  8bd8              mov      bx, ax
+  0000:1BBC  8b4e08            mov      cx, word ptr [bp + 8]
+  0000:1BBF  8b5606            mov      dx, word ptr [bp + 6]
+  0000:1BC2  8b4604            mov      ax, word ptr [bp + 4]
+
+loc_0000_1BC5:
+  0000:1BC5  d1eb              shr      bx, 1
+  0000:1BC7  d1d9              rcr      cx, 1
+  0000:1BC9  d1ea              shr      dx, 1
+  0000:1BCB  d1d8              rcr      ax, 1
+  0000:1BCD  0bdb              or       bx, bx
+  0000:1BCF  75f4              jne      0x1bc5  ; -> loc_0000_1BC5
+  0000:1BD1  f7f1              div      cx
+  0000:1BD3  8bc8              mov      cx, ax
+  0000:1BD5  f7660a            mul      word ptr [bp + 0xa]
+  0000:1BD8  91                xchg     cx, ax
+  0000:1BD9  f76608            mul      word ptr [bp + 8]
+  0000:1BDC  03d1              add      dx, cx
+  0000:1BDE  720c              jb       0x1bec  ; -> loc_0000_1BEC
+  0000:1BE0  3b5606            cmp      dx, word ptr [bp + 6]
+  0000:1BE3  7707              ja       0x1bec  ; -> loc_0000_1BEC
+  0000:1BE5  720b              jb       0x1bf2  ; -> loc_0000_1BF2
+  0000:1BE7  3b4604            cmp      ax, word ptr [bp + 4]
+  0000:1BEA  7606              jbe      0x1bf2  ; -> loc_0000_1BF2
+
+loc_0000_1BEC:
+  0000:1BEC  2b4608            sub      ax, word ptr [bp + 8]
+  0000:1BEF  1b560a            sbb      dx, word ptr [bp + 0xa]
+
+loc_0000_1BF2:
+  0000:1BF2  2b4604            sub      ax, word ptr [bp + 4]
+  0000:1BF5  1b5606            sbb      dx, word ptr [bp + 6]
+  0000:1BF8  4f                dec      di
+  0000:1BF9  7907              jns      0x1c02  ; -> loc_0000_1C02
+
+loc_0000_1BFB:
+  0000:1BFB  f7da              neg      dx
+  0000:1BFD  f7d8              neg      ax
+  0000:1BFF  83da00            sbb      dx, 0
+
+loc_0000_1C02:
+  0000:1C02  5f                pop      di
+  0000:1C03  5b                pop      bx
+  0000:1C04  8be5              mov      sp, bp
+  0000:1C06  5d                pop      bp
+  0000:1C07  c20800            ret      8
+
+; --- alrminit_formatField ---
+; Format date/time field with padding
+alrminit_formatField:  ; (sub_0000_1C0A)
+  0000:1C0A  55                push     bp
+  0000:1C0B  8bec              mov      bp, sp
+  0000:1C0D  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:1C10  ff7608            push     word ptr [bp + 8]
+  0000:1C13  ff7606            push     word ptr [bp + 6]
+  0000:1C16  ff7702            push     word ptr [bx + 2]
+  0000:1C19  ff37              push     word ptr [bx]
+  0000:1C1B  e84aff            call     0x1b68  ; -> sub_0000_1B68  ; alrminit_formatNumber
+  0000:1C1E  8b5e04            mov      bx, word ptr [bp + 4]
+  0000:1C21  895702            mov      word ptr [bx + 2], dx
+  0000:1C24  8907              mov      word ptr [bx], ax
+  0000:1C26  8be5              mov      sp, bp
+  0000:1C28  5d                pop      bp
+  0000:1C29  c20600            ret      6
+
+loc_0000_1C2C:
+  0000:1C2C  55                push     bp
+  0000:1C2D  8bec              mov      bp, sp
+  0000:1C2F  57                push     di
+  0000:1C30  56                push     si
+  0000:1C31  8b7604            mov      si, word ptr [bp + 4]
+  0000:1C34  33c0              xor      ax, ax
+  0000:1C36  99                cdq
+  0000:1C37  33db              xor      bx, bx
+
+loc_0000_1C39:
+  0000:1C39  ac                lodsb    al, byte ptr [si]
+  0000:1C3A  3c20              cmp      al, 0x20
+  0000:1C3C  74fb              je       0x1c39  ; -> loc_0000_1C39
+  0000:1C3E  3c09              cmp      al, 9
+  0000:1C40  74f7              je       0x1c39  ; -> loc_0000_1C39
+  0000:1C42  50                push     ax
+  0000:1C43  3c2d              cmp      al, 0x2d
+  0000:1C45  7404              je       0x1c4b  ; -> loc_0000_1C4B
+  0000:1C47  3c2b              cmp      al, 0x2b
+  0000:1C49  7501              jne      0x1c4c  ; -> loc_0000_1C4C
+
+loc_0000_1C4B:
+  0000:1C4B  ac                lodsb    al, byte ptr [si]
+
+loc_0000_1C4C:
+  0000:1C4C  3c39              cmp      al, 0x39
+  0000:1C4E  771f              ja       0x1c6f  ; -> loc_0000_1C6F
+  0000:1C50  2c30              sub      al, 0x30
+  0000:1C52  721b              jb       0x1c6f  ; -> loc_0000_1C6F
+  0000:1C54  d1e3              shl      bx, 1
+  0000:1C56  d1d2              rcl      dx, 1
+  0000:1C58  8bcb              mov      cx, bx
+  0000:1C5A  8bfa              mov      di, dx
+  0000:1C5C  d1e3              shl      bx, 1
+  0000:1C5E  d1d2              rcl      dx, 1
+  0000:1C60  d1e3              shl      bx, 1
+  0000:1C62  d1d2              rcl      dx, 1
+  0000:1C64  03d9              add      bx, cx
+  0000:1C66  13d7              adc      dx, di
+  0000:1C68  03d8              add      bx, ax
+  0000:1C6A  83d200            adc      dx, 0
+  0000:1C6D  ebdc              jmp      0x1c4b  ; -> loc_0000_1C4B
+
+loc_0000_1C6F:
+  0000:1C6F  58                pop      ax
+  0000:1C70  3c2d              cmp      al, 0x2d
+  0000:1C72  93                xchg     bx, ax
+  0000:1C73  7507              jne      0x1c7c  ; -> loc_0000_1C7C
+  0000:1C75  f7d8              neg      ax
+  0000:1C77  83d200            adc      dx, 0
+  0000:1C7A  f7da              neg      dx
+
+loc_0000_1C7C:
+  0000:1C7C  5e                pop      si
+  0000:1C7D  5f                pop      di
+  0000:1C7E  5d                pop      bp
+  0000:1C7F  c3                ret
+
+; ------------------------------------------------------------------------
+; SEGMENT seg_01C8  (192 bytes, file 0x1E80-0x1F40)
+; ------------------------------------------------------------------------
+seg_01C8:
+
+
+; --- alrminit_entryPoint ---
+; MSC 5.x CRT startup / DM89 entry point
+alrminit_entryPoint:  ; (entry_point)
+  01C8:0000  b430              mov      ah, 0x30
+  01C8:0002  cd21              int      0x21  ; INT 21h/30h: Get DOS version
+  01C8:0004  3c02              cmp      al, 2
+  01C8:0006  7302              jae      0xa  ; -> loc_01C8_000A
+  01C8:0008  cd20              int      0x20  ; INT 20h, AH=30h
+
+loc_01C8_000A:
+  01C8:000A  bfd401            mov      di, 0x1d4  ; RELOC->seg_01D4
+  01C8:000D  8b360200          mov      si, word ptr [2]
+  01C8:0011  2bf7              sub      si, di
+  01C8:0013  81fe0010          cmp      si, 0x1000
+  01C8:0017  7203              jb       0x1c  ; -> loc_01C8_001C
+  01C8:0019  be0010            mov      si, 0x1000
+
+loc_01C8_001C:
+  01C8:001C  fa                cli
+  01C8:001D  8ed7              mov      ss, di
+  01C8:001F  81c48e14          add      sp, 0x148e
+  01C8:0023  fb                sti
+  01C8:0024  7314              jae      0x3a  ; -> loc_01C8_003A
+  01C8:0026  16                push     ss
+  01C8:0027  1f                pop      ds
+  01C8:0028  9a57080000        lcall    0, 0x857  ; -> entry_point | RELOC->seg_0000
+  01C8:002D  33c0              xor      ax, ax
+  01C8:002F  50                push     ax
+  01C8:0030  9a5b080000        lcall    0, 0x85b  ; -> entry_point | RELOC->seg_0000
+  01C8:0035  b8ff4c            mov      ax, 0x4cff
+  01C8:0038  cd21              int      0x21  ; INT 21h/4Ch: Exit with return code
+
+loc_01C8_003A:
+  01C8:003A  83e4fe            and      sp, 0xfffe
+  01C8:003D  368926b402        mov      word ptr ss:[0x2b4], sp
+  01C8:0042  368926b002        mov      word ptr ss:[0x2b0], sp
+  01C8:0047  8bc6              mov      ax, si
+  01C8:0049  b104              mov      cl, 4
+  01C8:004B  d3e0              shl      ax, cl
+  01C8:004D  48                dec      ax
+  01C8:004E  36a3ae02          mov      word ptr ss:[0x2ae], ax
+  01C8:0052  03f7              add      si, di
+  01C8:0054  89360200          mov      word ptr [2], si
+  01C8:0058  8cc3              mov      bx, es
+  01C8:005A  2bde              sub      bx, si
+  01C8:005C  f7db              neg      bx
+  01C8:005E  b44a              mov      ah, 0x4a
+  01C8:0060  cd21              int      0x21  ; INT 21h/4Ah: Resize memory block
+  01C8:0062  368c1e2503        mov      word ptr ss:[0x325], ds
+  01C8:0067  16                push     ss
+  01C8:0068  07                pop      es
+  01C8:0069  fc                cld
+  01C8:006A  bfc207            mov      di, 0x7c2
+  01C8:006D  b99014            mov      cx, 0x1490
+  01C8:0070  2bcf              sub      cx, di
+  01C8:0072  33c0              xor      ax, ax
+  01C8:0074  f3aa              rep stosb byte ptr es:[di], al
+  01C8:0076  16                push     ss
+  01C8:0077  1f                pop      ds
+  01C8:0078  06                push     es
+  01C8:0079  0e                push     cs
+  01C8:007A  07                pop      es
+  01C8:007B  9a53080000        lcall    0, 0x853  ; -> entry_point | RELOC->seg_0000
+  01C8:0080  07                pop      es
+  01C8:0081  16                push     ss
+  01C8:0082  1f                pop      ds
+  01C8:0083  9a38080000        lcall    0, 0x838  ; -> entry_point | RELOC->seg_0000
+  01C8:0088  b8d401            mov      ax, 0x1d4  ; RELOC->seg_01D4
+  01C8:008B  8ed8              mov      ds, ax
+  01C8:008D  b80300            mov      ax, 3
+  01C8:0090  36c706b2023609    mov      word ptr ss:[0x2b2], 0x936
+  01C8:0097  9a5f080000        lcall    0, 0x85f  ; -> entry_point | RELOC->seg_0000
+  01C8:009C  55                push     bp
+  01C8:009D  8bec              mov      bp, sp
+  01C8:009F  1e                push     ds
+  01C8:00A0  b8d401            mov      ax, 0x1d4  ; RELOC->seg_01D4
+  01C8:00A3  8ed8              mov      ds, ax
+  01C8:00A5  9ac70c0000        lcall    0, 0xcc7  ; -> entry_point | RELOC->seg_0000
+  01C8:00AA  1f                pop      ds
+  01C8:00AB  5d                pop      bp
+  01C8:00AC  cb                retf
+  01C8:00AD  55                push     bp
+  01C8:00AE  8bec              mov      bp, sp
+  01C8:00B0  1e                push     ds
+  01C8:00B1  b8d401            mov      ax, 0x1d4  ; RELOC->seg_01D4
+  01C8:00B4  8ed8              mov      ds, ax
+  01C8:00B6  9ae50d0000        lcall    0, 0xde5  ; -> entry_point | RELOC->seg_0000
+  01C8:00BB  1f                pop      ds
+  01C8:00BC  5d                pop      bp
+  01C8:00BD  cb                retf
+  01C8:00BE  db 00 00                                           ; |..|
+
+; ------------------------------------------------------------------------
+; SEGMENT seg_01D4  (64 bytes, file 0x1F40-0x1F80)
+; ------------------------------------------------------------------------
+seg_01D4:
+
+  01D4:0000  db 00 00 00 00 00 00 00 00                         ; |........|
+  01D4:0008  db 4D 53 20 52 75 6E 2D 54 69 6D 65 20 4C 69 62 72 ; "MS Run-Time Library - Copyright (c) 1988, Microsoft Corp"
+  01D4:0018  db 61 72 79 20 2D 20 43 6F 70 79 72 69 67 68 74 20
+  01D4:0028  db 28 63 29 20 31 39 38 38 2C 20 4D 69 63 72 6F 73
+  01D4:0038  db 6F 66 74 20 43 6F 72 70
+
+; ------------------------------------------------------------------------
+; SEGMENT seg_01D8  (1921 bytes, file 0x1F80-0x2701)
+; ------------------------------------------------------------------------
+seg_01D8:
+
+  01D8:0000  db 11 00 00 00 00 00 00 00 00 00 00 00             ; |............|
+  01D8:000C  db 44 61 74 65                                     ; "Date"
+  01D8:0010  db 00                                                ; NUL
+  01D8:0011  db 00                                              ; |.|
+  01D8:0012  db 53 74 61 72 74 54 69 6D 65                      ; "StartTime"
+  01D8:001B  db 00                                                ; NUL
+  01D8:001C  db 44 65 73 63 72 69 70 74 69 6F 6E                ; "Description"
+  01D8:0027  db 00                                                ; NUL
+  01D8:0028  db 44 61 74 65 3D 20 20 20                         ; "Date=   "
+  01D8:0030  db 00                                                ; NUL
+  01D8:0031  db 00                                              ; |.|
+  01D8:0032  db 53 74 61 72 74 54 69 6D 65 3E 20                ; "StartTime> "
+  01D8:003D  db 00                                                ; NUL
+  01D8:003E  db 50 72 6F 74 65 63 74 65 64 3E 32                ; "Protected>2"
+  01D8:0049  db 00                                                ; NUL
+  01D8:004A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:005A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:006A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:007A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:008A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:009A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:00AA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:00BA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:00CA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:00DA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:00EA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:00FA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:010A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:011A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:012A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:013A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:014A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:015A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:016A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:017A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:018A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:019A  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:01AA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:01BA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:01CA  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:01DA  db 00 00 8A 00 00 00 00 00 01 00 68 00 72 00 7E 00 ; |..........h.r.~.|
+  01D8:01EA  db 4C 00 52 00 5C 00 00 00 00 00 00 00 2A 02 03 00 ; |L.R.\.......*...|
+  01D8:01FA  db 24 02 00 00 00 00                               ; |$.....|
+  01D8:0200  db 44 4D 43 4F 4E 46 49 47                         ; "DMCONFIG"
+  01D8:0208  db 00                                                ; NUL
+  01D8:0209  db 5C 00 00                                        ; |\..|
+  01D8:020C  db 50 45 52 53 4F 4E 41 4C 2E 43 4C 4E             ; "PERSONAL.CLN"
+  01D8:0218  db 00                                                ; NUL
+  01D8:0219  db 00                                              ; |.|
+  01D8:021A  db 41 6C 61 72 6D 20 45 72 72 6F 72                ; "Alarm Error"
+  01D8:0225  db 00                                                ; NUL
+  01D8:0226  db 50 45 52 53 4F 4E 41 4C 2E 43 4C 4E 20 77 61 73 ; "PERSONAL.CLN was not found."
+  01D8:0236  db 20 6E 6F 74 20 66 6F 75 6E 64 2E
+  01D8:0241  db 00                                                ; NUL
+  01D8:0242  db 00 5A 02 66 02 00                               ; |.Z.f..|
+  01D8:0248  db 41 4C 52 4D 49 4E 49 54 36                      ; "ALRMINIT6"
+  01D8:0251  db 08 00 00 1C 08 00 00 00 00 00 00 00 00 00 00 00 ; |................| [RELOC->seg_0000]
+  01D8:0261  db 00 00 00 00 00 00 00 00 00 03 00 00 00 00 00 00 ; |................|
+  01D8:0271  db 00 4D 09 00 00 D4 01 00 00 00 00 00 00 00 00 00 ; |.M..............| [RELOC->seg_01D4]
+  01D8:0281  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0291  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:02A1  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:02B1  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:02C1  db 00 00 00 B4 02                                  ; |.....|
+  01D8:02C6  db 3B 43 5F 46 49 4C 45 5F 49 4E 46 4F             ; ";C_FILE_INFO"
+  01D8:02D2  db 00                                                ; NUL
+  01D8:02D3  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:02E3  db 00 00 00 00 00 00 00 00 00 14 00 81 81 81 01 01 ; |................|
+  01D8:02F3  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0303  db 00 00 00 00 00 4C 03 D4 01 43 00 00 00 00 00 00 ; |.....L...C......| [RELOC->seg_01D4]
+  01D8:0313  db 00 00 00 00 00                                  ; |.....|
+  01D8:0318  db 50 52 47 55 46                                  ; "PRGUF"
+  01D8:031D  db 00                                                ; NUL
+  01D8:031E  db 01 00                                           ; |..|
+  01D8:0320  db 44 4D 44 42                                     ; "DMDB"
+  01D8:0324  db 00                                                ; NUL
+  01D8:0325  db 44 42 52 45 41 44                               ; "DBREAD"
+  01D8:032B  db 00                                                ; NUL
+  01D8:032C  db 34 2E 30 00 00 00 CD AB BA DC                   ; |4.0.......|
+  01D8:0336  db 44 4D 43 53 52                                  ; "DMCSR"
+  01D8:033B  db 00                                                ; NUL
+  01D8:033C  db 00 00 00 00 00 00 00 00 00 00 9C 00 C8 01 AD 00 ; |................| [RELOC->seg_01C8]
+  01D8:034C  db C8 01 CD AB BA DC 00 00 00 00 00 00 00 00 00 00 ; |................| [RELOC->seg_01C8]
+  01D8:035C  db FE FD FD FE 01 01 02 03 02 FE 11 05 05 05 05 08 ; |................|
+  01D8:036C  db 08 05 04 00 06 06 12 FE 09 06 07 09 04 09 0F 10 ; |................|
+  01D8:037C  db 10 01 14 14 09 15 16 03 FE FE FE FE FE FE FE FE ; |................|
+  01D8:038C  db FE FE FE FE FE FE FE FD 02 04 0D 04 15 04 1A 04 ; |................|
+  01D8:039C  db 1F 04 24 04 2F 04 34 04 39 04 44 04 4C 04 51 04 ; |..$./.4.9.D.L.Q.|
+  01D8:03AC  db 53 04 5B 04 63 04 65 04 67 04 6C 04 71 04 79 04 ; |S.[.c.e.g.l.q.y.|
+  01D8:03BC  db 7E 04 80 04 82 04 11 0A 04 02 0A 06 02 0A 08 02 ; |~...............|
+  01D8:03CC  db FF 0B FD 02 FF 0C 09 07 FF 06 FD 02 FF FF 0A 0D ; |................|
+  01D8:03DC  db 04 02 FF 08 0A 06 04 FF 10 0A 06 04 0A 0A 08 0B ; |................|
+  01D8:03EC  db 02 FF FF 04 0B 02 FF FF 04 0E 02 FF FF 17 0A 06 ; |................|
+  01D8:03FC  db 04 0A 0A 08 0B 02 FF FF 06 FD 02 FF FD 04 FF FF ; |................|
+  01D8:040C  db 02 FD 00 FF FF 00 FF 09 FD 00 FF FD 02 FF FF 04 ; |................|
+  01D8:041C  db FD 00 FF FD 02 FF FF 12 FF 05 FF 04 FD 02 FF FF ; |................|
+  01D8:042C  db 0A 0A 04 02 FF 08 FD 02 FF 13 06 04 FF 03 FD 00 ; |................|
+  01D8:043C  db FF FF 25 FF 04 FF 0E 0A 04 02 FF 66 0E 6B 0E 36 ; |..%........f.k.6|
+  01D8:044C  db 0E A3 0E 40 0E 91 0E 2D 0E 66 0E 66 0E 66 0E 66 ; |...@...-.f.f.f.f|
+  01D8:045C  db 0E 92 0F 7E 0E 5A 0F 6E 0F 82 0F 00 0E 0E 12 10 ; |...~.Z.n........|
+  01D8:046C  db 00 10 18 00 14 02 04 04 04 04 06 06 04 00 1A 08 ; |................|
+  01D8:047C  db 08 00 00 00 0A 00 00 00 0C 00 08 08 16 1E 1E 00 ; |................|
+  01D8:048C  db 00 1C 18 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:049C  db 00 00 0E 00 00 00                               ; |......|
+  01D8:04A2  db 31 30 30 30 43 47 41                            ; "1000CGA"
+  01D8:04A9  db 00                                                ; NUL
+  01D8:04AA  db 44 44 47 41 45 47 41                            ; "DDGAEGA"
+  01D8:04B1  db 00                                                ; NUL
+  01D8:04B2  db 48 45 52 43 50 4C 41 4E 54 43 31 36 54 43 34    ; "HERCPLANTC16TC4"
+  01D8:04C1  db 00                                                ; NUL
+  01D8:04C2  db 56 47 41 00                                     ; |VGA.|
+  01D8:04C6  db 4D 43 47 41 4D                                  ; "MCGAM"
+  01D8:04CB  db 00                                                ; NUL
+  01D8:04CC  db 00 00                                           ; |..|
+  01D8:04CE  db 4C 52 45 53 54 32 35 36 54 43 34 30 48          ; "LREST256TC40H"
+  01D8:04DB  db 00                                                ; NUL
+  01D8:04DC  db 00 00 45 00 00 00 4D 00 00 00 00 00 90 15 00 00 ; |..E...M.........|
+  01D8:04EC  db 00 16 02 02 18 0D 09 0C 0C 0C 07 08 16 16 FF 12 ; |................|
+  01D8:04FC  db 0D 12 02 FF 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:050C  db 00 00 00 00 00 00 54 5A 00 00 50 53 54 00 50 44 ; |......TZ..PST.PD|
+  01D8:051C  db 54 00 80 70 00 00 01 00 56 05 5A 05             ; |T..p....V.Z.|
+  01D8:0528  db 53 75 6E 4D 6F 6E 54 75 65 57 65 64 54 68 75 46 ; "SunMonTueWedThuFriSat"
+  01D8:0538  db 72 69 53 61 74
+  01D8:053D  db 00                                                ; NUL
+  01D8:053E  db 4A 61 6E 46 65 62 4D 61 72 41 70 72 4D 61 79 4A ; "JanFebMarAprMayJunJulAugSepOctNovDec"
+  01D8:054E  db 75 6E 4A 75 6C 41 75 67 53 65 70 4F 63 74 4E 6F
+  01D8:055E  db 76 44 65 63
+  01D8:0562  db 00                                                ; NUL
+  01D8:0563  db 00 00                                           ; |..|
+  01D8:0565  db 20 20 20 20 20 20 20 20 20 28 28 28 28 28 20 20 ; "         (((((                  H"
+  01D8:0575  db 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
+  01D8:0585  db 48
+  01D8:0586  db 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 84 ; |................|
+  01D8:0596  db 84 84 84 84 84 84 84 84 84 10 10 10 10 10 10 10 ; |................|
+  01D8:05A6  db 81 81 81 81 81 81 01 01 01 01 01 01 01 01 01 01 ; |................|
+  01D8:05B6  db 01 01 01 01 01 01 01 01 01 01 10 10 10 10 10 10 ; |................|
+  01D8:05C6  db 82 82 82 82 82 82 02 02 02 02 02 02 02 02 02 02 ; |................|
+  01D8:05D6  db 02 02 02 02 02 02 02 02 02 02 10 10 10 10 20 00 ; |.............. .|
+  01D8:05E6  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:05F6  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0606  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0616  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0626  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0636  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0646  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0656  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01D8:0666  db FF FF 1E 00 3B 00 5A 00 78 00 97 00 B5 00 D4 00 ; |....;.Z.x.......|
+  01D8:0676  db F3 00 11 01 30 01 4E 01 6D 01 FF FF 1E 00 3A 00 ; |....0.N.m.....:.|
+  01D8:0686  db 59 00 77 00 96 00 B4 00 D3 00 F2 00 10 01 2F 01 ; |Y.w.........../.|
+  01D8:0696  db 4D 01 6C 01 00 00 00 00 00 00 00 00 00 00 00 00 ; |M.l.............|
+  01D8:06A6  db 00 00                                           ; |..|
+  01D8:06A8  db 3C 3C 4E 4D 53 47 3E 3E                         ; "<<NMSG>>"
+  01D8:06B0  db 00                                                ; NUL
+  01D8:06B1  db 00                                              ; |.|
+  01D8:06B2  db 52 36 30 30 30 0D 0A 2D 20 73 74 61 63 6B 20 6F ; "R6000\r\n- stack overflow\r\n"
+  01D8:06C2  db 76 65 72 66 6C 6F 77 0D 0A
+  01D8:06CB  db 00                                                ; NUL
+  01D8:06CC  db 03 00                                           ; |..|
+  01D8:06CE  db 52 36 30 30 33 0D 0A 2D 20 69 6E 74 65 67 65 72 ; "R6003\r\n- integer divide by 0\r\n"
+  01D8:06DE  db 20 64 69 76 69 64 65 20 62 79 20 30 0D 0A
+  01D8:06EC  db 00                                                ; NUL
+  01D8:06ED  db 09 00                                           ; |..|
+  01D8:06EF  db 52 36 30 30 39 0D 0A 2D 20 6E 6F 74 20 65 6E 6F ; "R6009\r\n- not enough space for environment\r\n"
+  01D8:06FF  db 75 67 68 20 73 70 61 63 65 20 66 6F 72 20 65 6E
+  01D8:070F  db 76 69 72 6F 6E 6D 65 6E 74 0D 0A
+  01D8:071A  db 00                                                ; NUL
+  01D8:071B  db FC 00 0D 0A 00 FF 00                            ; |.......|
+  01D8:0722  db 72 75 6E 2D 74 69 6D 65 20 65 72 72 6F 72 20    ; "run-time error "
+  01D8:0731  db 00                                                ; NUL
+  01D8:0732  db 02 00                                           ; |..|
+  01D8:0734  db 52 36 30 30 32 0D 0A 2D 20 66 6C 6F 61 74 69 6E ; "R6002\r\n- floating point not loaded\r\n"
+  01D8:0744  db 67 20 70 6F 69 6E 74 20 6E 6F 74 20 6C 6F 61 64
+  01D8:0754  db 65 64 0D 0A
+  01D8:0758  db 00                                                ; NUL
+  01D8:0759  db 01 00                                           ; |..|
+  01D8:075B  db 52 36 30 30 31 0D 0A 2D 20 6E 75 6C 6C 20 70 6F ; "R6001\r\n- null pointer assignment\r\n"
+  01D8:076B  db 69 6E 74 65 72 20 61 73 73 69 67 6E 6D 65 6E 74
+  01D8:077B  db 0D 0A
+  01D8:077D  db 00                                                ; NUL
+  01D8:077E  db FF FF FF                                        ; |...|

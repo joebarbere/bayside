@@ -1,0 +1,1602 @@
+; ========================================================================
+; SPELL.RES -- Fully Annotated Disassembly
+; DeskMate 3.05, Tandy Corporation, Copyright (c) 1987, Microsoft Corp.
+; Compiled with Microsoft C 5.x (1987)
+; Annotated for the Bayside reverse engineering project
+; ========================================================================
+;
+; SPELL.RES is the spell checker interface module for DeskMate 3.05.
+; It provides the user-facing spell checking UI, dictionary management,
+; and word validation used by the Text word processor. It also provides
+; word list services used by Hangman's profanity filter.
+;
+; The module manages two dictionaries: DICT.SPL (the main read-only
+; dictionary) and USERDICT.SPL (user-added words). It presents dialogs
+; for unknown words, suggested corrections ("Alternates"), and options
+; to add words to the user dictionary.
+;
+; SPELL.RES works as a front-end that delegates actual dictionary
+; searching to SPL.RES (the core spell engine) via INT 15h/70h calls.
+;
+; Key UI elements:
+;   - "Spell Checker" main dialog
+;   - "Spell Checker Correction" dialog with alternates list
+;   - "Check Unknown Word" option
+;   - "Add to Dictionary" (Ctrl+A)
+;   - "Restore Context" (Ctrl+R)
+;
+; DM89 imports: PRGUF, DMGUF, DMCSR, AUTOLOAD
+; Dependencies: SPL.RES (dictionary engine), DICT.SPL, USERDICT.SPL
+;
+
+; ========================================================================
+; FUNCTION INDEX
+; ========================================================================
+;
+; --- SPELL.RES Functions ---
+;
+; Address          Name                              Description
+; -------          ----                              -----------
+; 0000:0000        spell_dispatchTable               Spell checker function dispatch table (12 entry points)
+; 0000:0F7F        spell_checkDocument               Check entire document for spelling - main spell check loop
+; 0000:0FAF        spell_initChecker                 Initialize spell checker state (load dictionaries)
+; 0000:0FBD        spell_registerCallbacks           Register 3 callback functions with host via INT E0h
+; 0000:0FE3        spell_callHostDispatch            Call host dispatch entry (INT E0h callback)
+; 0000:0FEC        spell_cleanup                     Clean up spell checker state on exit
+; 0000:10AD        spell_mainEventLoop               Main spell checking event loop (process words, show dialogs)
+; 0000:11A6        spell_handleAddWord               Handle 'Add to Dictionary' action
+; 0000:11C1        spell_handleCorrection            Handle word correction/replacement
+; 0000:11E1        spell_handleSkip                  Handle skip/ignore unknown word
+; 0000:12E2        spell_showAlternates              Show alternate spelling suggestions dialog
+; 0000:131B        spell_lookupWord                  Look up word in dictionary via SPL.RES
+; 0000:1326        spell_getSuggestions              Get spelling suggestions for unknown word
+; 0000:1335        spell_validateWord                Validate a single word against dictionary
+; 0000:1351        spell_callEngine                  Call SPL.RES engine function via INT 15h/70h (3 callers)
+; 0000:14CE        spell_getCallbackA                Get callback function pointer A
+; 0000:14D4        spell_getCallbackB                Get callback function pointer B
+; 0000:14DA        spell_getCallbackC                Get callback function pointer C
+; 0000:14E0        spell_getCallbackD                Get callback function pointer D
+; 0000:14EC        spell_getCallbackE                Get callback function pointer E
+; 0000:14F8        spell_getCallbackF                Get callback function pointer F
+; 0000:14FE        spell_getCallbackG                Get callback function pointer G
+; 0000:150A        spell_getCallbackH                Get callback function pointer H
+; 0000:1510        spell_savePSP                     Save/restore PSP segment (INT 21h/50h,51h)
+; 0000:160A        spell_intE0hDispatch              INT E0h dispatch handler (3 sub-functions)
+; 0000:169E        spell_savePSPContext              Save PSP context for interrupt safety
+; 0000:16A4        spell_restorePSPContext           Restore PSP context after callback
+; 0000:16C2        spell_getSystemTime               Get system time via INT 21h/2Ch
+; 0000:172A        spell_intE0hCall                  INT E0h API call wrapper (4 call sites)
+; 018A:0000        spell_crtResizeMemory             MSC CRT memory resize (INT 21h/4Ah)
+; 018A:00B8        spell_crtAllocMemory              MSC CRT allocate memory block
+; 018A:00CA        spell_crtStartup                  MSC 5.x CRT startup sequence for RES module
+;
+
+
+seg_0000:
+
+
+; --- spell_dispatchTable ---
+; Spell checker function dispatch table (12 entry points)
+spell_dispatchTable:  ; (sub_0000_0000)
+  0000:0000  d50a              aad      0xa
+  0000:0002  190b              sbb      word ptr [bp + di], cx
+  0000:0004  f70f2b10          test     word ptr [bx], 0x102b
+  0000:0008  7310              jae      0x1a  ; -> loc_0000_001A
+  0000:000A  8710              xchg     word ptr [bx + si], dx
+  0000:000C  91                xchg     cx, ax
+  0000:000D  108a1194          adc      byte ptr [bp + si - 0x6bef], cl
+  0000:0011  1121              adc      word ptr [bx + di], sp
+  0000:0013  0dc90d            or       ax, 0xdc9
+  0000:0016  fe0d              dec      byte ptr [di]
+  0000:0018  140e              adc      al, 0xe
+
+loc_0000_001A:
+  0000:001A  180e810e          sbb      byte ptr [0xe81], cl
+  0000:001E  a6                cmpsb    byte ptr [si], byte ptr es:[di]
+  0000:001F  0e                push     cs
+  0000:0020  4c                dec      sp
+  0000:0021  12ca              adc      cl, dl
+  0000:0023  0ce1              or       al, 0xe1
+  0000:0025  0cb8              or       al, 0xb8
+  0000:0027  0e                push     cs
+  0000:0028  b20e              mov      dl, 0xe
+  0000:002A  c10c50            ror      word ptr [si], 0x50
+  0000:002D  3d0300            cmp      ax, 3
+  0000:0030  760a              jbe      0x3c  ; -> loc_0000_003C
+  0000:0032  3d0900            cmp      ax, 9
+  0000:0035  7405              je       0x3c  ; -> loc_0000_003C
+  0000:0037  3d0a00            cmp      ax, 0xa
+  0000:003A  750d              jne      0x49  ; -> loc_0000_0049
+
+loc_0000_003C:
+  0000:003C  e8400f            call     0xf7f  ; -> sub_0000_0F7F  ; spell_checkDocument
+  0000:003F  3dfeff            cmp      ax, 0xfffe
+  0000:0042  7505              jne      0x49  ; -> loc_0000_0049
+  0000:0044  83c402            add      sp, 2
+  0000:0047  eb20              jmp      0x69  ; -> loc_0000_0069
+
+loc_0000_0049:
+  0000:0049  e85216            call     0x169e  ; -> sub_0000_169E  ; spell_savePSPContext
+  0000:004C  58                pop      ax
+  0000:004D  d1e0              shl      ax, 1
+  0000:004F  bf0000            mov      di, 0
+  0000:0052  03f8              add      di, ax
+  0000:0054  2eff15            call     word ptr cs:[di]
+  0000:0057  3dfeff            cmp      ax, 0xfffe
+  0000:005A  7506              jne      0x62  ; -> loc_0000_0062
+  0000:005C  e88d0f            call     0xfec  ; -> sub_0000_0FEC  ; spell_cleanup
+  0000:005F  b8feff            mov      ax, 0xfffe
+
+loc_0000_0062:
+  0000:0062  50                push     ax
+  0000:0063  52                push     dx
+  0000:0064  e83d16            call     0x16a4  ; -> sub_0000_16A4  ; spell_restorePSPContext
+  0000:0067  5a                pop      dx
+  0000:0068  58                pop      ax
+
+loc_0000_0069:
+  0000:0069  cb                retf
+  0000:006A  db E8 BF 0B E8 C6 0B E8 A3 15 3D FF FF 74 42 E8 68 ; |.........=..tB.h|
+  0000:007A  db 13 3D FF FF 74 34 E8 7B 16 3D FF FF 74 29 E8 78 ; |.=..t4.{.=..t).x|
+  0000:008A  db 0E 3D FF FF 74 1E E8 FE 0F 3D FF FF 74 16 E8 D8 ; |.=..t....=..t...|
+  0000:009A  db 0F 06 B4 34 CD 21 4B 89 1E 6A 06 8C 06 6C 06 07 ; |...4.!K..j...l..|
+  0000:00AA  db 33 C0 EB 0C E8 6A 16 E8 71 13 E8 78 15 B8 FF FF ; |3....j..q..x....|
+  0000:00BA  db CB B8 01 00 E8 56 11 FF 36 F6 1A E8 06 14 83 C4 ; |.....V..6.......|
+  0000:00CA  db 02 3D FF FF 75 0A FF 36 F6 1A E8 15 14 83 C4 02 ; |.=..u..6........|
+  0000:00DA  db 80 3E 5C 02 00 74 03 E8 FD 0B E8 34 16 E8 3B 13 ; |.>\..t.....4..;.|
+  0000:00EA  db E8 42 15 CB 26 8A 04 46 80 3E 2C 07 01 75 0D E8 ; |.B..&..F.>,..u..|
+  0000:00FA  db AD 01 3D 05 00 74 59 3D 06 00 74 54 32 E4 E8 CE ; |..=..tY=..tT2...|
+  0000:010A  db 06 0A C0 74 2F 3D 04 00 74 3E 3D FE FF 74 41 E8 ; |...t/=..t>=..tA.|
+  0000:011A  db CC 01 83 3E A4 01 00 74 04 89 36 29 07 3D 02 00 ; |...>...t..6).=..|
+  0000:012A  db 75 0D E8 32 00 0B C0 75 27 8B 36 29 07 EB B5 3D ; |u..2...u'.6)...=|
+  0000:013A  db 04 00 74 1C 3B 36 1F 07 72 AA 77 14 80 3E 27 07 ; |..t.;6..r.w..>'.|
+  0000:014A  db 00 74 0D B0 1A 46 EB B4 B0 1A E8 82 06 B8 04 00 ; |.t...F..........|
+  0000:015A  db C7 06 A4 01 00 00 C3 BF 6C 00 06 1E 07 E8 96 05 ; |........l.......|
+  0000:016A  db 07 8B CF 83 3E A4 01 00 74 05 E8 AD 00 EB 03 E8 ; |....>...t.......|
+  0000:017A  db 85 00 80 3E CA 06 01 75 06 E8 CC 00 EB 78 90 8B ; |...>...u.....x..|
+  0000:018A  db 36 91 06 2B FE 89 3E 93 06                      ; |6..+..>..|
+  0000:0193  db 74 4C 72 30                                     ; "tLr0"
+  0000:0197  db 8B C7 03 06 21 07 3B 06 23 07 76 06 B8 03 00 EB ; |....!.;.#.v.....|
+  0000:01A7  db 58 90 51 FD 8B 36 21 07 4E 03 FE 8B CE 2B 0E 29 ; |X.Q..6!.N....+.)|
+  0000:01B7  db 07 2B 0E 91 06 41 1E 06 1F F3 A4 1F FC 59 EB 1A ; |.+...A.......Y..|
+  0000:01C7  db 8B 36 29 07 8B FE 03 36 91 06 03 F9 51 8B 0E 21 ; |.6)....6....Q..!|
+  0000:01D7  db 07 2B CE 1E 06 1F F3 A4 1F 59 89 0E 91 06 8B 3E ; |.+.......Y.....>|
+  0000:01E7  db 29 07 BE 6C 00 F3 A4 A1 93 06 01 06 1F 07 01 06 ; |)..l............|
+  0000:01F7  db 21 07 33 C0 C6 06 26 07 01 C3 A1 AA 01 3D C3 06 ; |!.3...&......=..|
+  0000:0207  db 74 1A 8B 36 29 07 03 36 91 06 26 8A 04 E8 C2 07 ; |t..6)..6..&.....|
+  0000:0217  db 80 FA 06 75 07 FF 06 91 06 46 EB EE C3 A1 9E 06 ; |...u.....F......|
+  0000:0227  db 40 A3 91 06 03 06 A4 01 8B 36 29 07 2B F0 4E A1 ; |@........6).+.N.|
+  0000:0237  db A6 01 FF 0E A4 01 74 0A C7 06 A4 01 00 00 26 88 ; |......t.......&.|
+  0000:0247  db 24 46 26 88 04 46 89 36 29 07 C3 55 8B 1E C8 06 ; |$F&..F.6)..U....|
+  0000:0257  db A1 29 07                                        ; |.).|
+  0000:025A  db 26 2B 47 24 26                                  ; "&+G$&"
+  0000:025F  db 89 47 1F 8B E8 A1 91 06 03 E8 26 89 47 21 BE B3 ; |.G........&.G!..|
+  0000:026F  db 00 FF 74 1D 1E B8 6C 00 50 06 53 E8 4B 14 5B 83 ; |..t...l.P.S.K.[.|
+  0000:027F  db C4 08 3D FF FF 74 1E 8B C5 26 2B 47 1B 29 06 1F ; |..=..t...&+G.)..|
+  0000:028F  db 07 26 8B 47 24 26 03 47 1D A3 21 07 33 C0 C6 06 ; |.&.G$&.G..!.3...|
+  0000:029F  db 26 07 01 EB 03 B8 03 00 5D C3 3C 03 74 29 3C 01 ; |&.......].<.t)<.|
+  0000:02AF  db 74 1F 3C 05 75 32 8B FE B0 06 8B 0E 1F 07 2B CE ; |t.<.u2........+.|
+  0000:02BF  db F2 AE 75 08 8B F7 26 8A 04 46 EB DE B8 06 00 EB ; |..u...&..F......|
+  0000:02CF  db 17 26 03 34 83 C6 03 83 C6 04 26 8A 04 46 3B 36 ; |.&.4......&..F;6|
+  0000:02DF  db 1F 07 76 C6 B8 05 00 4E C3 57 56 51 E8 5D 01 8C ; |..v....N.WVQ.]..|
+  0000:02EF  db 06 6E 06 06 1E 07 C6 06 A0 06 00 E8 21 03 E8 C1 ; |.n..........!...|
+  0000:02FF  db 04 E8 33 03 E8 07 03 80 3E 25 07 01 74 03 E8 26 ; |..3.....>%..t..&|
+  0000:030F  db 01 C6 06 8E 01 02 C6 06 F9 00 00 C6 06 E4 00 01 ; |................|
+  0000:031F  db C6 06 7D 01 01 C6 06 7E 01 01 C6 06 45 00 00 E8 ; |..}....~....E...|
+  0000:032F  db 08 00 E8 56 02 07 59 5E 5F C3 B8 8B 01 50 E8 7C ; |...V..Y^_....P.||
+  0000:033F  db 13 83 C4 02 3D 01 FA 75 05 E8 8E 00 EB EC 8B 1E ; |....=..u........|
+  0000:034F  db 8C 01 83 FB                                     ; |....|
+  0000:0353  db 09 74 60 3D                                     ; "\tt`="
+  0000:0357  db 01 00 75 0A 83 FB 07 74 1D E8 AA 03 EB D4 3D 02 ; |..u....t......=.|
+  0000:0367  db 00 75 0C E8 E9 02 83 3E 8C 01 07 74 09 EB C3 3D ; |.u.....>...t...=|
+  0000:0377  db 0D 00 75 27 EB 03 E8 87 00 C6 06 11 01 00 C6 06 ; |..u'............|
+  0000:0387  db 7F 01 01 B8 02 00 80 3E A0 06 01 74 39 C7 06 A4 ; |.......>...t9...|
+  0000:0397  db 01 00 00 E8 31 04 B8 01 00 EB 2B 3D 1B 00 75 92 ; |....1.....+=..u.|
+  0000:03A7  db C6 06 25 01 00 C6 06 80 01 01 B8 04 00 EB 17 E8 ; |..%.............|
+  0000:03B7  db 43 00 A1 96 06 3D 04 00 75 06 E8 8C 03 E9 72 FF ; |C....=..u.....r.|
+  0000:03C7  db E8 5D 03 B8 01 00 50 E8 AF 12 58 C7 06 A1 01 01 ; |.]....P...X.....|
+  0000:03D7  db 00 C3 E8 20 00 80 3E 95 06 06 75 18 83 3E 96 06 ; |... ..>...u..>..|
+  0000:03E7  db 03 75 11 83 3E 98 06 0A 75 0A FF 36 98 06 E8 18 ; |.u..>...u..6....|
+  0000:03F7  db 12 83 C4 02 C3 B8 95 06 50 E8 71 12 83 C4 02 C3 ; |........P.q.....|
+  0000:0407  db C6 06 95 06 01 C7 06 96 06 0D 00 B8 95 06 50 E8 ; |..............P.|
+  0000:0417  db 61 12 83 C4 02 C6 06 11 01 01 C6 06 7F 01 01 C6 ; |a...............|
+  0000:0427  db 06 8E 01 03 B8 8B 01 50 E8 8A 12 83 C4 02 C3 C6 ; |.......P........|
+  0000:0437  db 06 F9 00 00 B8 8B 01 50 E8 74 12 83 C4 02 C6 06 ; |.......P.t......|
+  0000:0447  db 25 07 01 C3 83 3E A4 01 00 74 17 8B 0E A8 01 BE ; |%....>...t......|
+  0000:0457  db A2 06 2B CE 49 89 36 D2 00 89 0E D4 00 E8 FC 00 ; |..+.I.6.........|
+  0000:0467  db EB 17 E8 1E 00 A1 AA 01 3D C3 06 74 06 8B 0E D4 ; |........=..t....|
+  0000:0477  db 00 EB 03 E8 5C 00 E8 CA 00 E8 F5 00 E8 FD 00 E8 ; |....\...........|
+  0000:0487  db 33 01 C3 83 EE 02 26 8A 04 E8 46 05 80 FA 01 76 ; |3.....&...F....v|
+  0000:0497  db 01 4E 89 36 D4 00 4E 8B 1E 1D 07 26 8A 04 4E E8 ; |.N.6..N....&..N.|
+  0000:04A7  db 30 05 80 FA 01 76 05 80 FA 06 75 08 3B F3 73 EB ; |0....v....u.;.s.|
+  0000:04B7  db 8B F3 EB 03 83 C6 02 26 8A 04 E8 15 05 80 FA 01 ; |.......&........|
+  0000:04C7  db 76 03 46 EB F2 29 36 D4 00 FF 06 D4 00 89 36 D2 ; |v.F..)6.......6.|
+  0000:04D7  db 00 C3 55 B9 0F 00 8B 1E 1D 07 26 8A 04          ; |..U.......&..|
+  0000:04E4  db 4E 3C 20 72                                     ; "N< r"
+  0000:04E8  db 02 E2 F6 26 8A 04 E8 E8 04 80 FA 01 77 03 46 EB ; |...&........w.F.|
+  0000:04F8  db F2 26 8A 04 E8 DA 04 80 FA 01 76 03 46 EB F2 3B ; |.&........v.F..;|
+  0000:0508  db F3 73 02 8B F3 8B EE B9 1E 00 8B 1E 1F 07 26 8A ; |.s............&.|
+  0000:0518  db 04                                              ; |.|
+  0000:0519  db 46 3C 20 72                                     ; "F< r"
+  0000:051D  db 05 E2 F6 E8 CF 00 26 80 7C FF 20 72 06 26 80 3C ; |......&.|. r.&.<|
+  0000:052D  db 20 77 03 4E EB F7 3B F3 72 0A 8B 36 D2 00 8B 0E ; | w.N..;.r..6....|
+  0000:053D  db D4 00 EB 07 8B CE 8B F5 2B CE 41 5D C3 89 36 29 ; |........+.A]..6)|
+  0000:054D  db 07 89 0E 91 06 06 1E 07 1F BF 6C 00 F3 A4 32 C0 ; |..........l...2.|
+  0000:055D  db AA 1E 06 1F 07 C3 89 36 29 07 89 0E 91 06 06 1E ; |.......6).......|
+  0000:056D  db 07 BF 6C 00 F3 A4 32 C0 AA 07 C3 A1 D2 00 2B 06 ; |..l...2.......+.|
+  0000:057D  db 29 07 A3 D2 00 C3 A1 D2 00 A3 CE 00 C3 55 50 80 ; |)............UP.|
+  0000:058D  db 3E A0 06 01 75 26 A1 AA 01 2D C3 06 74 1E 8B E8 ; |>...u&...-..t...|
+  0000:059D  db E8 55 01 8B CF 41 81 C7 6C 00 8B F7 03 FD FD F3 ; |.U...A..l.......|
+  0000:05AD  db A4 FC BE C3 06 BF 6C 00 8B CD F3 A4 58 5D C3 A1 ; |......l.....X]..|
+  0000:05BD  db AA 01 3D C3 06 74 1F 8B 0E D4 00 BE 6C 00 8A 04 ; |..=..t......l...|
+  0000:05CD  db E8 09 04 80 FA 06 75 04 E8 0C 00 4E 46 E2 EF E8 ; |......u....NF...|
+  0000:05DD  db 16 01 89 3E D4 00 C3 06 1E 07 56 51 8B FE 46 F3 ; |...>......VQ..F.|
+  0000:05ED  db A4 59 5E 07 C3 26 8A 04 E8 E1 03 80 FA 01 76 08 ; |.Y^..&........v.|
+  0000:05FD  db 80 FA 06 73 03 4E EB 07 46 3B 36 1F 07 76 E6 C3 ; |...s.N..F;6..v..|
+  0000:060D  db 32 C0 BB 70 06 E8 ED 05 A2 FC 00 C6 06 7E 01 01 ; |2..p.........~..|
+  0000:061D  db C3 06 1E 07 BE 6C 00 03 36 D2 00 8B 0E D4 00 BF ; |.....l..6.......|
+  0000:062D  db 70 06 F3 A4 32 C0 AA 07 C3 A1 D4 00 05 1E 00 BB ; |p...2...........|
+  0000:063D  db 64 00 33 D2 F7 EB A3 65 01 B8 33 01 03 06 D4 00 ; |d.3....e..3.....|
+  0000:064D  db A3 6A 01 C6 06 8B 01 01 C3 80 3E F9 00 00 75 0B ; |.j........>...u.|
+  0000:065D  db E8 F0 00 C6 06 8E 01 02 EB 62 90 8B 36 D4 00 E8 ; |.........b..6...|
+  0000:066D  db 6F 00 8B CF 89 3E D4 00 B8 6C 00 3B F7 74 1F 77 ; |o....>...l.;.t.w|
+  0000:067D  db 23 8B D0 03 16 D2 00 03 D6 2B FE 8B 36 D0 00 03 ; |#........+..6...|
+  0000:068D  db F0 03 FE 51 FD 8B CE 2B CA 41 F3 A4 FC 59 03 06 ; |...Q...+.A...Y..|
+  0000:069D  db D2 00 EB 10 03 06 D2 00 03 F0 03 F8 50 AC AA 0A ; |............P...|
+  0000:06AD  db C0 75 FA 58 8B F8 8B F3 F3 A4 C6 06 7D 01 01 E8 ; |.u.X........}...|
+  0000:06BD  db C4 FE C6 06 A0 06 01 C6 06 45 00 01 C3 8B 36 D2 ; |.........E....6.|
+  0000:06CD  db 00 81 C6 6C 00 E8 1D FF 2B 36 D2 00 81 EE 6C 00 ; |...l....+6....l.|
+  0000:06DD  db C3 8A 1E F9 00 32 FF 4B D1 E3 81 C3 EE 06 8B 3F ; |.....2.K.......?|
+  0000:06ED  db 06 1E 07 E8 0D 00 07 C3 06 1E 07 BF 6C 00 E8 02 ; |............l...|
+  0000:06FD  db 00 07 C3 B9 FF FF 8B DF 32 C0 F2 AE 2B FB 4F C3 ; |........2...+.O.|
+  0000:070D  db C6 06 45 00 01 C6 06 E4 00 00 C6 06 7E 01 01 83 ; |..E.........~...|
+  0000:071D  db FB 01 75 05 C6 06 A0 06 01 C3 06 1E 07 BB 70 06 ; |..u...........p.|
+  0000:072D  db E8 5A 0A 07 0B C0 75 0C C6 06 5A 02 01 C6 06 28 ; |.Z....u...Z....(|
+  0000:073D  db 07 01 EB 03 E8 01 00 C3 B8 34 00 50 E8 76 0F 83 ; |.........4.P.v..|
+  0000:074D  db C4 02 C3 A1 AA 01 3D C3 06 75 07 83 3E A4 01 00 ; |......=..u..>...|
+  0000:075D  db 74 06 A1 91 06 A3 D4 00 8B 36 29 07 BF 6C 00 8B ; |t........6)..l..|
+  0000:076D  db 0E 91 06 83 3E A4 01 00 75 04 8E 1E 6E 06 F3 A4 ; |....>...u...n...|
+  0000:077D  db 32 C0 AA 06 1F E8 37 FE A1 9C 06 A3 D2 00 A3 CE ; |2.....7.........|
+  0000:078D  db 00 A1 9E 06 A3 D4 00 C6 06 A0 06 00 C6 06 8E 01 ; |................|
+  0000:079D  db 01 C6 06 7D 01 01 80 3E E4 00 00 74 07 80 3E F9 ; |...}...>...t..>.|
+  0000:07AD  db 00 00 74 0A C6 06 F9 00 00 C6 06 7E 01 01 C6 06 ; |..t........~....|
+  0000:07BD  db E4 00 01 C3 A1 D2 00 A3 9C 06 A1 D4 00 A3 9E 06 ; |................|
+  0000:07CD  db C3 06 1E 07 BB 70 06 E8 B0 08 07 C3 56 80 3E A1 ; |.....p......V.>.|
+  0000:07DD  db 01 01 75 16 3C 08 75 0F 80 3E 2D 07 01 75 08 C6 ; |..u.<.u..>-..u..|
+  0000:07ED  db 06 A1 01 00 E9 52 01 E8 C9 01 80 FC 00 75 13 E8 ; |.....R.......u..|
+  0000:07FD  db DA 01 0A D2 74 38 FE CA 74 30 FE CA 74 4C FE CA ; |....t8..t0..tL..|
+  0000:080D  db 75 03 E9 A8 00 FE CA 75 03 E9 B2 00 FE CA 75 03 ; |u......u......u.|
+  0000:081D  db E9 09 01 E8 6B 01 83 FE 04 75 05 8B C6 E9 1C 01 ; |....k....u......|
+  0000:082D  db FE CA 75 03 E9 D1 00 E9 BC 00 FE 06 A3 01 8B 36 ; |..u............6|
+  0000:083D  db A8 01 88 04 81 FE C2 06 75 08 C6 06 A0 01 01 E9 ; |........u.......|
+  0000:084D  db F7 00 46 89 36 A8 01 E9 EF 00 80 3E A0 01 01 75 ; |..F.6......>...u|
+  0000:085D  db 12 C6 06 A0 01 00 C6 06 A1 01 01 C6 06 A3 01 00 ; |................|
+  0000:086D  db E9 D6 00 80 3E A3 01 00                         ; |....>...|
+  0000:0875  db 74 7C 3C 0D 74                                  ; "t|<\rt"
+  0000:087A  db 04                                              ; |.|
+  0000:087B  db 3C 0A 75 36                                     ; "<\nu6"
+  0000:087F  db 8B 36 A8 01 80 7C FF 2D 75 2C 80 7C FE 2D 74 26 ; |.6...|.-u,.|.-t&|
+  0000:088F  db 80 7C FE 20 74 20 8B 16 A6 01 83 3E A4 01 01 72 ; |.|. t .....>...r|
+  0000:089F  db 08 77 13 8A F2 3A D0 74 0D 8A D0 89 16 A6 01 FF ; |.w...:.t........|
+  0000:08AF  db 06 A4 01 E9 91 00 E8 61 01 EB 3C 80 3E A0 01 00 ; |.......a..<.>...|
+  0000:08BF  db 74 03 E9 82 00 C6 06 A0 01 01 EB 28 80 3E A3 01 ; |t..........(.>..|
+  0000:08CF  db 00 75 E3 3C 2E 75 1D E8 72 00 0B C0 74 19 8B 36 ; |.u.<.u..r...t..6|
+  0000:08DF  db A8 01 C6 04 2E FF 06 A8 01 E8 60 00 0B C0 74 07 ; |..........`...t.|
+  0000:08EF  db FF 0E A8 01 E8 55 00 C6 06 A1 01 01 EB 4C 90 C6 ; |.....U.......L..|
+  0000:08FF  db 06 A1 01 01 EB 41 80 3E 2C 07 01 75 E7 8B 36 A8 ; |.....A.>,..u..6.|
+  0000:090F  db 01 81 FE A2 06 74 30 8B 36 AA 01 81 FE C8 06 74 ; |.....t0.6......t|
+  0000:091F  db 26 88 04 46 89 36 AA 01 EB 1D 8B 36 A8 01 81 FE ; |&..F.6.....6....|
+  0000:092F  db A2 06 75 0E 80 3E 2D 07 01 75 0C C6 06 5B 02 00 ; |..u..>-..u...[..|
+  0000:093F  db EB 05 4E 89 36 A8 01 B8 00 00 5E C3 53 33 C0 8B ; |..N.6.....^.S3..|
+  0000:094F  db 1E A8 01 81 FB A3 06 76 23 C6 07 00 E8 1F 00 74 ; |.......v#......t|
+  0000:095F  db 1B BB A2 06 06 1E 07 53 8B DC E8 8B 06 83 C4 02 ; |.......S........|
+  0000:096F  db 07 3D 00 00 74 06 C7 06 A4 01 00 00 5B C3 BE A2 ; |.=..t.......[...|
+  0000:097F  db 06 AC 0A C0 74 08 3C 30 72 04 3C 39 76 F3 C3 50 ; |....t.<0r.<9v..P|
+  0000:098F  db 52 33 F6 B0 01 38 06 A2 01 74 23 38 06 2C 07 74 ; |R3...8...t#8.,.t|
+  0000:099F  db 1D 38 06 2B 07 74 17 C6 06 A2 01 01 B8 38 02 50 ; |.8.+.t.......8.P|
+  0000:09AF  db E8 10 0D 83 C4 02 3D 01 F7 74 03 BE 04 00 5A 58 ; |......=..t....ZX|
+  0000:09BF  db C3 50 B8 A2 06 A3 A8 01 B8 C3 06 A3 AA 01 C6 06 ; |.P..............|
+  0000:09CF  db 2D 07 00 C6 06 A1 01 00 58 C3 06 1E 07 57 51 32 ; |-.......X....WQ2|
+  0000:09DF  db D2 BF AC 01 B9 61 00 F2 AE 74 2B FE C2 41 AE 74 ; |.....a...t+..A.t|
+  0000:09EF  db 25 FE C2 B9 1D 00 F2 AE 74 1C FE C2 FE C2 B9 07 ; |%.......t.......|
+  0000:09FF  db 00 F2 AE 74 11 FE C2 3C 08 74 0B FE C2 B9 06 00 ; |...t...<.t......|
+  0000:0A0F  db F2 AE 74 02 FE C2 59 5F 07 C3 06 1E 07 33 C0 BF ; |..t...Y_.....3..|
+  0000:0A1F  db A2 06 8B 0E A8 01 8B F1 2B CF 83 F9 01 77 03 E9 ; |........+....w..|
+  0000:0A2F  db 92 00 3A 0E A3 01 75 03 E9 89 00 C6 04 00 06 1E ; |..:...u.........|
+  0000:0A3F  db 07 57 8B DC E8 B1 05 83 C4 02 07 0B C0 74 75 8B ; |.W...........tu.|
+  0000:0A4F  db DF B0 2D F2 AE C6 45 FF 00 80 3F 00 74 11 06 1E ; |..-...E...?.t...|
+  0000:0A5F  db 07 53 8B DC E8 91 05 83 C4 02 07 0B C0 75 26 FE ; |.S...........u&.|
+  0000:0A6F  db 0E A3 01 75 DA 3B 3E A8 01 74 49 8B DF 8B 3E A8 ; |...u.;>..tI...>.|
+  0000:0A7F  db 01 C6 05 00 06 1E 07 53 8B DC E8 6B 05 83 C4 02 ; |.......S...k....|
+  0000:0A8F  db 07 0B C0 74 2F 8B 3E A4 01 0B FF 74 2F BF A2 06 ; |...t/.>....t/...|
+  0000:0A9F  db 32 C0 B9 20 00 F2 AE 8B F7 4F AC AA 0A C0 75 FA ; |2.. .....O....u.|
+  0000:0AAF  db BB A2 06 06 1E 07 53 8B DC E8 3C 05 83 C4 02 07 ; |......S...<.....|
+  0000:0ABF  db 0B C0 75 0B C7 06 A4 01 00 00 EB 03 B8 08 00 C6 ; |..u.............|
+  0000:0ACF  db 06 A3 01 00 07 C3 C6 06 26 07 00 C6 06 25 07 00 ; |........&....%..|
+  0000:0ADF  db C6 06 27 07 01 C6 06 CA 06 01 C6 06 2C 07 00 C6 ; |..'.........,...|
+  0000:0AEF  db 06 A2 01 00 C6 06 A1 01 01 E8 A0 00 E8 A5 00 8B ; |................|
+  0000:0AFF  db 36 1D 07 E8 E9 F5 8B 1E C8 06 26 C7 47 21 00 00 ; |6.........&.G!..|
+  0000:0B0F  db 26 8B 57 1F 26 89 57 1B EB 3E C6 06 26 07 00 C6 ; |&.W.&.W..>..&...|
+  0000:0B1F  db 06 25 07 00 C6 06 27 07 01 C6 06 CA 06 00 C6 06 ; |.%....'.........|
+  0000:0B2F  db 2C 07 01 C6 06 A2 01 00 C6 06 A1 01 01 E8 5C 00 ; |,.............\.|
+  0000:0B3F  db E8 94 00 8B 36 1D 07 E8 A5 F5 8B 1E C8 06 50 A1 ; |....6.........P.|
+  0000:0B4F  db 21 07 48 26 89 47 04 58 3D 04 00 74 0C 80 3E 25 ; |!.H&.G.X=..t..>%|
+  0000:0B5F  db 07 01 74 05 E8 8E 00 EB 32 50 33 C0 E8 A9 06 58 ; |..t.....2P3....X|
+  0000:0B6F  db 3D 01 00 74 26 8B D0 B8 01 00 80 3E 26 07 00 74 ; |=..t&......>&..t|
+  0000:0B7F  db 03 B8 02 00 83 FA 03 74 0F 83 FA FE 75 0D 50 E8 ; |.......t....u.P.|
+  0000:0B8F  db 5B 04 58 0D 08 00 EB 03 0D 04 00 C3 36 8B 1F 89 ; |[.X.........6...|
+  0000:0B9F  db 1E C8 06 C3 8B 1E C8 06 26 8B 47 24 8B C8 26 03 ; |........&.G$..&.|
+  0000:0BAF  db 47 1D A3 21 07 8B C1 26 03 47 1F A3 1D 07 26 03 ; |G..!...&.G....&.|
+  0000:0BBF  db 47 21 A3 1F 07 26 8B 47 16 05 02 00 99 26 F7 6F ; |G!...&.G.....&.o|
+  0000:0BCF  db 18 03 C1 A3 23 07 C3 26 8B 07 A3 1D 07 26 8B 47 ; |....#..&.....&.G|
+  0000:0BDF  db 02 A3 1F 07 26 8B 47 04 40 A3 21 07 26 8B 47 06 ; |....&.G.@.!.&.G.|
+  0000:0BEF  db 40 A3 23 07 C3 B8 54 02 50 E8 C7 0A 83 C4 02 B8 ; |@.#...T.P.......|
+  0000:0BFF  db 00 00 C3 55 8B E8 06 1E 07 53 E8 11 04 5E 0B C0 ; |...U.....S...^..|
+  0000:0C0F  db 74 18 50 32 C0 BE EE 06 BF EE 16 B9 FF FF 89 3C ; |t.P2...........<|
+  0000:0C1F  db 83 C6 02 F2 AE 38 05 75 F5 58 07 5D C3 BA E3 19 ; |.....8.u.X.]....|
+  0000:0C2F  db BE 47 02 E8 25 00 C3 06 BE 80 00 BF B5 1A 1E 1E ; |.G..%...........|
+  0000:0C3F  db 07 8E 1E 62 06 AC 0A C0 74 03 AA EB F8 83 EF 09 ; |...b....t.......|
+  0000:0C4F  db 1F BE 75 02 B9 09 00 F3 A4 07 C3 06 1E 07 52 E8 ; |..u...........R.|
+  0000:0C5F  db A3 09 5F E8 9B FA 03 FB B0 5C 38 45 FF 74 01 AA ; |.._......\8E.t..|
+  0000:0C6F  db B9 0D 00 F3 A4 07 C3 C6 06 2B 07 01 E8 5B FB C6 ; |.........+...[..|
+  0000:0C7F  db 06 2B 07 00 0A C0 74 28 3D FE FF 75 10 E8 52 00 ; |.+....t(=..u..R.|
+  0000:0C8F  db C6 06 5B 02 00 E8 3D 02 B8 FE FF EB 0E E8 52 00 ; |..[...=.......R.|
+  0000:0C9F  db E8 0E 00 B8 FF FF C6 06 5B 02 01 C6 06 2D 07 01 ; |........[....-..|
+  0000:0CAF  db CB BE A2 06 BF CC 06 06 1E 07 AC AA 0A C0 75 FA ; |..............u.|
+  0000:0CBF  db 07 C3 C6 06 6E 02 01 E8 01 00 C3 C6 06 5C 02 01 ; |....n........\..|
+  0000:0CCF  db B8 42 02 50 E8 D4 09 83 C4 02 A3 EC 06 FF 1E 3E ; |.B.P...........>|
+  0000:0CDF  db 02 C3 C6 06 5C 02 00 FF 36 EC 06 E8 C3 09 83 C4 ; |....\...6.......|
+  0000:0CEF  db 02 C3 50 51 B0 B6 E6 43 EB 00 B8 00 08 E6 42 EB ; |..PQ...C......B.|
+  0000:0CFF  db 00 8A C4 E6 42 EB 00 E4 61 8A E0 0C 03 E6 61 50 ; |....B...a.....aP|
+  0000:0D0F  db B8 0D 00 50 E8 B8 09 83 C4 02 58 8A C4 E6 61 59 ; |...P......X...aY|
+  0000:0D1F  db 58 C3 55 8B EB 8B 46 14 A3 1D 07 8B 46 12 A3 1F ; |X.U...F.....F...|
+  0000:0D2F  db 07 8B 46 10 A3 21 07 8B 46 0E A3 23 07 8B 46 0C ; |..F..!..F..#..F.|
+  0000:0D3F  db A2 25 07 88 26 26 07 8B 46 0A A2 27 07 88 26 5A ; |.%..&&..F..'..&Z|
+  0000:0D4F  db 02 8B 46 08 A2 2B 07 88 26 2C 07 8B 46 06 A2 2D ; |..F..+..&,..F..-|
+  0000:0D5F  db 07 88 26 5B 02 8B 46 04 A3 29 07 8B 46 02 A2 A2 ; |..&[..F..)..F...|
+  0000:0D6F  db 01 8B 76 00 E8 78 F3 89 76 00 50 A0 A2 01 89 46 ; |..v..x..v.P....F|
+  0000:0D7F  db 02 A1 29 07 89 46 04 8A 26 5B 02 A0 2D 07 89 46 ; |..)..F..&[..-..F|
+  0000:0D8F  db 06 8A 26 2C 07 A0 2B 07 89 46 08 A0 27 07 8A 26 ; |..&,..+..F..'..&|
+  0000:0D9F  db 5A 02 89 46 0A A0 25 07 8A 26 26 07 89 46 0C A1 ; |Z..F..%..&&..F..|
+  0000:0DAF  db 23 07 89 46 0E A1 21 07 89 46 10 A1 1F 07 89 46 ; |#..F..!..F.....F|
+  0000:0DBF  db 12 A1 1D 07 89 46 14 58 5D C3 55 8B EB 8B 46 02 ; |.....F.X].U...F.|
+  0000:0DCF  db A2 2B 07 88 26 2C 07 8B 46 00 A2 2D 07 88 26 5B ; |.+..&,..F..-..&[|
+  0000:0DDF  db 02 8B 46 04 E8 F3 F9 50 8A 26 5B 02 A0 2D 07 89 ; |..F....P.&[..-..|
+  0000:0DEF  db 46 02 8A 26 2C 07 A0 2B 07 89 46 00 58 5D C3 55 ; |F..&,..+..F.X].U|
+  0000:0DFF  db 8B EB 06 8B 7E 00 8E 46 02 BE CC 06 AC AA 0A C0 ; |....~..F........|
+  0000:0E0F  db 75 FA 07 5D C3 E8 4A F3 C3 55 8B EB 06 1E 07 8E ; |u..]..J..U......|
+  0000:0E1F  db 5E 00 8B 76 06 BF 2E 07 8B DF AC AA 0A C0 75 FA ; |^..v..........u.|
+  0000:0E2F  db 06 1F 07 B8 01 00 E8 CA FD 0B C0 74 10 06 8E 46 ; |...........t...F|
+  0000:0E3F  db 00 50 E8 0A 00 58 E8 19 00 E8 21 00 07 5D C3 8B ; |.P...X....!..]..|
+  0000:0E4F  db 7E 02 BE EE 16 AC AA 0A C0 75 FA AC AA 0A C0 75 ; |~........u.....u|
+  0000:0E5F  db F4 C3 8B C8 8B 7E 04 BE EE 06 F3 A5 C3 8B C8 8B ; |.....~..........|
+  0000:0E6F  db 5E 02 81 EB EE 16 8B 7E 04 26 01 1D 83 C7 02 E2 ; |^......~.&......|
+  0000:0E7F  db F8 C3 55 8B EB 06 8E 46 00 E8 06 00 E8 0B 00 07 ; |..U....F........|
+  0000:0E8F  db 5D C3 8B 7E 02 BE 4E 07 EB 06 8B 7E 04 BE E3 19 ; |]..~..N....~....|
+  0000:0E9F  db AC AA 0A C0 75 FA C3 A0 5C 02 8A 26 5B 02 8A 16 ; |....u...\..&[...|
+  0000:0EAF  db 5A 02 C3 C6 06 5B 02 00 C3 E8 0E 00 E8 16 00 33 ; |Z....[.........3|
+  0000:0EBF  db C0 E8 54 03 C6 06 5B 02 00 C3 36 8B 07 A2 5C 02 ; |..T...[...6...\.|
+  0000:0ECF  db 88 26 5A 02 C3 A0 6E 02 38 06 5C 02 74 03 E8 01 ; |.&Z...n.8.\.t...|
+  0000:0EDF  db 00 C3 A0 5C 02 A2 6E 02 A2 18 07 A2 68 02 E8 47 ; |...\..n.....h..G|
+  0000:0EEF  db 08 3D FF FF 74 0D B8 5D 02 50 E8 67 08 83 C4 02 ; |.=..t..].P.g....|
+  0000:0EFF  db E8 52 08 C3 E8 10 00 3D FF FF 74 0A A3 F6 1A 8B ; |.R.....=..t.....|
+  0000:0F0F  db C8 33 C0 E8 15 08 C3 33 C0 80 3E 68 06 FF 75 0D ; |.3.....3..>h..u.|
+  0000:0F1F  db E8 16 00 0B C0 7F 06 E8 04 00 B8 FF FF C3 B8 70 ; |...............p|
+  0000:0F2F  db 02 50 E8 8E 07 83 C4 02 C3 B8 B5 1A 50 E8 CB 06 ; |.P..........P...|
+  0000:0F3F  db 83 C4 02 0B C0 75 25 33 C0 50 B8 24 1A 50 B8 75 ; |.....u%3.P.$.P.u|
+  0000:0F4F  db 02 50 E8 C2 05 83 C4 06 0B C0 74 20 06 1E 07 BE ; |.P........t ....|
+  0000:0F5F  db 24 1A BF B5 1A AC AA 0A C0 75 FA 07 B8 A0 00 50 ; |$........u.....P|
+  0000:0F6F  db B8 B5 1A 50 E8 64 05 83 C4 04 EB 03 B8 FF FF C3 ; |...P.d..........|
+
+; --- spell_checkDocument ---
+; Check entire document for spelling - main spell check loop
+spell_checkDocument:  ; (sub_0000_0F7F)
+  0000:0F7F  a0b51a            mov      al, byte ptr [0x1ab5]
+  0000:0F82  98                cwde
+  0000:0F83  50                push     ax
+  0000:0F84  e88905            call     0x1510  ; -> sub_0000_1510  ; spell_savePSP
+  0000:0F87  83c402            add      sp, 2
+  0000:0F8A  0bc0              or       ax, ax
+  0000:0F8C  741e              je       0xfac  ; -> loc_0000_0FAC
+
+loc_0000_0F8E:
+  0000:0F8E  b8b51a            mov      ax, 0x1ab5
+  0000:0F91  50                push     ax
+  0000:0F92  e87506            call     0x160a  ; -> sub_0000_160A  ; spell_intE0hDispatch
+  0000:0F95  83c402            add      sp, 2
+  0000:0F98  0bc0              or       ax, ax
+  0000:0F9A  7510              jne      0xfac  ; -> loc_0000_0FAC
+  0000:0F9C  e81000            call     0xfaf  ; -> sub_0000_0FAF  ; spell_initChecker
+  0000:0F9F  3d01f7            cmp      ax, 0xf701
+  0000:0FA2  74ea              je       0xf8e  ; -> loc_0000_0F8E
+  0000:0FA4  e84500            call     0xfec  ; -> sub_0000_0FEC  ; spell_cleanup
+  0000:0FA7  b8feff            mov      ax, 0xfffe
+  0000:0FAA  eb02              jmp      0xfae  ; -> loc_0000_0FAE
+
+loc_0000_0FAC:
+  0000:0FAC  33c0              xor      ax, ax
+
+loc_0000_0FAE:
+  0000:0FAE  c3                ret
+
+; --- spell_initChecker ---
+; Initialize spell checker state (load dictionaries)
+spell_initChecker:  ; (sub_0000_0FAF)
+  0000:0FAF  e80b00            call     0xfbd  ; -> sub_0000_0FBD  ; spell_registerCallbacks
+  0000:0FB2  b87e02            mov      ax, 0x27e
+  0000:0FB5  50                push     ax
+  0000:0FB6  e80907            call     0x16c2  ; -> sub_0000_16C2  ; spell_getSystemTime
+  0000:0FB9  83c402            add      sp, 2
+  0000:0FBC  c3                ret
+
+; --- spell_registerCallbacks ---
+; Register 3 callback functions with host via INT E0h
+spell_registerCallbacks:  ; (sub_0000_0FBD)
+  0000:0FBD  be6d05            mov      si, 0x56d
+  0000:0FC0  bff81a            mov      di, 0x1af8
+  0000:0FC3  06                push     es
+  0000:0FC4  1e                push     ds
+  0000:0FC5  07                pop      es
+  0000:0FC6  e81a00            call     0xfe3  ; -> sub_0000_0FE3  ; spell_callHostDispatch
+  0000:0FC9  beb51a            mov      si, 0x1ab5
+  0000:0FCC  83c602            add      si, 2
+  0000:0FCF  e81100            call     0xfe3  ; -> sub_0000_0FE3  ; spell_callHostDispatch
+  0000:0FD2  a0b51a            mov      al, byte ptr [0x1ab5]
+  0000:0FD5  245f              and      al, 0x5f
+  0000:0FD7  a29105            mov      byte ptr [0x591], al
+  0000:0FDA  be8505            mov      si, 0x585
+  0000:0FDD  e80300            call     0xfe3  ; -> sub_0000_0FE3  ; spell_callHostDispatch
+  0000:0FE0  aa                stosb    byte ptr es:[di], al
+  0000:0FE1  07                pop      es
+  0000:0FE2  c3                ret
+
+; --- spell_callHostDispatch ---
+; Call host dispatch entry (INT E0h callback)
+spell_callHostDispatch:  ; (sub_0000_0FE3)
+  0000:0FE3  ac                lodsb    al, byte ptr [si]
+  0000:0FE4  0ac0              or       al, al
+  0000:0FE6  7403              je       0xfeb  ; -> loc_0000_0FEB
+  0000:0FE8  aa                stosb    byte ptr es:[di], al
+  0000:0FE9  ebf8              jmp      0xfe3  ; -> sub_0000_0FE3  ; spell_callHostDispatch
+
+loc_0000_0FEB:
+  0000:0FEB  c3                ret
+
+; --- spell_cleanup ---
+; Clean up spell checker state on exit
+spell_cleanup:  ; (sub_0000_0FEC)
+  0000:0FEC  b88302            mov      ax, 0x283
+  0000:0FEF  50                push     ax
+  0000:0FF0  e8cf06            call     0x16c2  ; -> sub_0000_16C2  ; spell_getSystemTime
+  0000:0FF3  83c402            add      sp, 2
+  0000:0FF6  c3                ret
+  0000:0FF7  db 55 8B EB 06 8B 5E 00 B0 01 E8 27 07 3D 00 00 74 ; |U....^....'.=..t|
+  0000:1007  db 0D 3D 0B 00 75 05 B8 FE FF EB 03 B8 FF FF C6 06 ; |.=..u...........|
+  0000:1017  db 2D 07 00 07 5D C3 B8 EE 16 50 53 8B DC E8 04 00 ; |-...]....PS.....|
+  0000:1027  db 83 C4 04 C3 55 8B EB                            ; |....U..|
+  0000:102E  db 53 51 56 57                                     ; "SQVW"
+  0000:1032  db 06 1E B9 15 00 8B 7E 02 8B 5E 00 8C C5 B0 03 E8 ; |......~..^......|
+  0000:1042  db E6 06 1E 06 06 1F 8E C5 3D 10 00 74 14 8B F3 AC ; |........=..t....|
+  0000:1052  db AA 0A C0 75 FA FE C5 3A E9 74 06 07 1F B0 06 EB ; |...u...:.t......|
+  0000:1062  db DE 32 C0 AA 07 1F 8A C5 98 1F 07                ; |.2.........|
+  0000:106D  db 5F 5E 59 5B 5D                                  ; "_^Y[]"
+  0000:1072  db C3                                              ; |.|
+  0000:1073  55                push     bp
+  0000:1074  8bec              mov      bp, sp
+  0000:1076  06                push     es
+  0000:1077  1e                push     ds
+  0000:1078  07                pop      es
+  0000:1079  bb1e0f            mov      bx, 0xf1e
+  0000:107C  b9d007            mov      cx, 0x7d0
+  0000:107F  b015              mov      al, 0x15
+  0000:1081  e8a606            call     0x172a  ; -> sub_0000_172A  ; spell_intE0hCall
+  0000:1084  07                pop      es
+  0000:1085  5d                pop      bp
+  0000:1086  c3                ret
+  0000:1087  55                push     bp
+  0000:1088  8bec              mov      bp, sp
+  0000:108A  b014              mov      al, 0x14
+  0000:108C  e89b06            call     0x172a  ; -> sub_0000_172A  ; spell_intE0hCall
+  0000:108F  5d                pop      bp
+  0000:1090  c3                ret
+  0000:1091  55                push     bp
+  0000:1092  8bec              mov      bp, sp
+  0000:1094  e81600            call     0x10ad  ; -> sub_0000_10AD  ; spell_mainEventLoop
+  0000:1097  3dffff            cmp      ax, 0xffff
+  0000:109A  740f              je       0x10ab  ; -> loc_0000_10AB
+  0000:109C  06                push     es
+  0000:109D  1e                push     ds
+  0000:109E  07                pop      es
+  0000:109F  bb4e07            mov      bx, 0x74e
+  0000:10A2  b9d007            mov      cx, 0x7d0
+  0000:10A5  b012              mov      al, 0x12
+  0000:10A7  e88006            call     0x172a  ; -> sub_0000_172A  ; spell_intE0hCall
+  0000:10AA  07                pop      es
+
+loc_0000_10AB:
+  0000:10AB  5d                pop      bp
+  0000:10AC  c3                ret
+
+; --- spell_mainEventLoop ---
+; Main spell checking event loop (process words, show dialogs)
+spell_mainEventLoop:  ; (sub_0000_10AD)
+  0000:10AD  56                push     si
+  0000:10AE  32c0              xor      al, al
+  0000:10B0  06                push     es
+  0000:10B1  1e                push     ds
+  0000:10B2  07                pop      es
+  0000:10B3  bf4e07            mov      di, 0x74e
+  0000:10B6  b9d007            mov      cx, 0x7d0
+  0000:10B9  f3aa              rep stosb byte ptr es:[di], al
+  0000:10BB  07                pop      es
+  0000:10BC  e85c02            call     0x131b  ; -> sub_0000_131B  ; spell_lookupWord
+  0000:10BF  0bc0              or       ax, ax
+  0000:10C1  7408              je       0x10cb  ; -> loc_0000_10CB
+
+loc_0000_10C3:
+  0000:10C3  e86002            call     0x1326  ; -> sub_0000_1326  ; spell_getSuggestions
+  0000:10C6  3dffff            cmp      ax, 0xffff
+  0000:10C9  754d              jne      0x1118  ; -> loc_0000_1118
+
+loc_0000_10CB:
+  0000:10CB  803e6806ff        cmp      byte ptr [0x668], 0xff
+  0000:10D0  742e              je       0x1100  ; -> loc_0000_1100
+  0000:10D2  a0e319            mov      al, byte ptr [0x19e3]
+  0000:10D5  245f              and      al, 0x5f
+  0000:10D7  50                push     ax
+  0000:10D8  e83504            call     0x1510  ; -> sub_0000_1510  ; spell_savePSP
+  0000:10DB  83c402            add      sp, 2
+  0000:10DE  0bc0              or       ax, ax
+  0000:10E0  725a              jb       0x113c  ; -> loc_0000_113C
+  0000:10E2  741c              je       0x1100  ; -> loc_0000_1100
+  0000:10E4  e84e02            call     0x1335  ; -> sub_0000_1335  ; spell_validateWord
+  0000:10E7  250100            and      ax, 1
+  0000:10EA  0bc0              or       ax, ax
+  0000:10EC  7502              jne      0x10f0  ; -> loc_0000_10F0
+  0000:10EE  eb07              jmp      0x10f7  ; -> loc_0000_10F7
+
+loc_0000_10F0:
+  0000:10F0  e8ef01            call     0x12e2  ; -> sub_0000_12E2  ; spell_showAlternates
+  0000:10F3  0bc0              or       ax, ax
+  0000:10F5  75cc              jne      0x10c3  ; -> loc_0000_10C3
+
+loc_0000_10F7:
+  0000:10F7  2bc0              sub      ax, ax
+  0000:10F9  e85502            call     0x1351  ; -> sub_0000_1351  ; spell_callEngine
+  0000:10FC  2bc0              sub      ax, ax
+  0000:10FE  eb3c              jmp      0x113c  ; -> loc_0000_113C
+
+loc_0000_1100:
+  0000:1100  e8a300            call     0x11a6  ; -> sub_0000_11A6  ; spell_handleAddWord
+  0000:1103  be4e07            mov      si, 0x74e
+  0000:1106  c60400            mov      byte ptr [si], 0
+  0000:1109  3dffff            cmp      ax, 0xffff
+  0000:110C  742e              je       0x113c  ; -> loc_0000_113C
+  0000:110E  b80100            mov      ax, 1
+  0000:1111  e83d02            call     0x1351  ; -> sub_0000_1351  ; spell_callEngine
+  0000:1114  2bc0              sub      ax, ax
+  0000:1116  eb1f              jmp      0x1137  ; -> loc_0000_1137
+
+loc_0000_1118:
+  0000:1118  a3651a            mov      word ptr [0x1a65], ax
+  0000:111B  e8c300            call     0x11e1  ; -> sub_0000_11E1  ; spell_handleSkip
+  0000:111E  3dffff            cmp      ax, 0xffff
+  0000:1121  7414              je       0x1137  ; -> loc_0000_1137
+  0000:1123  be4e07            mov      si, 0x74e
+  0000:1126  03f0              add      si, ax
+  0000:1128  c60400            mov      byte ptr [si], 0
+  0000:112B  b001              mov      al, 1
+  0000:112D  e82102            call     0x1351  ; -> sub_0000_1351  ; spell_callEngine
+  0000:1130  2bc0              sub      ax, ax
+  0000:1132  c606880201        mov      byte ptr [0x288], 1
+
+loc_0000_1137:
+  0000:1137  50                push     ax
+  0000:1138  e88600            call     0x11c1  ; -> sub_0000_11C1  ; spell_handleCorrection
+  0000:113B  58                pop      ax
+
+loc_0000_113C:
+  0000:113C  5e                pop      si
+  0000:113D  c3                ret
+  0000:113E  db E8 13 00 B8 89 02 50 E8 7A 05 83 C4 02 3D 01 F7 ; |......P.z....=..|
+  0000:114E  db 74 03 B8 FF FF C3 06 1E 07 BE 5D 04 BF 67 1A AC ; |t.........]..g..|
+  0000:115E  db 0A C0 74 03 AA EB F8 A0 E3 19 24 5F AA B0 3A AA ; |..t.......$_..:.|
+  0000:116E  db 32 C0 AA 07 C3 B8 8E 02 50 E8 48 05 83 C4 02 3D ; |2.......P.H....=|
+  0000:117E  db 03 F7 74 05 B8 FF FF EB 02 2B C0 C3             ; |..t......+..|
+  0000:118A  55                push     bp
+  0000:118B  8bec              mov      bp, sp
+  0000:118D  b00a              mov      al, 0xa
+  0000:118F  e89805            call     0x172a  ; -> sub_0000_172A  ; spell_intE0hCall
+  0000:1192  5d                pop      bp
+  0000:1193  c3                ret
+  0000:1194  db 55 8B EB 06 8B 5E 00 8E 46 02 B0 0B E8 87 05 07 ; |U....^..F.......|
+  0000:11A4  db 5D C3                                           ; |].|
+
+; --- spell_handleAddWord ---
+; Handle 'Add to Dictionary' action
+spell_handleAddWord:  ; (sub_0000_11A6)
+  0000:11A6  b8e319            mov      ax, 0x19e3
+  0000:11A9  50                push     ax
+  0000:11AA  e82703            call     0x14d4  ; -> sub_0000_14D4  ; spell_getCallbackB
+  0000:11AD  83c402            add      sp, 2
+  0000:11B0  3dffff            cmp      ax, 0xffff
+  0000:11B3  7405              je       0x11ba  ; -> loc_0000_11BA
+  0000:11B5  a3651a            mov      word ptr [0x1a65], ax
+  0000:11B8  eb06              jmp      0x11c0  ; -> loc_0000_11C0
+
+loc_0000_11BA:
+  0000:11BA  e83b03            call     0x14f8  ; -> sub_0000_14F8  ; spell_getCallbackF
+  0000:11BD  b8ffff            mov      ax, 0xffff
+
+loc_0000_11C0:
+  0000:11C0  c3                ret
+
+; --- spell_handleCorrection ---
+; Handle word correction/replacement
+spell_handleCorrection:  ; (sub_0000_11C1)
+  0000:11C1  ff36651a          push     word ptr [0x1a65]
+  0000:11C5  e80603            call     0x14ce  ; -> sub_0000_14CE  ; spell_getCallbackA
+  0000:11C8  83c402            add      sp, 2
+  0000:11CB  3dffff            cmp      ax, 0xffff
+  0000:11CE  7510              jne      0x11e0  ; -> loc_0000_11E0
+  0000:11D0  ff36651a          push     word ptr [0x1a65]
+  0000:11D4  e81503            call     0x14ec  ; -> sub_0000_14EC  ; spell_getCallbackE
+  0000:11D7  83c402            add      sp, 2
+  0000:11DA  e82d03            call     0x150a  ; -> sub_0000_150A  ; spell_getCallbackH
+  0000:11DD  b8ffff            mov      ax, 0xffff
+
+loc_0000_11E0:
+  0000:11E0  c3                ret
+
+; --- spell_handleSkip ---
+; Handle skip/ignore unknown word
+spell_handleSkip:  ; (sub_0000_11E1)
+  0000:11E1  b8d007            mov      ax, 0x7d0
+  0000:11E4  50                push     ax
+  0000:11E5  be4e07            mov      si, 0x74e
+  0000:11E8  56                push     si
+  0000:11E9  ff36651a          push     word ptr [0x1a65]
+  0000:11ED  e8f002            call     0x14e0  ; -> sub_0000_14E0  ; spell_getCallbackD
+  0000:11F0  83c406            add      sp, 6
+  0000:11F3  3dffff            cmp      ax, 0xffff
+  0000:11F6  7506              jne      0x11fe  ; -> loc_0000_11FE
+  0000:11F8  e80303            call     0x14fe  ; -> sub_0000_14FE  ; spell_getCallbackG
+  0000:11FB  b8ffff            mov      ax, 0xffff
+
+loc_0000_11FE:
+  0000:11FE  c3                ret
+  0000:11FF  db 50 56 FF 36 65 1A E8 DE 02 83 C4 06 3D FF FF 75 ; |PV.6e.......=..u|
+  0000:120F  db 06 E8 F1 02 B8 FF FF C3 80 3E 5A 02 01 74 03 E9 ; |.........>Z..t..|
+  0000:121F  db C0 00 0B C0 B0 04 74 02 B0 02 A2 F2 02 C6 06 EE ; |......t.........|
+  0000:122F  db 02 00 B8 EB 02 50 E8 7E 04 83 C4 02 B8 EB 02 50 ; |.....P.~.......P|
+  0000:123F  db E8 7A 04 83 C4 02 0B C0 74 03 E9 8B 00 E8 CC 00 ; |.z......t.......|
+  0000:124F  db 0B C0 74 09 A0 88 02 0A C0 74 2A EB 38 A0 E3 19 ; |..t......t*.8...|
+  0000:125F  db 24 5F 50 E8 AB 02 83 C4 02 0B C0                ; |$_P........|
+  0000:126A  db 72 6B 74 30                                     ; "rkt0"
+  0000:126E  db A0 88 02 0A C0 75 18 E8 C6 FE 3D FF FF 74 5A E8 ; |.....u....=..tZ.|
+  0000:127E  db 9B 00 0B C0 74 1A E8 EC FE 0B C0 74 13 EB 4A E8 ; |....t......t..J.|
+  0000:128E  db 52 00 0B C0 74 43 E8 8F 00 3D FF FF 74 3B EB 08 ; |R...tC...=..t;..|
+  0000:129E  db E8 05 FF 3D FF FF 74 31 50 A3 65 1A BF 4E 07 06 ; |...=..t1P.e..N..|
+  0000:12AE  db 1E 07 E8 4D F4 07 8B C7 8B F3 E8 44 FF 3D FF FF ; |...M.......D.=..|
+  0000:12BE  db 74 16 33 C0 E8 3A FF 58 E8 F8 FE C6 06 5A 02 00 ; |t.3..:.X.....Z..|
+  0000:12CE  db B8 01 00 E8 7D 00 EB 01 58 C6 06 A3 02 00 C6 06 ; |....}...X.......|
+  0000:12DE  db B7 02 00 C3                                     ; |....|
+
+; --- spell_showAlternates ---
+; Show alternate spelling suggestions dialog
+spell_showAlternates:  ; (sub_0000_12E2)
+  0000:12E2  57                push     di
+  0000:12E3  56                push     si
+  0000:12E4  53                push     bx
+  0000:12E5  06                push     es
+  0000:12E6  1e                push     ds
+  0000:12E7  07                pop      es
+  0000:12E8  bb0100            mov      bx, 1
+  0000:12EB  be241a            mov      si, 0x1a24
+  0000:12EE  bf4702            mov      di, 0x247
+  0000:12F1  b80306            mov      ax, 0x603
+  0000:12F4  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:12F6  07                pop      es
+  0000:12F7  5b                pop      bx
+  0000:12F8  5e                pop      si
+  0000:12F9  5f                pop      di
+  0000:12FA  0bc0              or       ax, ax
+  0000:12FC  741c              je       0x131a  ; -> loc_0000_131A
+  0000:12FE  3dffff            cmp      ax, 0xffff
+  0000:1301  7504              jne      0x1307  ; -> loc_0000_1307
+  0000:1303  2bc0              sub      ax, ax
+  0000:1305  eb13              jmp      0x131a  ; -> loc_0000_131A
+
+loc_0000_1307:
+  0000:1307  06                push     es
+  0000:1308  1e                push     ds
+  0000:1309  07                pop      es
+  0000:130A  be241a            mov      si, 0x1a24
+  0000:130D  bfe319            mov      di, 0x19e3
+
+loc_0000_1310:
+  0000:1310  ac                lodsb    al, byte ptr [si]
+  0000:1311  aa                stosb    byte ptr es:[di], al
+  0000:1312  0ac0              or       al, al
+  0000:1314  75fa              jne      0x1310  ; -> loc_0000_1310
+  0000:1316  07                pop      es
+  0000:1317  b80100            mov      ax, 1
+
+loc_0000_131A:
+  0000:131A  c3                ret
+
+; --- spell_lookupWord ---
+; Look up word in dictionary via SPL.RES
+spell_lookupWord:  ; (sub_0000_131B)
+  0000:131B  b8e319            mov      ax, 0x19e3
+  0000:131E  50                push     ax
+  0000:131F  e8e802            call     0x160a  ; -> sub_0000_160A  ; spell_intE0hDispatch
+  0000:1322  83c402            add      sp, 2
+  0000:1325  c3                ret
+
+; --- spell_getSuggestions ---
+; Get spelling suggestions for unknown word
+spell_getSuggestions:  ; (sub_0000_1326)
+  0000:1326  b89200            mov      ax, 0x92
+  0000:1329  50                push     ax
+  0000:132A  b8e319            mov      ax, 0x19e3
+  0000:132D  50                push     ax
+  0000:132E  e8a901            call     0x14da  ; -> sub_0000_14DA  ; spell_getCallbackC
+  0000:1331  83c404            add      sp, 4
+  0000:1334  c3                ret
+
+; --- spell_validateWord ---
+; Validate a single word against dictionary
+spell_validateWord:  ; (sub_0000_1335)
+  0000:1335  53                push     bx
+  0000:1336  52                push     dx
+  0000:1337  803e6806ff        cmp      byte ptr [0x668], 0xff
+  0000:133C  740f              je       0x134d  ; -> loc_0000_134D
+  0000:133E  bb3400            mov      bx, 0x34
+  0000:1341  b80070            mov      ax, 0x7000
+  0000:1344  cd15              int      0x15  ; INT 15h, AH=70h
+  0000:1346  7205              jb       0x134d  ; -> loc_0000_134D
+  0000:1348  8bc2              mov      ax, dx
+
+loc_0000_134A:
+  0000:134A  5a                pop      dx
+  0000:134B  5b                pop      bx
+  0000:134C  c3                ret
+
+loc_0000_134D:
+  0000:134D  2bc0              sub      ax, ax
+  0000:134F  ebf9              jmp      0x134a  ; -> loc_0000_134A
+
+; --- spell_callEngine ---
+; Call SPL.RES engine function via INT 15h/70h (3 callers)
+spell_callEngine:  ; (sub_0000_1351)
+  0000:1351  53                push     bx
+  0000:1352  52                push     dx
+  0000:1353  803e6806ff        cmp      byte ptr [0x668], 0xff
+  0000:1358  74f3              je       0x134d  ; -> loc_0000_134D
+  0000:135A  a28802            mov      byte ptr [0x288], al
+  0000:135D  50                push     ax
+  0000:135E  bb3400            mov      bx, 0x34
+  0000:1361  b80070            mov      ax, 0x7000
+  0000:1364  cd15              int      0x15  ; INT 15h, AH=70h
+  0000:1366  58                pop      ax
+  0000:1367  72e4              jb       0x134d  ; -> loc_0000_134D
+  0000:1369  52                push     dx
+  0000:136A  80e201            and      dl, 1
+  0000:136D  3ad0              cmp      dl, al
+  0000:136F  5a                pop      dx
+  0000:1370  740d              je       0x137f  ; -> loc_0000_137F
+  0000:1372  80e2fe            and      dl, 0xfe
+  0000:1375  0ad0              or       dl, al
+  0000:1377  bb3400            mov      bx, 0x34
+  0000:137A  b80170            mov      ax, 0x7001
+  0000:137D  cd15              int      0x15  ; INT 15h, AH=70h
+
+loc_0000_137F:
+  0000:137F  ebcc              jmp      0x134d  ; -> loc_0000_134D
+  0000:1381  db 06 53 1E 07 B8 08 02 BA CA 05 BB C6 05 CD E0 0B ; |.S..............|
+  0000:1391  db C0 7E 16 C6 06 DA 05 01 B8 06 02 CD E0 0B C0 B8 ; |.~..............|
+  0000:13A1  db FF FF 74 02 33 C0 5B 07 C3 BA D4 05 B8 08 02 CD ; |..t.3.[.........|
+  0000:13B1  db E0 0B C0 7E DE C6 06 DA 05 00 EB DC 52 06 80 3E ; |...~........R..>|
+  0000:13C1  db DA 05 00 74 05 BA CA 05 EB 03 BA D4 05 B8 07 02 ; |...t............|
+  0000:13D1  db 1E 07 CD E0 B8 49 14 A3 C6 05 8C C8 A3 C8 05 07 ; |.....I..........|
+  0000:13E1  db 5A C3 06 53 1E 07 BA D4 05 BB D0 05 B8 06 02 CD ; |Z..S............|
+  0000:13F1  db E0 0B C0 B8 FF FF 74 29 A1 D0 05 A3 C6 05 A1 D2 ; |......t)........|
+  0000:1401  db 05 A3 C8 05 B8 08 02 BA CA 05 BB C6 05 CD E0 0B ; |................|
+  0000:1411  db C0 7E 07 C6 06 DA 05 01 EB 05 C6 06 DA 05 00 33 ; |.~.............3|
+  0000:1421  db C0 5B 07 C3 52 BA D4 05 B8 07 02 06 1E 07 CD E0 ; |.[..R...........|
+  0000:1431  db 07 B8 45 14 A3 D0 05 A3 C6 05 8C C8 A3 D2 05 A3 ; |..E.............|
+  0000:1441  db C8 05 5A C3 B8 FF FF CB B8 FF FF CB             ; |..Z.........|
+
+loc_0000_144D:
+  0000:144D  803eda0501        cmp      byte ptr [0x5da], 1
+  0000:1452  7411              je       0x1465  ; -> loc_0000_1465
+  0000:1454  3d3900            cmp      ax, 0x39
+  0000:1457  7c0c              jl       0x1465  ; -> loc_0000_1465
+  0000:1459  7407              je       0x1462  ; -> loc_0000_1462
+  0000:145B  3d4400            cmp      ax, 0x44
+  0000:145E  7e2c              jle      0x148c  ; -> loc_0000_148C
+  0000:1460  eb03              jmp      0x1465  ; -> loc_0000_1465
+
+loc_0000_1462:
+  0000:1462  b8ae00            mov      ax, 0xae
+
+loc_0000_1465:
+  0000:1465  8f06df05          pop      word ptr [0x5df]
+  0000:1469  ff36dd05          push     word ptr [0x5dd]
+  0000:146D  ff36df05          push     word ptr [0x5df]
+  0000:1471  53                push     bx
+  0000:1472  8bdc              mov      bx, sp
+  0000:1474  1e                push     ds
+  0000:1475  06                push     es
+  0000:1476  16                push     ss
+  0000:1477  07                pop      es
+  0000:1478  ff1ec605          lcall    [0x5c6]
+  0000:147C  07                pop      es
+  0000:147D  1f                pop      ds
+  0000:147E  5b                pop      bx
+  0000:147F  8f06df05          pop      word ptr [0x5df]
+  0000:1483  8f06dd05          pop      word ptr [0x5dd]
+  0000:1487  ff36df05          push     word ptr [0x5df]
+
+loc_0000_148B:
+  0000:148B  c3                ret
+
+loc_0000_148C:
+  0000:148C  b8ffff            mov      ax, 0xffff
+  0000:148F  ebfa              jmp      0x148b  ; -> loc_0000_148B
+
+loc_0000_1491:
+  0000:1491  803eda0501        cmp      byte ptr [0x5da], 1
+  0000:1496  740a              je       0x14a2  ; -> loc_0000_14A2
+  0000:1498  3dbe00            cmp      ax, 0xbe
+  0000:149B  742c              je       0x14c9  ; -> loc_0000_14C9
+  0000:149D  3dbf00            cmp      ax, 0xbf
+  0000:14A0  7427              je       0x14c9  ; -> loc_0000_14C9
+
+loc_0000_14A2:
+  0000:14A2  8f06df05          pop      word ptr [0x5df]
+  0000:14A6  ff36dd05          push     word ptr [0x5dd]
+  0000:14AA  ff36df05          push     word ptr [0x5df]
+  0000:14AE  53                push     bx
+  0000:14AF  8bdc              mov      bx, sp
+  0000:14B1  1e                push     ds
+  0000:14B2  06                push     es
+  0000:14B3  16                push     ss
+  0000:14B4  07                pop      es
+  0000:14B5  ff1ed005          lcall    [0x5d0]
+  0000:14B9  07                pop      es
+  0000:14BA  1f                pop      ds
+  0000:14BB  5b                pop      bx
+  0000:14BC  8f06df05          pop      word ptr [0x5df]
+  0000:14C0  8f06dd05          pop      word ptr [0x5dd]
+  0000:14C4  ff36df05          push     word ptr [0x5df]
+
+loc_0000_14C8:
+  0000:14C8  c3                ret
+
+loc_0000_14C9:
+  0000:14C9  b8ffff            mov      ax, 0xffff
+  0000:14CC  ebfa              jmp      0x14c8  ; -> loc_0000_14C8
+
+; --- spell_getCallbackA ---
+; Get callback function pointer A
+spell_getCallbackA:  ; (sub_0000_14CE)
+  0000:14CE  b80100            mov      ax, 1
+  0000:14D1  e979ff            jmp      0x144d  ; -> loc_0000_144D
+
+; --- spell_getCallbackB ---
+; Get callback function pointer B
+spell_getCallbackB:  ; (sub_0000_14D4)
+  0000:14D4  b80200            mov      ax, 2
+  0000:14D7  e973ff            jmp      0x144d  ; -> loc_0000_144D
+
+; --- spell_getCallbackC ---
+; Get callback function pointer C
+spell_getCallbackC:  ; (sub_0000_14DA)
+  0000:14DA  b80500            mov      ax, 5
+  0000:14DD  e96dff            jmp      0x144d  ; -> loc_0000_144D
+
+; --- spell_getCallbackD ---
+; Get callback function pointer D
+spell_getCallbackD:  ; (sub_0000_14E0)
+  0000:14E0  b80600            mov      ax, 6
+  0000:14E3  e967ff            jmp      0x144d  ; -> loc_0000_144D
+  0000:14E6  db B8 07 00 E9 61 FF                               ; |....a.|
+
+; --- spell_getCallbackE ---
+; Get callback function pointer E
+spell_getCallbackE:  ; (sub_0000_14EC)
+  0000:14EC  b80800            mov      ax, 8
+  0000:14EF  e95bff            jmp      0x144d  ; -> loc_0000_144D
+  0000:14F2  db B8 12 00 E9 55 FF                               ; |....U.|
+
+; --- spell_getCallbackF ---
+; Get callback function pointer F
+spell_getCallbackF:  ; (sub_0000_14F8)
+  0000:14F8  b81d00            mov      ax, 0x1d
+  0000:14FB  e993ff            jmp      0x1491  ; -> loc_0000_1491
+
+; --- spell_getCallbackG ---
+; Get callback function pointer G
+spell_getCallbackG:  ; (sub_0000_14FE)
+  0000:14FE  b81e00            mov      ax, 0x1e
+  0000:1501  e98dff            jmp      0x1491  ; -> loc_0000_1491
+  0000:1504  db B8 1F 00 E9 87 FF                               ; |......|
+
+; --- spell_getCallbackH ---
+; Get callback function pointer H
+spell_getCallbackH:  ; (sub_0000_150A)
+  0000:150A  b82000            mov      ax, 0x20
+  0000:150D  e981ff            jmp      0x1491  ; -> loc_0000_1491
+
+; --- spell_savePSP ---
+; Save/restore PSP segment (INT 21h/50h,51h)
+spell_savePSP:  ; (sub_0000_1510)
+  0000:1510  b83800            mov      ax, 0x38
+  0000:1513  e937ff            jmp      0x144d  ; -> loc_0000_144D
+  0000:1516  55                push     bp
+  0000:1517  8bec              mov      bp, sp
+  0000:1519  1e                push     ds
+  0000:151A  06                push     es
+  0000:151B  56                push     si
+  0000:151C  57                push     di
+  0000:151D  53                push     bx
+  0000:151E  51                push     cx
+  0000:151F  52                push     dx
+  0000:1520  b80006            mov      ax, 0x600
+  0000:1523  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:1525  250080            and      ax, 0x8000
+  0000:1528  7413              je       0x153d  ; -> loc_0000_153D
+  0000:152A  baec05            mov      dx, 0x5ec
+  0000:152D  1e                push     ds
+  0000:152E  07                pop      es
+  0000:152F  b80e06            mov      ax, 0x60e
+  0000:1532  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:1534  0bc0              or       ax, ax
+  0000:1536  7405              je       0x153d  ; -> loc_0000_153D
+  0000:1538  3d6e00            cmp      ax, 0x6e
+  0000:153B  7c03              jl       0x1540  ; -> loc_0000_1540
+
+loc_0000_153D:
+  0000:153D  e98d00            jmp      0x15cd  ; -> loc_0000_15CD
+
+loc_0000_1540:
+  0000:1540  8b4608            mov      ax, word ptr [bp + 8]
+  0000:1543  a3ea05            mov      word ptr [0x5ea], ax
+  0000:1546  83ec41            sub      sp, 0x41
+  0000:1549  8bfc              mov      di, sp
+  0000:154B  57                push     di
+  0000:154C  16                push     ss
+  0000:154D  07                pop      es
+  0000:154E  8b7604            mov      si, word ptr [bp + 4]
+  0000:1551  b94100            mov      cx, 0x41
+  0000:1554  fc                cld
+  0000:1555  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+  0000:1557  5f                pop      di
+  0000:1558  83ec41            sub      sp, 0x41
+  0000:155B  8bf4              mov      si, sp
+  0000:155D  83ec61            sub      sp, 0x61
+  0000:1560  8bdc              mov      bx, sp
+  0000:1562  b104              mov      cl, 4
+  0000:1564  d3eb              shr      bx, cl
+  0000:1566  8cd2              mov      dx, ss
+  0000:1568  03d3              add      dx, bx
+  0000:156A  81ea9701          sub      dx, 0x197
+  0000:156E  b104              mov      cl, 4
+  0000:1570  d3e3              shl      bx, cl
+  0000:1572  8bcc              mov      cx, sp
+  0000:1574  2bcb              sub      cx, bx
+  0000:1576  81c17019          add      cx, 0x1970
+  0000:157A  8936e805          mov      word ptr [0x5e8], si
+  0000:157E  2bf3              sub      si, bx
+  0000:1580  2bfb              sub      di, bx
+  0000:1582  81c67019          add      si, 0x1970
+  0000:1586  81c77019          add      di, 0x1970
+  0000:158A  fa                cli
+  0000:158B  8c16e405          mov      word ptr [0x5e4], ss
+  0000:158F  8926e605          mov      word ptr [0x5e6], sp
+  0000:1593  8ed2              mov      ss, dx
+  0000:1595  8be1              mov      sp, cx
+  0000:1597  fb                sti
+  0000:1598  8cd0              mov      ax, ss
+  0000:159A  8ec0              mov      es, ax
+  0000:159C  8b1eea05          mov      bx, word ptr [0x5ea]
+  0000:15A0  b80306            mov      ax, 0x603
+  0000:15A3  cde0              int      0xe0  ; INT E0h, AH=06h
+  0000:15A5  fa                cli
+  0000:15A6  8e16e405          mov      ss, word ptr [0x5e4]
+  0000:15AA  8b26e605          mov      sp, word ptr [0x5e6]
+  0000:15AE  fb                sti
+  0000:15AF  0bc0              or       ax, ax
+  0000:15B1  7e0f              jle      0x15c2  ; -> loc_0000_15C2
+  0000:15B3  8b7e06            mov      di, word ptr [bp + 6]
+  0000:15B6  1e                push     ds
+  0000:15B7  07                pop      es
+  0000:15B8  8b36e805          mov      si, word ptr [0x5e8]
+  0000:15BC  b94100            mov      cx, 0x41
+  0000:15BF  fc                cld
+  0000:15C0  f3a4              rep movsb byte ptr es:[di], byte ptr [si]
+
+loc_0000_15C2:
+  0000:15C2  83c461            add      sp, 0x61
+  0000:15C5  83c441            add      sp, 0x41
+  0000:15C8  83c441            add      sp, 0x41
+  0000:15CB  eb10              jmp      0x15dd  ; -> loc_0000_15DD
+
+loc_0000_15CD:
+  0000:15CD  1e                push     ds
+  0000:15CE  07                pop      es
+  0000:15CF  8b5e08            mov      bx, word ptr [bp + 8]
+  0000:15D2  8b7606            mov      si, word ptr [bp + 6]
+  0000:15D5  8b7e04            mov      di, word ptr [bp + 4]
+  0000:15D8  b80306            mov      ax, 0x603
+  0000:15DB  cde0              int      0xe0  ; INT E0h, AH=06h
+
+loc_0000_15DD:
+  0000:15DD  5a                pop      dx
+  0000:15DE  59                pop      cx
+  0000:15DF  5b                pop      bx
+  0000:15E0  5f                pop      di
+  0000:15E1  5e                pop      si
+  0000:15E2  07                pop      es
+  0000:15E3  1f                pop      ds
+  0000:15E4  5d                pop      bp
+  0000:15E5  c3                ret
+  0000:15E6  55                push     bp
+  0000:15E7  8bec              mov      bp, sp
+  0000:15E9  83c504            add      bp, 4
+  0000:15EC  06                push     es
+  0000:15ED  1e                push     ds
+  0000:15EE  07                pop      es
+  0000:15EF  cde0              int      0xe0  ; INT E0h
+  0000:15F1  07                pop      es
+  0000:15F2  5d                pop      bp
+  0000:15F3  c3                ret
+
+loc_0000_15F4:
+  0000:15F4  55                push     bp
+  0000:15F5  8bec              mov      bp, sp
+  0000:15F7  06                push     es
+  0000:15F8  57                push     di
+  0000:15F9  1e                push     ds
+  0000:15FA  07                pop      es
+  0000:15FB  8b7e04            mov      di, word ptr [bp + 4]
+  0000:15FE  cde0              int      0xe0  ; INT E0h
+  0000:1600  5f                pop      di
+  0000:1601  07                pop      es
+  0000:1602  5d                pop      bp
+  0000:1603  c3                ret
+  0000:1604  db B8 01 06 E9 EA FF                               ; |......|
+
+; --- spell_intE0hDispatch ---
+; INT E0h dispatch handler (3 sub-functions)
+spell_intE0hDispatch:  ; (sub_0000_160A)
+  0000:160A  b80406            mov      ax, 0x604
+  0000:160D  e9e4ff            jmp      0x15f4  ; -> loc_0000_15F4
+  0000:1610  db B8 01 07 E9 D0 FF 06 53 52 1E 07 BB F2 05 BA F6 ; |.......SR.......|
+  0000:1620  db 05 B8 06 02 CD E0 9A 73 17 00 00 5A 5B 07 C3 06 ; |.......s...Z[...| [RELOC->seg_0000]
+  0000:1630  db 52 1E 07 BA F6 05 B8 07 02 CD E0 5A 07 C3 E8 D5 ; |R..........Z....|
+  0000:1640  db FF E8 5A 00 C3 E8 5C 00 E8 E4 FF C3             ; |..Z...\.....|
+
+loc_0000_164C:
+  0000:164C  55                push     bp
+  0000:164D  8bec              mov      bp, sp
+  0000:164F  83c504            add      bp, 4
+  0000:1652  9a9a170000        lcall    0, 0x179a  ; -> sub_0000_0000 | RELOC->seg_0000
+  0000:1657  3dffff            cmp      ax, 0xffff
+  0000:165A  7416              je       0x1672  ; -> loc_0000_1672
+  0000:165C  3dfeff            cmp      ax, 0xfffe
+  0000:165F  7411              je       0x1672  ; -> loc_0000_1672
+  0000:1661  9ac9170000        lcall    0, 0x17c9  ; -> sub_0000_0000 | RELOC->seg_0000
+  0000:1666  a3fc05            mov      word ptr [0x5fc], ax
+  0000:1669  ff1ef205          lcall    [0x5f2]
+  0000:166D  9af3170000        lcall    0, 0x17f3  ; -> sub_0000_0000 | RELOC->seg_0000
+
+loc_0000_1672:
+  0000:1672  5d                pop      bp
+  0000:1673  c3                ret
+  0000:1674  db B8 13 20 E9 D2 FF B8 15 20 E9 CC FF B8 16 20 E9 ; |.. ..... ..... .|
+  0000:1684  db C6 FF B8 1C 20 E9 C0 FF B8 1D 20 E9 BA FF B8 44 ; |.... ..... ....D|
+  0000:1694  db 20 E9 B4 FF B8 52 20 E9 AE FF                   ; | ....R ...|
+
+; --- spell_savePSPContext ---
+; Save PSP context for interrupt safety
+spell_savePSPContext:  ; (sub_0000_169E)
+  0000:169E  b8d620            mov      ax, 0x20d6
+  0000:16A1  e9a8ff            jmp      0x164c  ; -> loc_0000_164C
+
+; --- spell_restorePSPContext ---
+; Restore PSP context after callback
+spell_restorePSPContext:  ; (sub_0000_16A4)
+  0000:16A4  b8d720            mov      ax, 0x20d7
+  0000:16A7  e9a2ff            jmp      0x164c  ; -> loc_0000_164C
+  0000:16AA  db B8 DF 20 E9 9C FF B8 E0 20 E9 96 FF B8 E3 20 E9 ; |.. ..... ..... .|
+  0000:16BA  db 90 FF B8 E4 20 E9 8A FF                         ; |.... ...|
+
+; --- spell_getSystemTime ---
+; Get system time via INT 21h/2Ch
+spell_getSystemTime:  ; (sub_0000_16C2)
+  0000:16C2  b8e920            mov      ax, 0x20e9
+  0000:16C5  e984ff            jmp      0x164c  ; -> loc_0000_164C
+  0000:16C8  db B8 EA 20 E9 7E FF                               ; |.. .~.|
+  0000:16CE  55                push     bp
+  0000:16CF  8bec              mov      bp, sp
+  0000:16D1  56                push     si
+  0000:16D2  57                push     di
+  0000:16D3  8b7604            mov      si, word ptr [bp + 4]
+  0000:16D6  b42c              mov      ah, 0x2c
+  0000:16D8  cd21              int      0x21  ; INT 21h/2Ch: Get time
+  0000:16DA  035604            add      dx, word ptr [bp + 4]
+  0000:16DD  80fa64            cmp      dl, 0x64
+  0000:16E0  7205              jb       0x16e7  ; -> loc_0000_16E7
+  0000:16E2  80ea64            sub      dl, 0x64
+  0000:16E5  fec6              inc      dh
+
+loc_0000_16E7:
+  0000:16E7  8bf2              mov      si, dx
+  0000:16E9  8bf9              mov      di, cx
+
+loc_0000_16EB:
+  0000:16EB  b42c              mov      ah, 0x2c
+  0000:16ED  cd21              int      0x21  ; INT 21h/2Ch: Get time
+  0000:16EF  3bcf              cmp      cx, di
+  0000:16F1  7403              je       0x16f6  ; -> loc_0000_16F6
+  0000:16F3  80c63c            add      dh, 0x3c
+
+loc_0000_16F6:
+  0000:16F6  3bf2              cmp      si, dx
+  0000:16F8  77f1              ja       0x16eb  ; -> loc_0000_16EB
+  0000:16FA  5f                pop      di
+  0000:16FB  5e                pop      si
+  0000:16FC  5d                pop      bp
+  0000:16FD  c3                ret
+  0000:16FE  db 06 53 52 1E 07 BA 02 06 BB FE 05 B8 06 02 CD E0 ; |.SR.............|
+  0000:170E  db 0B C0 B8 FF FF 74 02 33 C0 5A 5B 07 C3 52 BA 02 ; |.....t.3.Z[..R..|
+  0000:171E  db 06 06 1E 07 B8 07 02 CD E0 07 5A C3             ; |..........Z.|
+
+; --- spell_intE0hCall ---
+; INT E0h API call wrapper (4 call sites)
+spell_intE0hCall:  ; (sub_0000_172A)
+  0000:172A  813efe05cdab      cmp      word ptr [0x5fe], 0xabcd
+  0000:1730  7404              je       0x1736  ; -> loc_0000_1736
+  0000:1732  ff1efe05          lcall    [0x5fe]
+
+loc_0000_1736:
+  0000:1736  c3                ret
+  0000:1737  db 06 53 52 1E 07 BA 0A 06 BB 06 06 B8 06 02 CD E0 ; |.SR.............|
+  0000:1747  db 0B C0 B8 FF FF 74 02 33 C0 5A 5B 07 C3 52 06 1E ; |.....t.3.Z[..R..|
+  0000:1757  db 07 BA 0A 06 B8 07 02 CD E0 07 5A C3 53 06 8B DC ; |..........Z.S...|
+  0000:1767  db 83 C3 06 16 07 FF 1E 06 06 07 5B C3 50 B8 D5 20 ; |..........[.P.. |
+  0000:1777  db 25 FF 0F FF 1E F2 05 C7 06 14 06 FF 0F 3C 20 7E ; |%............< ~|
+  0000:1787  db 10 C7 06 14 06 FF FF 3C 37 7E 06 C7 06 14 06 FF ; |.......<7~......|
+  0000:1797  db EF 58 CB 81 3E 14 06 FF 0F 74 11 81 3E 14 06 FF ; |.X..>....t..>...|
+  0000:17A7  db EF 74 1E                                        ; |.t.|
+  0000:17AA  db 3D 44 21 7E                                     ; "=D!~"
+  0000:17AE  db 19 B8 FF FF CB 3D 0A 21 7F 05 23 06 14 06 CB 3D ; |.....=.!..#....=|
+  0000:17BE  db 2D 21 B8 FE FF 74 03 B8 FF FF CB 9C 3D 90 20 75 ; |-!...t......=. u|
+  0000:17CE  db 22 81 3E 14 06 FF 0F 74 1A 50 B8 D5 20 FF 1E F2 ; |".>....t.P.. ...|
+  0000:17DE  db 05 3C 29 58 7F 0D 53 8B 5D 0E 8B 1F D1 E3 43 29 ; |.<)X..S.].....C)|
+  0000:17EE  db 5D 02 5B 9D CB 9C 81 3E FC 05 90 20 74 0A 81 3E ; |].[....>... t..>|
+  0000:17FE  db FC 05 17 21 74 02 9D CB 81 3E 14 06 FF 0F 74 6A ; |...!t....>....tj|
+  0000:180E  db 50 B8 D5 20 FF 1E F2 05 3C 29 7F 18 81 3E FC 05 ; |P.. ....<)...>..|
+  0000:181E  db 17 21 74 10 58 53 8B 5D 0E 8B 1F D1 E3 43 01 5D ; |.!t.XS.].....C.]|
+  0000:182E  db 02 5B EB                                        ; |.[.|
+  0000:1831  db 46 3C 37 58                                     ; "F<7X"
+  0000:1835  db 7F 41 81 3E FC 05 17                            ; |.A.>...|
+  0000:183C  db 21 75 39 56 57 51 52                            ; "!u9VWQR"
+  0000:1843  db 8B 76 00 83 C6 04 E8 2E 00 32 E4 B1 04 F6 E1 BF ; |.v.......2......|
+  0000:1853  db 16 06 03 F8 B9 04 00 B8 00 00                   ; |..........|
+  0000:185D  db 4E 4F 47 46                                     ; "NOGF"
+  0000:1861  db 8A 15 0A 14 74 0D 8A 15 38 14 75 04 E2 F0 EB 03 ; |....t...8.u.....|
+  0000:1871  db B8 FF FF                                        ; |...|
+  0000:1874  db 5A 59 5F 5E                                     ; "ZY_^"
+  0000:1878  db 9D CB 55 83 EC 0B 8B EC 1E 1E 07 16 1F 8D 46 00 ; |..U...........F.|
+  0000:1888  db 55 50 8B EC B8 31 20 25 FF 0F 26 FF 1E F2 05 83 ; |UP...1 %..&.....|
+  0000:1898  db C4 02 5D 1F 8A 46 00 83                         ; |..]..F..|
+
+; ------------------------------------------------------------------------
+; SEGMENT seg_018A  (416 bytes, file 0x1AA0-0x1C40)
+; ------------------------------------------------------------------------
+seg_018A:
+
+
+; --- spell_crtResizeMemory ---
+; MSC CRT memory resize (INT 21h/4Ah)
+spell_crtResizeMemory:  ; (sub_018A_0000)
+  018A:0000  c40b              les      cx, ptr [bp + di]
+  018A:0002  5d                pop      bp
+  018A:0003  c3                ret
+  018A:0004  db 00 00                                           ; |..|
+
+; --- spell_entryPoint ---
+; MSC 5.x CRT startup / DM89 entry point
+spell_entryPoint:  ; (entry_point)
+  018A:0006  b8a401            mov      ax, 0x1a4  ; RELOC->seg_01A4
+  018A:0009  8ed8              mov      ds, ax
+  018A:000B  8c066206          mov      word ptr [0x662], es
+  018A:000F  2e8c1e0400        mov      word ptr cs:[4], ds
+  018A:0014  89266406          mov      word ptr [0x664], sp
+  018A:0018  8c166606          mov      word ptr [0x666], ss
+  018A:001C  1e                push     ds
+  018A:001D  07                pop      es
+  018A:001E  bb0e00            mov      bx, 0xe
+  018A:0021  a16206            mov      ax, word ptr [0x662]
+  018A:0024  894720            mov      word ptr [bx + 0x20], ax
+  018A:0027  b80006            mov      ax, 0x600
+  018A:002A  cde0              int      0xe0  ; INT E0h, AH=06h
+  018A:002C  250080            and      ax, 0x8000
+  018A:002F  7405              je       0x36  ; -> loc_018A_0036
+  018A:0031  b8f001            mov      ax, 0x1f0
+  018A:0034  eb03              jmp      0x39  ; -> loc_018A_0039
+
+loc_018A_0036:
+  018A:0036  b8ff01            mov      ax, 0x1ff
+
+loc_018A_0039:
+  018A:0039  b90000            mov      cx, 0  ; RELOC->seg_0000
+  018A:003C  cde0              int      0xe0  ; INT E0h, AH=01h
+  018A:003E  a26806            mov      byte ptr [0x668], al
+  018A:0041  9a6a000000        lcall    0, 0x6a  ; -> sub_018A_0000 | RELOC->seg_0000
+  018A:0046  a26906            mov      byte ptr [0x669], al
+  018A:0049  b85c03            mov      ax, 0x35c  ; RELOC->seg_035C
+  018A:004C  803e6806ff        cmp      byte ptr [0x668], 0xff
+  018A:0051  7404              je       0x57  ; -> loc_018A_0057
+  018A:0053  8ccb              mov      bx, cs
+  018A:0055  eb03              jmp      0x5a  ; -> loc_018A_005A
+
+loc_018A_0057:
+  018A:0057  bb0000            mov      bx, 0  ; RELOC->seg_0000
+
+loc_018A_005A:
+  018A:005A  2bc3              sub      ax, bx
+  018A:005C  051000            add      ax, 0x10
+  018A:005F  8bd0              mov      dx, ax
+  018A:0061  a06906            mov      al, byte ptr [0x669]
+  018A:0064  b431              mov      ah, 0x31
+  018A:0066  cd21              int      0x21  ; INT 21h/31h: TSR (keep process)
+  018A:0068  55                push     bp
+  018A:0069  06                push     es
+  018A:006A  1e                push     ds
+  018A:006B  56                push     si
+  018A:006C  8bec              mov      bp, sp
+  018A:006E  83ec03            sub      sp, 3
+  018A:0071  1e                push     ds
+  018A:0072  07                pop      es
+  018A:0073  2e8e1e0400        mov      ds, word ptr cs:[4]
+  018A:0078  50                push     ax
+  018A:0079  e83c00            call     0xb8  ; -> sub_018A_00B8  ; spell_crtAllocMemory
+  018A:007C  a06806            mov      al, byte ptr [0x668]
+  018A:007F  3cff              cmp      al, 0xff
+  018A:0081  7410              je       0x93  ; -> loc_018A_0093
+  018A:0083  52                push     dx
+  018A:0084  8ad0              mov      dl, al
+  018A:0086  b80270            mov      ax, 0x7002
+  018A:0089  cd15              int      0x15  ; INT 15h, AH=70h
+  018A:008B  50                push     ax
+  018A:008C  b80370            mov      ax, 0x7003
+  018A:008F  cd15              int      0x15  ; INT 15h, AH=70h
+  018A:0091  58                pop      ax
+  018A:0092  5a                pop      dx
+
+loc_018A_0093:
+  018A:0093  8846ff            mov      byte ptr [bp - 1], al
+  018A:0096  58                pop      ax
+  018A:0097  9a2c000000        lcall    0, 0x2c  ; -> sub_018A_0000 | RELOC->seg_0000
+  018A:009C  50                push     ax
+  018A:009D  8a46ff            mov      al, byte ptr [bp - 1]
+  018A:00A0  3cff              cmp      al, 0xff
+  018A:00A2  7409              je       0xad  ; -> loc_018A_00AD
+  018A:00A4  52                push     dx
+  018A:00A5  8ad0              mov      dl, al
+  018A:00A7  b80370            mov      ax, 0x7003
+  018A:00AA  cd15              int      0x15  ; INT 15h, AH=70h
+  018A:00AC  5a                pop      dx
+
+loc_018A_00AD:
+  018A:00AD  e81a00            call     0xca  ; -> sub_018A_00CA  ; spell_crtStartup
+  018A:00B0  58                pop      ax
+  018A:00B1  8be5              mov      sp, bp
+  018A:00B3  5e                pop      si
+  018A:00B4  1f                pop      ds
+  018A:00B5  07                pop      es
+  018A:00B6  5d                pop      bp
+  018A:00B7  cb                retf
+
+; --- spell_crtAllocMemory ---
+; MSC CRT allocate memory block
+spell_crtAllocMemory:  ; (sub_018A_00B8)
+  018A:00B8  53                push     bx
+  018A:00B9  b451              mov      ah, 0x51
+  018A:00BB  cd21              int      0x21  ; INT 21h/51h: Get PSP
+  018A:00BD  895efd            mov      word ptr [bp - 3], bx
+  018A:00C0  8b1e6206          mov      bx, word ptr [0x662]
+
+loc_018A_00C4:
+  018A:00C4  b450              mov      ah, 0x50
+  018A:00C6  cd21              int      0x21  ; INT 21h/50h: Set PSP
+  018A:00C8  5b                pop      bx
+  018A:00C9  c3                ret
+
+; --- spell_crtStartup ---
+; MSC 5.x CRT startup sequence for RES module
+spell_crtStartup:  ; (sub_018A_00CA)
+  018A:00CA  53                push     bx
+  018A:00CB  8b5efd            mov      bx, word ptr [bp - 3]
+  018A:00CE  ebf4              jmp      0xc4  ; -> loc_018A_00C4
+  018A:00D0  55                push     bp
+  018A:00D1  8bec              mov      bp, sp
+  018A:00D3  83ec03            sub      sp, 3
+  018A:00D6  1e                push     ds
+  018A:00D7  b8a401            mov      ax, 0x1a4  ; RELOC->seg_01A4
+  018A:00DA  8ed8              mov      ds, ax
+  018A:00DC  803e690600        cmp      byte ptr [0x669], 0
+  018A:00E1  750b              jne      0xee  ; -> loc_018A_00EE
+  018A:00E3  e8d2ff            call     0xb8  ; -> sub_018A_00B8  ; spell_crtAllocMemory
+  018A:00E6  9abb000000        lcall    0, 0xbb  ; -> sub_018A_0000 | RELOC->seg_0000
+  018A:00EB  e8dcff            call     0xca  ; -> sub_018A_00CA  ; spell_crtStartup
+
+loc_018A_00EE:
+  018A:00EE  1f                pop      ds
+  018A:00EF  8be5              mov      sp, bp
+  018A:00F1  5d                pop      bp
+  018A:00F2  cb                retf
+  018A:00F3  db 00 00 00 2E 80 3E F3 00 01 75 03 E9 99 00 1E 2E ; |.....>...u......|
+  018A:0103  db 8E 1E F4 00 06 56 C4 36 6A 06 26 83 3C 00 5E 07 ; |.....V.6j.&.<.^.|
+  018A:0113  db 1F 74 03 E9 81 00 2E C6 06 F3 00 01             ; |.t..........|
+  018A:011F  55                push     bp
+  018A:0120  8bec              mov      bp, sp
+  018A:0122  803d01            cmp      byte ptr [di], 1
+  018A:0125  756c              jne      0x193  ; -> loc_018A_0193
+  018A:0127  807d03ff          cmp      byte ptr [di + 3], 0xff
+  018A:012B  7566              jne      0x193  ; -> loc_018A_0193
+  018A:012D  1e                push     ds
+  018A:012E  53                push     bx
+  018A:012F  51                push     cx
+  018A:0130  52                push     dx
+  018A:0131  56                push     si
+  018A:0132  57                push     di
+  018A:0133  06                push     es
+  018A:0134  8bec              mov      bp, sp
+  018A:0136  83ec02            sub      sp, 2
+  018A:0139  8b5501            mov      dx, word ptr [di + 1]
+  018A:013C  2e8e1ef400        mov      ds, word ptr cs:[0xf4]
+  018A:0141  53                push     bx
+  018A:0142  b451              mov      ah, 0x51
+  018A:0144  cd21              int      0x21  ; INT 21h/51h: Get PSP
+  018A:0146  895efe            mov      word ptr [bp - 2], bx
+  018A:0149  8b1e6206          mov      bx, word ptr [0x662]
+  018A:014D  b450              mov      ah, 0x50
+  018A:014F  cd21              int      0x21  ; INT 21h/50h: Set PSP
+  018A:0151  5b                pop      bx
+  018A:0152  a06806            mov      al, byte ptr [0x668]
+  018A:0155  3cff              cmp      al, 0xff
+  018A:0157  7410              je       0x169  ; -> loc_018A_0169
+  018A:0159  52                push     dx
+  018A:015A  8ad0              mov      dl, al
+  018A:015C  b80270            mov      ax, 0x7002
+  018A:015F  cd15              int      0x15  ; INT 15h, AH=70h
+  018A:0161  50                push     ax
+  018A:0162  b80370            mov      ax, 0x7003
+  018A:0165  cd15              int      0x15  ; INT 15h, AH=70h
+  018A:0167  58                pop      ax
+  018A:0168  5a                pop      dx
+
+loc_018A_0169:
+  018A:0169  50                push     ax
+  018A:016A  8bc2              mov      ax, dx
+  018A:016C  9a760c0000        lcall    0, 0xc76  ; -> sub_018A_0000 | RELOC->seg_0000
+  018A:0171  58                pop      ax
+  018A:0172  3cff              cmp      al, 0xff
+  018A:0174  7409              je       0x17f  ; -> loc_018A_017F
+  018A:0176  52                push     dx
+  018A:0177  8ad0              mov      dl, al
+  018A:0179  b80370            mov      ax, 0x7003
+  018A:017C  cd15              int      0x15  ; INT 15h, AH=70h
+  018A:017E  5a                pop      dx
+
+loc_018A_017F:
+  018A:017F  50                push     ax
+  018A:0180  53                push     bx
+  018A:0181  8b5efe            mov      bx, word ptr [bp - 2]
+  018A:0184  b450              mov      ah, 0x50
+  018A:0186  cd21              int      0x21  ; INT 21h/50h: Set PSP
+  018A:0188  5b                pop      bx
+  018A:0189  58                pop      ax
+  018A:018A  8be5              mov      sp, bp
+  018A:018C  07                pop      es
+  018A:018D  5f                pop      di
+  018A:018E  5e                pop      si
+  018A:018F  5a                pop      dx
+  018A:0190  59                pop      cx
+  018A:0191  5b                pop      bx
+  018A:0192  1f                pop      ds
+
+loc_018A_0193:
+  018A:0193  5d                pop      bp
+  018A:0194  2ec606f30000      mov      byte ptr cs:[0xf3], 0
+  018A:019A  cb                retf
+  018A:019B  db 2E 8C 1E F4 00                                  ; |.....|
+
+; ------------------------------------------------------------------------
+; SEGMENT seg_01A4  (1634 bytes, file 0x1C40-0x22A2)
+; ------------------------------------------------------------------------
+seg_01A4:
+
+  01A4:0000  db 2E C6 06 F3 00 00 CB 00                         ; |........|
+  01A4:0008  db 30 32 2E 30 33                                  ; "02.03"
+  01A4:000D  db 00                                                ; NUL
+  01A4:000E  db 53 50 45 4C 4C                                  ; "SPELL"
+  01A4:0013  db 00                                                ; NUL
+  01A4:0014  db 00 00 68 00 8A 01 D0 00 8A 01 00 00 00 00 00 00 ; |..h.............| [RELOC->seg_018A]
+  01A4:0024  db 00 00 00 00 00 00 00 00 00 00 00 00 03 03 02 00 ; |................|
+  01A4:0034  db 00 E5 03 F6 03 00 01 00 01 FD 03 00 00 00 60 03 ; |..............`.|
+  01A4:0044  db 00 01 00 12 FD 04 00 00 00 7A 03 1C 0C 58 03 02 ; |.........z...X..|
+  01A4:0054  db 39 00 06 F8 03 00 00 00 00 38 18 59 01 06 84 05 ; |9........8.Y....|
+  01A4:0064  db F5 00 01 01 4F 00 FE 00 00 00 00 00 00 00 00 00 ; |....O...........|
+  01A4:0074  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01A4:0084  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01A4:0094  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01A4:00A4  db 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 05 ; |................|
+  01A4:00B4  db F8 01 F4 01 DE 03 50 14 DC 00 01 00 01 00 00 00 ; |......P.........|
+  01A4:00C4  db 00 00 00 00 00 58 1B DC 00 00 00 00 00 00 00 00 ; |.....X..........|
+  01A4:00D4  db 00 00 00 6C 00 00 00 04 00 00 00 00 00 01 03 F8 ; |...l............|
+  01A4:00E4  db 01 F4 01 72 06 80 0C 04 06 02 00 02 00 01 00 00 ; |...r............|
+  01A4:00F4  db 00 01 00 00 01 01 94 03 00 00 00 EE 06 00 F8 01 ; |................|
+  01A4:0104  db 94 11 2A 08 20 03 59 01 0D 00 0D 00 02 00 00 0E ; |..*. .Y.........|
+  01A4:0114  db 03 00 F8 01 94 11 F5 0A 20 03 59 01 1B 00 1B 00 ; |........ .Y.....|
+  01A4:0124  db 02 00 00 11 03 84 03 94 02 38 18 C0 0D A1 03    ; |.........8.....|
+  01A4:0133  db 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 ; "                                "
+  01A4:0143  db 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
+  01A4:0153  db 00                                                ; NUL
+  01A4:0154  db 01 40 06 26 02 00 BA 03 01 B8 0B 26 02 08 70 06 ; |.@.&.......&..p.|
+  01A4:0164  db 01 00 00 26 02 00 00 00 01 68 10 17 07 00 C8 03 ; |...&.....h......|
+  01A4:0174  db 01 9A 10 E2 09 00 D7 03 01 00 00 00 00 56 00 B3 ; |.............V..|
+  01A4:0184  db 00 E2 00 01 01 15 01 00 00 00 01 80 29 01 05 54 ; |............)..T|
+  01A4:0194  db 01 00 00 00 00 00 00 05 7C 01 81 01 00 00 00 00 ; |........|.......|
+  01A4:01A4  db 00 00 00 00 A2 06 C3 06                         ; |........|
+  01A4:01AC  db 61 62 63 64 65 66 67 68 69 6A 6B 6C 6D 6E 6F 70 ; "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'0123456..."
+  01A4:01BC  db 71 72 73 74 75 76 77 78 79 7A 41 42 43 44 45 46
+  01A4:01CC  db 47 48 49 4A 4B 4C 4D 4E 4F 50 51 52 53 54 55 56
+  01A4:01DC  db 57 58 59 5A 27 30 31 32 33 34 35 36 37 38 39
+  01A4:01EB  db 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F ; |................|
+  01A4:01FB  db 90 91 92 93 94 95 96 97 98 9A A0 A1 A2 A3 A4 A5 ; |................|
+  01A4:020B  db A6 A7                                           ; |..|
+  01A4:020D  db 2D 20 09 0D 0A                                  ; "- \t\r\n"
+  01A4:0212  db 0B 1A 00                                        ; |...|
+  01A4:0215  db 28 29 2F 5C 7E 40 23 24 25 5E 26 2A 7B 7D 5B 5D ; "()/\~@#$%^&*{}[]<>`_+=,.;:"?!"
+  01A4:0225  db 3C 3E 60 5F 2B 3D 2C 2E 3B 3A 22 3F 21
+  01A4:0232  db 13 12 11 10 17 16 01 00 03 18 03 00 9B 01 8A 01 ; |................| [RELOC->seg_018A]
+  01A4:0242  db 01 F6 00 8A 01                                  ; |.....| [RELOC->seg_018A]
+  01A4:0247  db 55 53 45 52 44 49 43 54 2E 53 50 4C             ; "USERDICT.SPL"
+  01A4:0253  db 00                                                ; NUL
+  01A4:0254  db 00 00 03 0F 04 00 00 00 00 01                   ; |..........|
+  01A4:025E  db 53 50 45 4C 4C                                  ; "SPELL"
+  01A4:0263  db 00                                                ; NUL
+  01A4:0264  db 00 00 00 15 01 00 00 00 00 00 00 00 00 00 03 53 ; |...............S|
+  01A4:0274  db 05                                              ; |.|
+  01A4:0275  db 44 49 43 54 2E 53 50 4C                         ; "DICT.SPL"
+  01A4:027D  db 00                                                ; NUL
+  01A4:027E  db 01 00 03 F8 1A 00 00 03 94 05 00 01 4E 04 67 1A ; |............N.g.|
+  01A4:028E  db 0E A8 04 C2 04 00 F8 01 F4 01 4C 04 20 03 59 01 ; |..........L. .Y.|
+  01A4:029E  db 0D 00 00 00 02 00 00 0E 03 00 F8 01 8C 0A 4C 04 ; |..............L.|
+  01A4:02AE  db 20 03 59 01 1B 00 01 00 02 00 00 11 03 01 58 02 ; | .Y...........X.|
+  01A4:02BE  db DC 00 00 05 05 01 58 02 B8 01 00 22 05 01 F4 01 ; |......X...."....|
+  01A4:02CE  db 39 03 00 3F 05 01 28 0A 39 03 00 48 05 D0 07 74 ; |9..?..(.9..H...t|
+  01A4:02DE  db 09 A0 0F 04 06 F8 04 00 00 93 02 A7 02 00 00 00 ; |................|
+  01A4:02EE  db 00 00 DB 02 00 BB 02 00 00 00 00 00 00 02 E5 02 ; |................|
+  01A4:02FE  db E7 02                                           ; |..|
+  01A4:0300  db 53 70 65 6C 6C 20 43 68 65 63 6B 65 72          ; "Spell Checker"
+  01A4:030D  db 00                                                ; NUL
+  01A4:030E  db 4F 4B 00                                        ; |OK.|
+  01A4:0311  db 43 41 4E 43 45 4C                               ; "CANCEL"
+  01A4:0317  db 00                                                ; NUL
+  01A4:0318  db 54 68 69 73 20 44 6F 63 75 6D 65 6E 74 20 63 6F ; "This Document contains non-ASCII text. Do you wish to contin..."
+  01A4:0328  db 6E 74 61 69 6E 73 20 6E 6F 6E 2D 41 53 43 49 49
+  01A4:0338  db 20 74 65 78 74 2E 20 44 6F 20 79 6F 75 20 77 69
+  01A4:0348  db 73 68 20 74 6F 20 63 6F 6E 74 69 6E 75 65 3F
+  01A4:0357  db 00                                                ; NUL
+  01A4:0358  db 4F 70 74 69 6F 6E 73                            ; "Options"
+  01A4:035F  db 00                                                ; NUL
+  01A4:0360  db 41 64 64 20 74 6F 20 44 69 63 74 69 6F 6E 61 72 ; "Add to Dictionary  Ctrl+A"
+  01A4:0370  db 79 20 20 43 74 72 6C 2B 41
+  01A4:0379  db 00                                                ; NUL
+  01A4:037A  db 52 65 73 74 6F 72 65 20 43 6F 6E 74 65 78 74 20 ; "Restore Context    Ctrl+R"
+  01A4:038A  db 20 20 20 43 74 72 6C 2B 52
+  01A4:0393  db 00                                                ; NUL
+  01A4:0394  db 52 65 70 6C 61 63 65 6D 65 6E 74 73             ; "Replacements"
+  01A4:03A0  db 00                                                ; NUL
+  01A4:03A1  db 53 70 65 6C 6C 20 43 68 65 63 6B 65 72 20 43 6F ; "Spell Checker Correction"
+  01A4:03B1  db 72 72 65 63 74 69 6F 6E
+  01A4:03B9  db 00                                                ; NUL
+  01A4:03BA  db 55 6E 6B 6E 6F 77 6E 20 57 6F 72 64 3A          ; "Unknown Word:"
+  01A4:03C7  db 00                                                ; NUL
+  01A4:03C8  db 41 63 63 65 70 74 20 63 6F 6E 74 65 78 74       ; "Accept context"
+  01A4:03D6  db 00                                                ; NUL
+  01A4:03D7  db 53 74 6F 70 20 63 68 65 63 6B 69 6E 67          ; "Stop checking"
+  01A4:03E4  db 00                                                ; NUL
+  01A4:03E5  db 44 69 63 74 69 6F 6E 61 72 79 20 46 75 6C 6C 2E ; "Dictionary Full."
+  01A4:03F5  db 00                                                ; NUL
+  01A4:03F6  db 55 73 65 72 20 44 69 63 74 69 6F 6E 61 72 79 20 ; "User Dictionary is full."
+  01A4:0406  db 69 73 20 66 75 6C 6C 2E
+  01A4:040E  db 00                                                ; NUL
+  01A4:040F  db 41 6C 6C 20 77 6F 72 64 73 20 61 72 65 20 63 6F ; "All words are correctly spelled."
+  01A4:041F  db 72 72 65 63 74 6C 79 20 73 70 65 6C 6C 65 64 2E
+  01A4:042F  db 00                                                ; NUL
+  01A4:0430  db 43 68 65 63 6B 20 55 6E 6B 6E 6F 77 6E 20 57 6F ; "Check Unknown Word"
+  01A4:0440  db 72 64
+  01A4:0442  db 00                                                ; NUL
+  01A4:0443  db 41 4C 54 45 52 4E 41 54 45 53                   ; "ALTERNATES"
+  01A4:044D  db 00                                                ; NUL
+  01A4:044E  db 46 69 6C 65 20 4E 6F 74 20 46 6F 75 6E 64       ; "File Not Found"
+  01A4:045C  db 00                                                ; NUL
+  01A4:045D  db 49 6E 73 65 72 74 20 74 68 65 20 64 69 73 6B 20 ; "Insert the disk you wish to have your user dictionary create..."
+  01A4:046D  db 79 6F 75 20 77 69 73 68 20 74 6F 20 68 61 76 65
+  01A4:047D  db 20 79 6F 75 72 20 75 73 65 72 20 64 69 63 74 69
+  01A4:048D  db 6F 6E 61 72 79 20 63 72 65 61 74 65 64 20 6F 6E
+  01A4:049D  db 20 69 6E 20 64 72 69 76 65 20
+  01A4:04A7  db 00                                                ; NUL
+  01A4:04A8  db 4F 76 65 72 77 72 69 74 65 20 55 73 65 72 20 44 ; "Overwrite User Dictionary"
+  01A4:04B8  db 69 63 74 69 6F 6E 61 72 79
+  01A4:04C1  db 00                                                ; NUL
+  01A4:04C2  db 55 73 65 72 20 44 69 63 74 69 6F 6E 61 72 79 20 ; "User Dictionary exists.  Overwrite with new words?"
+  01A4:04D2  db 65 78 69 73 74 73 2E 20 20 4F 76 65 72 77 72 69
+  01A4:04E2  db 74 65 20 77 69 74 68 20 6E 65 77 20 77 6F 72 64
+  01A4:04F2  db 73 3F
+  01A4:04F4  db 00                                                ; NUL
+  01A4:04F5  db 00 00 00                                        ; |...|
+  01A4:04F8  db 53 61 76 65 20 43 68 61 6E 67 65 73             ; "Save Changes"
+  01A4:0504  db 00                                                ; NUL
+  01A4:0505  db 55 73 65 72 20 44 69 63 74 69 6F 6E 61 72 79 20 ; "User Dictionary has changed."
+  01A4:0515  db 68 61 73 20 63 68 61 6E 67 65 64 2E
+  01A4:0521  db 00                                                ; NUL
+  01A4:0522  db 44 6F 20 79 6F 75 20 77 69 73 68 20 74 6F 20 73 ; "Do you wish to save changes?"
+  01A4:0532  db 61 76 65 20 63 68 61 6E 67 65 73 3F
+  01A4:053E  db 00                                                ; NUL
+  01A4:053F  db 53 61 76 65 20 6E 6F 77                         ; "Save now"
+  01A4:0547  db 00                                                ; NUL
+  01A4:0548  db 53 61 76 65 20 6C 61 74 65 72                   ; "Save later"
+  01A4:0552  db 00                                                ; NUL
+  01A4:0553  db 53 70 65 6C 6C 20 43 68 65 63 6B 65 72 20 6E 6F ; "Spell Checker not loaded."
+  01A4:0563  db 74 20 6C 6F 61 64 65 64 2E
+  01A4:056C  db 00                                                ; NUL
+  01A4:056D  db 49 6E 73 65 72 74 20 64 69 73 6B 20 63 6F 6E 74 ; "Insert disk containing "
+  01A4:057D  db 61 69 6E 69 6E 67 20
+  01A4:0584  db 00                                                ; NUL
+  01A4:0585  db 20 69 6E 74 6F 20 64 72 69 76 65 20 78 3A       ; " into drive x:"
+  01A4:0593  db 00                                                ; NUL
+  01A4:0594  db 53 70 65 6C 6C 20 43 68 65 63 6B 65 72 20 63 61 ; "Spell Checker cannot continue without dictionary."
+  01A4:05A4  db 6E 6E 6F 74 20 63 6F 6E 74 69 6E 75 65 20 77 69
+  01A4:05B4  db 74 68 6F 75 74 20 64 69 63 74 69 6F 6E 61 72 79
+  01A4:05C4  db 2E
+  01A4:05C5  db 00                                                ; NUL
+  01A4:05C6  db CD AB BA DC                                     ; |....|
+  01A4:05CA  db 50 52 47 55 46                                  ; "PRGUF"
+  01A4:05CF  db 00                                                ; NUL
+  01A4:05D0  db CD AB BA DC                                     ; |....|
+  01A4:05D4  db 44 4D 47 55 46                                  ; "DMGUF"
+  01A4:05D9  db 00                                                ; NUL
+  01A4:05DA  db 00 00 00 DB 05 00 00 00 00 00 00 00 00 00 00 00 ; |................|
+  01A4:05EA  db 00 00                                           ; |..|
+  01A4:05EC  db 50 52 47 55 46                                  ; "PRGUF"
+  01A4:05F1  db 00                                                ; NUL
+  01A4:05F2  db CD AB BA DC                                     ; |....|
+  01A4:05F6  db 44 4D 43 53 52                                  ; "DMCSR"
+  01A4:05FB  db 00                                                ; NUL
+  01A4:05FC  db 00 00 CD AB BA DC 73 70 6C 00 00 00 00 00       ; |......spl.....|
+  01A4:060A  db 41 55 54 4F 4C 4F 41 44                         ; "AUTOLOAD"
+  01A4:0612  db 00                                                ; NUL
+  01A4:0613  db 00 00 00                                        ; |...|
+  01A4:0616  db 31 30 30 30 43 47 41                            ; "1000CGA"
+  01A4:061D  db 00                                                ; NUL
+  01A4:061E  db 44 44 47 41 45 47 41                            ; "DDGAEGA"
+  01A4:0625  db 00                                                ; NUL
+  01A4:0626  db 48 45 52 43 50 4C 41 4E 54 43 31 36 54 43 34    ; "HERCPLANTC16TC4"
+  01A4:0635  db 00                                                ; NUL
+  01A4:0636  db 56 47 41 00                                     ; |VGA.|
+  01A4:063A  db 4D 43 47 41 45 47 41                            ; "MCGAEGA"
+  01A4:0641  db 00                                                ; NUL
+  01A4:0642  db 4C 52 45 53 54 32 35 36 54 43 34 30 48          ; "LREST256TC40H"
+  01A4:064F  db 00                                                ; NUL
+  01A4:0650  db 00 00 43 00 00 00 4D 00 00 00 45 00 00 00 54 00 ; |..C...M...E...T.|
+  01A4:0660  db 00 00                                           ; |..|
