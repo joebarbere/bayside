@@ -25,6 +25,10 @@
 14. [.CLP -- Clipboard](#clp-format)
 15. [.R89 -- DeskMate Resource Module (1989)](#r89-format)
 16. [.FIG -- Draw Vector Graphics](#fig-format)
+17. [.SNG -- Music Composition](#sng-format)
+18. [.MOD -- Compatibility Module](#mod-format)
+19. [.ACC -- Desk Accessory](#acc-format)
+20. [.PNT -- Paint Bitmap (Personal DeskMate)](#pnt-format)
 
 ---
 
@@ -962,20 +966,248 @@ UI mockups, decorative elements).
 
 ---
 
+## .SNG Format -- Music Composition {#sng-format}
+
+**Files in DeskMate 3.05 extracted archive:** None found.
+Format referenced in DeskMate documentation (deskmate-overview.md) and present in
+Personal DeskMate 2 distributions, but no .SNG files ship with DeskMate 3.05 itself.
+They are created and saved by the MUSIC.PDM application at runtime.
+
+### Overview
+
+The .SNG format stores 3-channel music compositions created with DeskMate's Music
+application. Each channel references .SND instrument sample files for playback.
+The format is backward-compatible between Personal DeskMate 2 and DeskMate 3.x.
+
+### Playback Architecture
+
+Composition playback is handled by the DMPLAY.RES driver (42,188 bytes -- the
+largest sound-related RES module). Two music drivers exist:
+
+- **DMPLAY.RES** -- Full sound playback and DAC driver (instrument sample playback)
+- **DMSSM.RES** -- Sound/sample manager (6,032 bytes; sample catalog management)
+- **DMMDS.RES** -- SN76496 chip driver (2,113 bytes; square-wave fallback for non-DAC systems)
+- **DMMDP.RES** -- PC speaker driver (1,493 bytes; minimal fallback)
+- **DMMDJ.RES** -- Joystick music driver (1,540 bytes; purpose unclear)
+
+### Known Format Details
+
+From deskmate-overview.md and community research:
+
+- 3-channel composition data (matches the SN76496's 3 square-wave channels)
+- References .SND files by instrument number for digitized sample playback
+- Backward compatible: Personal DeskMate 2 songs play in DeskMate 3
+- MUSIC.PDM ships with Piano, Clarinet, Bells, Cello, and Bass instrument samples
+  (these are .SND files distributed separately, not present in this archive)
+
+### Header and Record Format
+
+**Not yet reverse engineered.** No sample .SNG files available in DeskMate 3.05
+distribution. Full format requires disassembly of MUSIC.PDM and DMPLAY.RES, or
+analysis of a Personal DeskMate 2 disk image which likely contains example .SNG files.
+
+---
+
+## .MOD Format -- Compatibility Module {#mod-format}
+
+**Files in DeskMate 3.05 extracted archive:** DMOLDAPP.MOD (8,113 bytes)
+
+The .MOD extension is used for compatibility shim modules. Only one .MOD file
+exists in the DeskMate 3.05 distribution.
+
+### DMOLDAPP.MOD -- Old Application Compatibility Shim
+
+DMOLDAPP.MOD is a standard DOS MZ executable (not a DM89 module) that provides
+backward compatibility for older DeskMate applications.
+
+#### Binary Structure
+
+```
+Offset  Size  Field           Description
+------  ----  -----------     -----------
+0x00    2     magic           "MZ" (4D 5A) -- standard DOS MZ executable
+0x02    2     last_page_bytes 0x01B1
+0x04    2     pages           0x0010 (16 pages = 8192 bytes total)
+0x06    2     reloc_count     0x0007
+0x08    2     header_paras    0x0020 (32 paragraphs = 512-byte header)
+0x0A    2     min_extra       0x0083
+0x0C    2     max_extra       0xFFFF
+0x0E    2     initial_SS      0x01DC
+0x10    2     initial_SP      0x0802
+0x12    2     checksum        0x38E3
+0x14    2     initial_IP      0x0006
+0x16    2     initial_CS      0x0000
+0x18    2     reloc_off       0x001E (standard -- no DM89 extension header)
+0x1A    2     overlay_num     0x0000
+```
+
+**Key observation:** DMOLDAPP.MOD uses `reloc_off = 0x001E` with `overlay_num = 0x0000`.
+This is a plain DOS MZ executable with no DM89 extension header, unlike .PDM/.RES/.ACC
+files. This is the same pattern as the three "no DM89 header" RES files
+(ALRMINIT.RES, D87.RES, DMUNPACK.RES).
+
+#### Code Section (starts at 0x0200)
+
+The first two bytes of the code section are "OA" (0x4F 0x41), which is not a
+standard x86 prologue. The code then initializes segment registers and sets up
+a stack, suggesting this is the main entry routine of a small DOS program.
+
+#### Strings Found in Binary
+
+Notable strings extracted from DMOLDAPP.MOD:
+
+| String | Interpretation |
+|--------|----------------|
+| `INTERNETBIOSMINDSPRO` | Internal capability/product flags (packed ASCII identifiers) |
+| `Tandy` | Hardware identification string |
+| `1400 LT` | Tandy 1400 LT laptop model reference |
+| `Tandon` | Tandon disk drive manufacturer reference |
+| `01.02.00` | Version string (v1.02.00) |
+| `File not found` | DOS error message |
+| `Please insert disk containing nnnnnnnn.nnn into drive n:` | Disk swap prompt |
+| `<R>etry, <C>ancel ? $RC` | Standard DOS retry/cancel prompt |
+| `Not Enough Memory` | Memory error message |
+| `for requested program in the current system configuration` | Continuation of memory error |
+| `Hit any key to continue.$` | Pause prompt |
+| `PATH=` | DOS PATH environment variable reference |
+
+#### Purpose
+
+Based on the strings and structure, DMOLDAPP.MOD is a **compatibility loader shim**
+for running older DeskMate 1.x/2.x applications under DeskMate 3.05. The references
+to "Tandy 1400 LT" and "Tandon" drive hardware suggest it also handles hardware
+detection for legacy Tandy portables. The "INTERNETBIOSMINDSPRO" string appears to
+be a packed set of capability identifiers (INT, ERNET, BIOS, MINDS, PRO) checked
+during initialization.
+
+It is a plain DOS .EXE (not a DeskMate module), loaded directly by DOS rather than
+through the DeskMate module loader.
+
+---
+
+## .ACC Format -- Desk Accessory {#acc-format}
+
+**Files in DeskMate 3.05 extracted archive:** 18 files (see list below)
+
+Desk accessories are small overlay programs that run on top of DeskMate applications,
+providing utility functions accessible from any DeskMate application. They are loaded
+and managed by DMACCESS.ACC (the accessory launcher/framework).
+
+### Relationship to .PDM and .RES
+
+.ACC files share the exact same binary format as .PDM and .RES files: a standard
+DOS MZ executable with a DeskMate DM89 extension header at offset 0x1C. See the
+`.RES` and `.PDM` format documentation (in `disassembly/raw/res-acc-format-analysis.md`)
+for the full header specification.
+
+The distinction between .ACC, .PDM, and .RES is functional, not structural:
+
+| Aspect | .RES | .ACC | .PDM |
+|--------|------|------|------|
+| Purpose | Loadable driver/library | Desk accessory | Full application |
+| Loaded by | DESK.EXE on demand | DESK.EXE accessory mgr | DESK.EXE app launcher |
+| Typical size | 1-42 KB | 2-32 KB | 5-70 KB |
+| Has DM89 header | Yes (most) | Yes (all) | Yes (all) |
+| Imports dmguf | Sometimes | Yes (all) | Yes (all) |
+
+### DM89 Header Summary
+
+```
+Offset  Size  Field           Description
+------  ----  -----------     -----------
+0x00    2     mz_magic        "MZ" (4D 5A)
+0x02-0x1B     Standard MZ header fields
+0x1C    4     dm_signature    "DM89" (44 4D 38 39)
+0x20    1     dm_version      0x3E ('>') for DeskMate 3.x
+0x21    1     module_subtype  0x00 for standard ACC files
+0x22    1     has_imports     0x01 if import table present
+0x23    1     dm_version_echo Mirrors 0x20 when imports present
+0x24    2     reserved        0x0000
+0x26    2     primary_code_seg Code segment value
+0x28    2     init_entry_off  Secondary entry offset
+0x2A    2     code_seg_copy   Always equals field at 0x26
+0x2C    20    reserved        Mostly zeros
+0x42    10    import_name     First import: "dmguf\0\0\0\0\0" (all ACC files)
+```
+
+The import name "dmguf" (10 bytes, null-padded) refers to DESK.EXE's built-in
+DMGUF (DeskMate GUI Framework) API -- the core UI and system services interface.
+
+### ACC Files in DeskMate 3.05
+
+| File | Size | Description |
+|------|------|-------------|
+| DMACCESS.ACC | 7,487 | Accessory launcher/framework |
+| DMALARM.ACC | 14,909 | Alarm clock |
+| DMCLIP.ACC | 10,507 | Clipboard manager |
+| DMDRWPRT.ACC | 1,638 | Draw print helper |
+| DMHELP.ACC | 31,836 | Help system |
+| DMNOTEPD.ACC | 14,295 | Notepad |
+| DMPD1.ACC | 6,713 | Printer driver accessory #1 |
+| DMPD2.ACC | 6,685 | Printer driver accessory #2 |
+| DMPDASCI.ACC | 8,035 | ASCII printer accessory |
+| DMPDIBMM.ACC | 9,251 | IBM printer accessory |
+| DMPDLASR.ACC | 6,969 | Laser printer accessory |
+| DMPDS.ACC | 9,559 | Serial printer accessory |
+| DMPHONE.ACC | 20,585 | Phone dialer |
+| DMPRTSEL.ACC | 13,643 | Printer selection (imports PRGUF, not dmguf) |
+| DMSERV.ACC | 24,187 | System services |
+| DMSETUP.ACC | 28,695 | Setup and configuration |
+| DMSPELL.ACC | 7,510 | Spell checker |
+| DMTODO.ACC | 6,086 | To-do list |
+
+**Exception:** DMPRTSEL.ACC imports "PRGUF" (from PRGUF.RES) rather than "dmguf",
+making it the only ACC file that does not directly depend on the DMGUF API.
+
+### Compiler
+
+All .ACC files are compiled with **Microsoft C 5.x (1987)**. The entry point
+follows the standard MSC 5.x DOS startup pattern (INT 21h/AH=30h version check,
+then INT 20h exit if DOS < 2.0).
+
+---
+
+## .PNT Format -- Paint Bitmap (Personal DeskMate) {#pnt-format}
+
+**Files in DeskMate 3.05 extracted archive:** None found.
+**Files in any other archive version:** None found in this repository.
+
+The .PNT format is the native bitmap graphics format for the Paint application
+that shipped with **Personal DeskMate 2** (1987). It was superseded by DRAW.PDM
+and the .FIG vector graphics format in DeskMate 3.00 (1989); Paint was dropped
+and did not ship with DeskMate 3.x.
+
+### Known Information
+
+From deskmate-overview.md:
+
+- Used by the Paint application in Personal DeskMate 2
+- Stores 320x200x16 bitmap graphics (Tandy TGA native resolution/depth)
+- Format has not been reverse engineered -- no sample files available in this repository
+
+### Acquisition Path
+
+To analyze .PNT files, a Personal DeskMate 2 disk image is needed (available
+from WinWorld or archive.org). The Personal DeskMate 2 distribution should
+include both the Paint application and sample .PNT graphics files.
+
+---
+
 ## Cross-Format Observations
 
 ### Shared Magic Bytes
 
-| Magic | Hex  | Formats                    |
-|-------|------|----------------------------|
-| 0x03  | 03   | .FIL, .CLN, .ADR, .HLP    |
-| 0x0E  | 0E   | .WKS                       |
-| 0x10  | 10   | .CLP                       |
-| 0x14  | 14   | .FIG                       |
-| 0x1A  | 1A   | .SND                       |
-| 0x46  | 46   | CFG icon entries ('F')     |
-| 0x51  | 51   | .PCL ('Q')                 |
-| "MZ"  | 4D5A | .PDM, .ACC, .RES, .R89     |
+| Magic | Hex  | Formats                          |
+|-------|------|----------------------------------|
+| 0x03  | 03   | .FIL, .CLN, .ADR, .HLP          |
+| 0x0E  | 0E   | .WKS                             |
+| 0x10  | 10   | .CLP                             |
+| 0x14  | 14   | .FIG                             |
+| 0x1A  | 1A   | .SND                             |
+| 0x46  | 46   | CFG icon entries ('F')           |
+| 0x51  | 51   | .PCL ('Q')                       |
+| "MZ"  | 4D5A | .PDM, .ACC, .RES, .R89, .MOD    |
+| unknown | ?  | .SNG, .PNT (no samples in repo) |
 
 ### Shared Markers
 
@@ -1036,3 +1268,7 @@ and 0x01-delimited text-format schema definitions.
 | .CLP   | Yes         | Partial        | No              | Needs more work  |
 | .R89   | Yes (MZ)    | Yes            | N/A (code)      | Same as .RES     |
 | .FIG   | Yes         | No samples     | No              | Needs SDK/disasm |
+| .SNG   | Unknown     | No             | No              | No samples in repo |
+| .MOD   | Yes (MZ)    | Yes            | N/A (code)      | One file (DMOLDAPP.MOD) |
+| .ACC   | Yes (MZ+DM89)| Yes           | N/A (code)      | Same as .RES/.PDM |
+| .PNT   | Unknown     | No             | No              | Personal DM 2 only |

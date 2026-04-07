@@ -1,0 +1,27 @@
+TUTKBD.RES -- Call Graph / Reference Map
+=========================================
+
+TUTKBD.RES is a compressed data resource file, not executable code.
+It contains no functions, no call graph, and no interrupt usage.
+
+File type: DeskMate packed data resource
+Format: 24-byte header + DMUNPACK-compressed body
+Size: 1931 bytes (compressed), ~3235 bytes (uncompressed)
+
+Reference chain:
+  PLAY.PDM
+    -> imports "dmplay" (DMPLAY.RES)
+    -> imports "unpack" (DMUNPACK.RES)
+       DMPLAY.RES
+         -> references ":TUTKBD.RES" at data offset 059C:3B54
+         -> calls DMUNPACK.RES to decompress TUTKBD.RES at runtime
+         -> uses decompressed data for "Teach Me!" tutorial keyboard layout
+
+Data contents (when decompressed):
+  - Key-to-note mapping table (PC keyboard -> piano key assignments)
+  - Piano keyboard bitmap graphic (2bpp, for on-screen display)
+  - Screen coordinate data for key label positioning
+
+No functions.
+No interrupt calls.
+No segment relocations.

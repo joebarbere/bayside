@@ -1,0 +1,12223 @@
+; ========================================================================
+; DMSERV.ACC -- Fully Annotated Disassembly
+; DeskMate 3.05, Tandy Corporation, Copyright (c) 1987, Microsoft Corp.
+; Compiled with Microsoft C 5.x (1987), Medium Memory Model
+; Annotated for the Bayside reverse engineering project
+; ========================================================================
+;
+; DMSERV.ACC is the service/utility module -- background services and page setup.
+; DMSERV.ACC is the background services module for DeskMate 3.05. Despite
+; its name, it provides the Page Setup dialog and serves as a general
+; service module for printing, floating-point operations, and system
+; utilities.
+;
+; The module contains floating-point error handling routines (linked
+; with MSC 5.x FP library) and references DMHELP and DMSPELL. INT 07h
+; is used (coprocessor not-present exception) for FP emulation support.
+;
+; At 24,187 bytes with 191 functions, this is a substantial service
+; module handling multiple subsystems.
+;
+; ========================================================================
+; BINARY STRUCTURE
+; ========================================================================
+;
+; MZ + DM89 header (512 bytes)
+; File size: 24,187 bytes
+; Load image: 23,675 bytes (after header)
+; DM89 entry point: 04CD:000E (MSC 5.x CRT startup)
+; SS:SP = 05F4:0FA0
+;
+; Segment Map (6 segments, 15 relocations):
+;   seg_0000     CODE     Service module code -- page setup, FP math, utilities
+;   seg_04CD     CODE     MSC 5.x CRT startup + DM89 entry
+;   seg_04D8     CODE     DM89 import far-call dispatcher
+;   seg_04DC     DATA     DGROUP -- page format data, FP constants, strings
+;   seg_0594     CODE     Additional code segment (FP library routines)
+;   seg_05F4     STACK    Stack segment
+;
+; Medium memory model: multiple code segments, DGROUP at 0594.
+;
+; DM flags: 0x0101
+;
+; ========================================================================
+; INTERRUPT SERVICES USED
+; ========================================================================
+;
+; INT E0h (DeskMate API):
+;   AH=00h (Core services)
+;   AH=02h (Resource/UI services)
+;   AH=07h (Memory services)
+;
+; INT 21h (DOS API):
+;   AH=25h (Set interrupt vector)
+;   AH=30h (Get DOS version)
+;   AH=35h (Get interrupt vector)
+;   AH=3Eh (Close file)
+;   AH=40h (Write file)
+;   AH=44h (IOCTL)
+;   AH=4Ah (Resize memory block)
+;   AH=4Ch (Exit process)
+;
+; Other interrupts:
+;   INT 07h x1 (Coprocessor not present)
+;   INT 20h x1 (DOS terminate)
+;
+; ========================================================================
+; NOTABLE STRINGS
+; ========================================================================
+;
+;   "Page Setup"  -- Page setup dialog title
+;   "Error"  -- Error dialog title
+;   "- floating-point error: "  -- FP error message prefix
+;   "DMSPELL"  -- Spell checker resource
+;   "DMHELP"  -- Help system resource
+;
+; ========================================================================
+; FUNCTION INDEX (191 functions total)
+; ========================================================================
+;
+; --- DMSERV Application Functions ---
+;
+; Address   Name                          Size  Description
+; -------   ----                          ----  -----------
+; 0000:0010 dmserv_main                      70  Main entry -- register services, init page setup
+; 0000:0056 dmserv_waitForEvent              72  Wait for DeskMate events
+; 0000:009E dmserv_initServices              26  Initialize service subsystems
+; 0000:00B8 dmserv_pageSetupDialog          338  Main page setup dialog handler
+; 0000:020A dmserv_marginDialog             314  Margin settings sub-dialog
+; 0000:0344 dmserv_parseMargin              158  Parse margin value from user input
+; 0000:062F dmserv_printPreview             590  Print preview rendering
+; 0000:08F6 dmserv_configManager            239  Configuration management dispatcher
+; 0000:09E5 dmserv_applyConfig              271  Apply configuration changes
+; 0000:0AF4 dmserv_readConfig               298  Read page setup configuration
+; 0000:0CA3 dmserv_writeConfig             1398  Write page setup configuration
+; 0000:15D3 dmserv_fontManager              604  Font management for page setup
+; 0000:1B11 dmserv_pageCalc                 577  Page layout calculation engine
+; 0000:1DC1 dmserv_headerFooter             476  Header/footer editing and formatting
+; 0000:2785 dmserv_fpMath                   200  Floating-point math routines (margin calc)
+; 0000:289B dmserv_fpFormat                 212  FP number formatting for display
+; 0000:30E4 dmserv_fpArith                  463  FP arithmetic (add, sub, mul, div)
+; 0000:3680 dmserv_fpConvert                432  FP conversion (int-to-float, float-to-int)
+; 0000:38B4 dmserv_fpCompare                479  FP comparison routines
+; 0000:3BA2 dmserv_printEngine              306  Print output engine
+;
+; --- DMGUF/Resource Thunks (6 bytes each) ---
+;
+; The remaining functions are 6-byte far-call thunks generated by the
+; DM89 import mechanism. Each thunk loads AX with a function code and
+; jumps to the import dispatcher. These provide access to DeskMate API
+; services (DMGUF, PRGUF, etc.) without direct INT E0h calls from
+; application code.
+;
+; --- MSC 5.x C Runtime Library Functions ---
+;
+; start (at 04CD:000E) -- MSC 5.x CRT startup sequence:
+;   1. Set up DS, SS, SP
+;   2. Resize memory block (INT 21h AH=4Ah)
+;   3. Initialize CRT (heap, stdio, argv)
+;   4. Call _main()
+;   5. Call _exit() on return
+;
+; The CRT startup also includes standard MSC error handlers:
+;   R6000 - stack overflow
+;   R6001 - null pointer assignment
+;   R6002 - floating point not loaded
+;   R6003 - integer divide by 0
+;   R6009 - not enough space for environment
+;
+; ========================================================================
+; ANNOTATED DISASSEMBLY
+; ========================================================================
+;
+; Below is the raw disassembly from DMSERV.ACC with function
+; boundaries annotated using the labels defined in the function index
+; above. 6-byte thunk functions are identified with their DM89 import
+; function codes.
+;
+  00000  0000           add      byte ptr [bx + si], al  ; 0000:0000
+  00002  0000           add      byte ptr [bx + si], al  ; 0000:0002
+  00004  0000           add      byte ptr [bx + si], al  ; 0000:0004
+  00006  0000           add      byte ptr [bx + si], al  ; 0000:0006
+  00008  0000           add      byte ptr [bx + si], al  ; 0000:0008
+  0000A  0000           add      byte ptr [bx + si], al  ; 0000:000A
+  0000C  0000           add      byte ptr [bx + si], al  ; 0000:000C
+  0000E  0000           add      byte ptr [bx + si], al  ; 0000:000E
+
+
+; ---- sub_00010 ----
+; --- dmserv_main: Main entry -- register services, init page setup
+dmserv_main:  ; was sub_00010
+  00010  55             push     bp  ; 0000:0010
+  00011  8bec           mov      bp, sp  ; 0000:0011
+  00013  83ec02         sub      sp, 2  ; 0000:0013
+  00016  e8bd1f         call     sub_01FD6  ; 0000:0016
+  00019  e8fd23         call     sub_02419  ; 0000:0019
+  0001C  b84200         mov      ax, 0x42  ; 0000:001C
+  0001F  50             push     ax  ; 0000:001F
+  00020  e8f824         call     sub_0251B  ; 0000:0020
+  00023  83c402         add      sp, 2  ; 0000:0023
+  00026  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0026
+  00029  8b5f04         mov      bx, word ptr [bx + 4]  ; 0000:0029
+  0002C  8a07           mov      al, byte ptr [bx]  ; 0000:002C
+  0002E  98             cwde       ; 0000:002E
+  0002F  2d2100         sub      ax, 0x21  ; 0000:002F
+  00032  7419           je       loc_0004D  ; 0000:0032
+  00034  3d0b00         cmp      ax, 0xb  ; 0000:0034
+  00037  7506           jne      loc_0003F  ; 0000:0037
+  00039  e86200         call     sub_0009E  ; 0000:0039
+  0003C  8946fe         mov      word ptr [bp - 2], ax  ; 0000:003C
+loc_0003F:
+  0003F  e83724         call     sub_02479  ; 0000:003F
+  00042  e8db23         call     sub_02420  ; 0000:0042
+  00045  e8c01f         call     sub_02008  ; 0000:0045
+  00048  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:0048
+  0004B  eb05           jmp      loc_00052  ; 0000:004B
+loc_0004D:
+  0004D  e86e08         call     sub_008BE  ; 0000:004D
+  00050  ebed           jmp      loc_0003F  ; 0000:0050
+loc_00052:
+  00052  8be5           mov      sp, bp  ; 0000:0052
+  00054  5d             pop      bp  ; 0000:0054
+  00055  c3             ret        ; 0000:0055
+
+
+; ---- sub_00056 ----
+; --- dmserv_waitForEvent: Wait for DeskMate events
+dmserv_waitForEvent:  ; was sub_00056
+  00056  55             push     bp  ; 0000:0056
+  00057  8bec           mov      bp, sp  ; 0000:0057
+  00059  83ec0a         sub      sp, 0xa  ; 0000:0059
+  0005C  e84a24         call     sub_024A9  ; 0000:005C
+  0005F  8946fe         mov      word ptr [bp - 2], ax  ; 0000:005F
+  00062  ff364211       push     word ptr [0x1142]  ; 0000:0062
+  00066  e83a24         call     sub_024A3  ; 0000:0066
+  00069  83c402         add      sp, 2  ; 0000:0069
+  0006C  8d46f6         lea      ax, [bp - 0xa]  ; 0000:006C
+  0006F  50             push     ax  ; 0000:006F
+  00070  e80024         call     sub_02473  ; 0000:0070
+  00073  83c402         add      sp, 2  ; 0000:0073
+  00076  807ef602       cmp      byte ptr [bp - 0xa], 2  ; 0000:0076
+  0007A  7518           jne      loc_00094  ; 0000:007A
+  0007C  817ef703fb     cmp      word ptr [bp - 9], 0xfb03  ; 0000:007C
+  00081  7511           jne      loc_00094  ; 0000:0081
+loc_00083:
+  00083  8d46f6         lea      ax, [bp - 0xa]  ; 0000:0083
+  00086  50             push     ax  ; 0000:0086
+  00087  e8e923         call     sub_02473  ; 0000:0087
+  0008A  83c402         add      sp, 2  ; 0000:008A
+  0008D  817ef705fb     cmp      word ptr [bp - 9], 0xfb05  ; 0000:008D
+  00092  75ef           jne      loc_00083  ; 0000:0092
+loc_00094:
+  00094  ff76fe         push     word ptr [bp - 2]  ; 0000:0094
+  00097  e80924         call     sub_024A3  ; 0000:0097
+  0009A  8be5           mov      sp, bp  ; 0000:009A
+  0009C  5d             pop      bp  ; 0000:009C
+  0009D  c3             ret        ; 0000:009D
+
+
+; ---- sub_0009E ----
+; --- dmserv_initServices: Initialize service subsystems
+dmserv_initServices:  ; was sub_0009E
+  0009E  55             push     bp  ; 0000:009E
+  0009F  8bec           mov      bp, sp  ; 0000:009F
+  000A1  83ec02         sub      sp, 2  ; 0000:00A1
+  000A4  e8ea23         call     sub_02491  ; 0000:00A4
+  000A7  e80e00         call     sub_000B8  ; 0000:00A7
+  000AA  8946fe         mov      word ptr [bp - 2], ax  ; 0000:00AA
+  000AD  e8e723         call     sub_02497  ; 0000:00AD
+  000B0  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:00B0
+  000B3  8be5           mov      sp, bp  ; 0000:00B3
+  000B5  5d             pop      bp  ; 0000:00B5
+  000B6  c3             ret        ; 0000:00B6
+  000B7  90             nop        ; 0000:00B7
+
+
+; ---- sub_000B8 ----
+; --- dmserv_pageSetupDialog: Main page setup dialog handler
+dmserv_pageSetupDialog:  ; was sub_000B8
+  000B8  55             push     bp  ; 0000:00B8
+  000B9  8bec           mov      bp, sp  ; 0000:00B9
+  000BB  83ec06         sub      sp, 6  ; 0000:00BB
+  000BE  56             push     si  ; 0000:00BE
+  000BF  e84801         call     sub_0020A  ; 0000:00BF
+loc_000C2:
+  000C2  b84c02         mov      ax, 0x24c  ; 0000:00C2
+  000C5  50             push     ax  ; 0000:00C5
+  000C6  e84624         call     sub_0250F  ; 0000:00C6
+  000C9  83c402         add      sp, 2  ; 0000:00C9
+  000CC  8946fe         mov      word ptr [bp - 2], ax  ; 0000:00CC
+  000CF  c6064c0201     mov      byte ptr [0x24c], 1  ; 0000:00CF
+  000D4  3d00f5         cmp      ax, 0xf500  ; 0000:00D4
+  000D7  7403           je       loc_000DC  ; 0000:00D7
+  000D9  e99f00         jmp      loc_0017B  ; 0000:00D9
+loc_000DC:
+  000DC  803ea01101     cmp      byte ptr [0x11a0], 1  ; 0000:00DC
+  000E1  750d           jne      loc_000F0  ; 0000:00E1
+  000E3  b8b510         mov      ax, 0x10b5  ; 0000:00E3
+  000E6  50             push     ax  ; 0000:00E6
+  000E7  b8a511         mov      ax, 0x11a5  ; 0000:00E7
+  000EA  50             push     ax  ; 0000:00EA
+  000EB  b85600         mov      ax, 0x56  ; 0000:00EB
+  000EE  eb12           jmp      loc_00102  ; 0000:00EE
+loc_000F0:
+  000F0  803ea01100     cmp      byte ptr [0x11a0], 0  ; 0000:00F0
+  000F5  7512           jne      loc_00109  ; 0000:00F5
+  000F7  b8b910         mov      ax, 0x10b9  ; 0000:00F7
+  000FA  50             push     ax  ; 0000:00FA
+  000FB  b8a911         mov      ax, 0x11a9  ; 0000:00FB
+  000FE  50             push     ax  ; 0000:00FE
+  000FF  b84600         mov      ax, 0x46  ; 0000:00FF
+loc_00102:
+  00102  50             push     ax  ; 0000:0102
+  00103  e83c03         call     sub_00442  ; 0000:0103
+  00106  83c406         add      sp, 6  ; 0000:0106
+loc_00109:
+  00109  803e130101     cmp      byte ptr [0x113], 1  ; 0000:0109
+  0010E  7514           jne      loc_00124  ; 0000:010E
+  00110  c606a01101     mov      byte ptr [0x11a0], 1  ; 0000:0110
+  00115  b89111         mov      ax, 0x1191  ; 0000:0115
+  00118  50             push     ax  ; 0000:0118
+  00119  e82802         call     sub_00344  ; 0000:0119
+  0011C  83c402         add      sp, 2  ; 0000:011C
+  0011F  b8a511         mov      ax, 0x11a5  ; 0000:011F
+  00122  eb12           jmp      loc_00136  ; 0000:0122
+loc_00124:
+  00124  c606a01100     mov      byte ptr [0x11a0], 0  ; 0000:0124
+  00129  b89811         mov      ax, 0x1198  ; 0000:0129
+  0012C  50             push     ax  ; 0000:012C
+  0012D  e81402         call     sub_00344  ; 0000:012D
+  00130  83c402         add      sp, 2  ; 0000:0130
+  00133  b8a911         mov      ax, 0x11a9  ; 0000:0133
+loc_00136:
+  00136  50             push     ax  ; 0000:0136
+  00137  e8a802         call     sub_003E2  ; 0000:0137
+  0013A  83c402         add      sp, 2  ; 0000:013A
+  0013D  c746fc0000     mov      word ptr [bp - 4], 0  ; 0000:013D
+loc_00142:
+  00142  b82f00         mov      ax, 0x2f  ; 0000:0142
+  00145  f76efc         imul     word ptr [bp - 4]  ; 0000:0145
+  00148  8bf0           mov      si, ax  ; 0000:0148
+  0014A  c7843501ffff   mov      word ptr [si + 0x135], 0xffff  ; 0000:014A
+  00150  2bc0           sub      ax, ax  ; 0000:0150
+  00152  89843b01       mov      word ptr [si + 0x13b], ax  ; 0000:0152
+  00156  89843901       mov      word ptr [si + 0x139], ax  ; 0000:0156
+  0015A  89843701       mov      word ptr [si + 0x137], ax  ; 0000:015A
+  0015E  ff46fc         inc      word ptr [bp - 4]  ; 0000:015E
+  00161  837efc04       cmp      word ptr [bp - 4], 4  ; 0000:0161
+  00165  7cdb           jl       loc_00142  ; 0000:0165
+  00167  8946fc         mov      word ptr [bp - 4], ax  ; 0000:0167
+loc_0016A:
+  0016A  8b5efc         mov      bx, word ptr [bp - 4]  ; 0000:016A
+  0016D  c687300201     mov      byte ptr [bx + 0x230], 1  ; 0000:016D
+  00172  ff46fc         inc      word ptr [bp - 4]  ; 0000:0172
+  00175  837efc05       cmp      word ptr [bp - 4], 5  ; 0000:0175
+  00179  7cef           jl       loc_0016A  ; 0000:0179
+loc_0017B:
+  0017B  817efe07f5     cmp      word ptr [bp - 2], 0xf507  ; 0000:017B
+  00180  7552           jne      loc_001D4  ; 0000:0180
+  00182  803ea01101     cmp      byte ptr [0x11a0], 1  ; 0000:0182
+  00187  750d           jne      loc_00196  ; 0000:0187
+  00189  b80100         mov      ax, 1  ; 0000:0189
+  0018C  50             push     ax  ; 0000:018C
+  0018D  b8a511         mov      ax, 0x11a5  ; 0000:018D
+  00190  50             push     ax  ; 0000:0190
+  00191  b85600         mov      ax, 0x56  ; 0000:0191
+  00194  eb11           jmp      loc_001A7  ; 0000:0194
+loc_00196:
+  00196  803ea01100     cmp      byte ptr [0x11a0], 0  ; 0000:0196
+  0019B  7514           jne      loc_001B1  ; 0000:019B
+  0019D  2bc0           sub      ax, ax  ; 0000:019D
+  0019F  50             push     ax  ; 0000:019F
+  001A0  b8a911         mov      ax, 0x11a9  ; 0000:01A0
+  001A3  50             push     ax  ; 0000:01A3
+  001A4  b84600         mov      ax, 0x46  ; 0000:01A4
+loc_001A7:
+  001A7  50             push     ax  ; 0000:01A7
+  001A8  e88404         call     sub_0062F  ; 0000:01A8
+  001AB  83c406         add      sp, 6  ; 0000:01AB
+  001AE  8946fa         mov      word ptr [bp - 6], ax  ; 0000:01AE
+loc_001B1:
+  001B1  837efa00       cmp      word ptr [bp - 6], 0  ; 0000:01B1
+  001B5  7411           je       loc_001C8  ; 0000:01B5
+  001B7  c746fe0000     mov      word ptr [bp - 2], 0  ; 0000:01B7
+  001BC  c606cc0000     mov      byte ptr [0xcc], 0  ; 0000:01BC
+  001C1  c606370201     mov      byte ptr [0x237], 1  ; 0000:01C1
+  001C6  eb0c           jmp      loc_001D4  ; 0000:01C6
+loc_001C8:
+  001C8  a0e501         mov      al, byte ptr [0x1e5]  ; 0000:01C8
+  001CB  a2ad11         mov      byte ptr [0x11ad], al  ; 0000:01CB
+  001CE  a0f501         mov      al, byte ptr [0x1f5]  ; 0000:01CE
+  001D1  a2ae11         mov      byte ptr [0x11ae], al  ; 0000:01D1
+loc_001D4:
+  001D4  817efe07f5     cmp      word ptr [bp - 2], 0xf507  ; 0000:01D4
+  001D9  740a           je       loc_001E5  ; 0000:01D9
+  001DB  817efe08f5     cmp      word ptr [bp - 2], 0xf508  ; 0000:01DB
+  001E0  7403           je       loc_001E5  ; 0000:01E0
+  001E2  e9ddfe         jmp      loc_000C2  ; 0000:01E2
+loc_001E5:
+  001E5  e89122         call     sub_02479  ; 0000:01E5
+  001E8  817efe07f5     cmp      word ptr [bp - 2], 0xf507  ; 0000:01E8
+  001ED  7513           jne      loc_00202  ; 0000:01ED
+  001EF  b88a11         mov      ax, 0x118a  ; 0000:01EF
+  001F2  50             push     ax  ; 0000:01F2
+  001F3  b8a011         mov      ax, 0x11a0  ; 0000:01F3
+  001F6  50             push     ax  ; 0000:01F6
+  001F7  e8fd22         call     sub_024F7  ; 0000:01F7
+  001FA  83c404         add      sp, 4  ; 0000:01FA
+  001FD  b80d00         mov      ax, 0xd  ; 0000:01FD
+  00200  eb03           jmp      loc_00205  ; 0000:0200
+loc_00202:
+  00202  b81b00         mov      ax, 0x1b  ; 0000:0202
+loc_00205:
+  00205  5e             pop      si  ; 0000:0205
+  00206  8be5           mov      sp, bp  ; 0000:0206
+  00208  5d             pop      bp  ; 0000:0208
+  00209  c3             ret        ; 0000:0209
+
+
+; ---- sub_0020A ----
+; --- dmserv_marginDialog: Margin settings sub-dialog
+dmserv_marginDialog:  ; was sub_0020A
+  0020A  55             push     bp  ; 0000:020A
+  0020B  8bec           mov      bp, sp  ; 0000:020B
+  0020D  83ec14         sub      sp, 0x14  ; 0000:020D
+  00210  56             push     si  ; 0000:0210
+  00211  b88a11         mov      ax, 0x118a  ; 0000:0211
+  00214  50             push     ax  ; 0000:0214
+  00215  b8a011         mov      ax, 0x11a0  ; 0000:0215
+  00218  50             push     ax  ; 0000:0218
+  00219  e8e122         call     sub_024FD  ; 0000:0219
+  0021C  83c404         add      sp, 4  ; 0000:021C
+  0021F  b88a11         mov      ax, 0x118a  ; 0000:021F
+  00222  50             push     ax  ; 0000:0222
+  00223  b8b010         mov      ax, 0x10b0  ; 0000:0223
+  00226  50             push     ax  ; 0000:0226
+  00227  e8d322         call     sub_024FD  ; 0000:0227
+  0022A  83c404         add      sp, 4  ; 0000:022A
+  0022D  a09811         mov      al, byte ptr [0x1198]  ; 0000:022D
+  00230  2ae4           sub      ah, ah  ; 0000:0230
+  00232  8bf0           mov      si, ax  ; 0000:0232
+  00234  39364c00       cmp      word ptr [0x4c], si  ; 0000:0234
+  00238  760a           jbe      loc_00244  ; 0000:0238
+  0023A  39364a00       cmp      word ptr [0x4a], si  ; 0000:023A
+  0023E  7304           jae      loc_00244  ; 0000:023E
+  00240  89364c00       mov      word ptr [0x4c], si  ; 0000:0240
+loc_00244:
+  00244  a09111         mov      al, byte ptr [0x1191]  ; 0000:0244
+  00247  2ae4           sub      ah, ah  ; 0000:0247
+  00249  8bf0           mov      si, ax  ; 0000:0249
+  0024B  39365c00       cmp      word ptr [0x5c], si  ; 0000:024B
+  0024F  760a           jbe      loc_0025B  ; 0000:024F
+  00251  39365a00       cmp      word ptr [0x5a], si  ; 0000:0251
+  00255  7304           jae      loc_0025B  ; 0000:0255
+  00257  89365c00       mov      word ptr [0x5c], si  ; 0000:0257
+loc_0025B:
+  0025B  b85600         mov      ax, 0x56  ; 0000:025B
+  0025E  50             push     ax  ; 0000:025E
+  0025F  b8b510         mov      ax, 0x10b5  ; 0000:025F
+  00262  50             push     ax  ; 0000:0262
+  00263  e8ea02         call     sub_00550  ; 0000:0263
+  00266  83c404         add      sp, 4  ; 0000:0266
+  00269  b84600         mov      ax, 0x46  ; 0000:0269
+  0026C  50             push     ax  ; 0000:026C
+  0026D  b8b910         mov      ax, 0x10b9  ; 0000:026D
+  00270  50             push     ax  ; 0000:0270
+  00271  e8dc02         call     sub_00550  ; 0000:0271
+  00274  83c404         add      sp, 4  ; 0000:0274
+  00277  a09211         mov      al, byte ptr [0x1192]  ; 0000:0277
+  0027A  a2fd00         mov      byte ptr [0xfd], al  ; 0000:027A
+  0027D  a09911         mov      al, byte ptr [0x1199]  ; 0000:027D
+  00280  a2f800         mov      byte ptr [0xf8], al  ; 0000:0280
+  00283  803ea01100     cmp      byte ptr [0x11a0], 0  ; 0000:0283
+  00288  7507           jne      loc_00291  ; 0000:0288
+  0028A  c606130100     mov      byte ptr [0x113], 0  ; 0000:028A
+  0028F  eb05           jmp      loc_00296  ; 0000:028F
+loc_00291:
+  00291  c606130101     mov      byte ptr [0x113], 1  ; 0000:0291
+loc_00296:
+  00296  a0a011         mov      al, byte ptr [0x11a0]  ; 0000:0296
+  00299  a21801         mov      byte ptr [0x118], al  ; 0000:0299
+  0029C  3c01           cmp      al, 1  ; 0000:029C
+  0029E  750f           jne      loc_002AF  ; 0000:029E
+  002A0  b89111         mov      ax, 0x1191  ; 0000:02A0
+  002A3  50             push     ax  ; 0000:02A3
+  002A4  e89d00         call     sub_00344  ; 0000:02A4
+  002A7  83c402         add      sp, 2  ; 0000:02A7
+  002AA  b8a511         mov      ax, 0x11a5  ; 0000:02AA
+  002AD  eb14           jmp      loc_002C3  ; 0000:02AD
+loc_002AF:
+  002AF  803ea01100     cmp      byte ptr [0x11a0], 0  ; 0000:02AF
+  002B4  7514           jne      loc_002CA  ; 0000:02B4
+  002B6  b89811         mov      ax, 0x1198  ; 0000:02B6
+  002B9  50             push     ax  ; 0000:02B9
+  002BA  e88700         call     sub_00344  ; 0000:02BA
+  002BD  83c402         add      sp, 2  ; 0000:02BD
+  002C0  b8a911         mov      ax, 0x11a9  ; 0000:02C0
+loc_002C3:
+  002C3  50             push     ax  ; 0000:02C3
+  002C4  e81b01         call     sub_003E2  ; 0000:02C4
+  002C7  83c402         add      sp, 2  ; 0000:02C7
+loc_002CA:
+  002CA  a0ad11         mov      al, byte ptr [0x11ad]  ; 0000:02CA
+  002CD  a2e501         mov      byte ptr [0x1e5], al  ; 0000:02CD
+  002D0  a0ae11         mov      al, byte ptr [0x11ae]  ; 0000:02D0
+  002D3  a2f501         mov      byte ptr [0x1f5], al  ; 0000:02D3
+  002D6  803e921100     cmp      byte ptr [0x1192], 0  ; 0000:02D6
+  002DB  750c           jne      loc_002E9  ; 0000:02DB
+  002DD  803e991100     cmp      byte ptr [0x1199], 0  ; 0000:02DD
+  002E2  7505           jne      loc_002E9  ; 0000:02E2
+  002E4  c606040100     mov      byte ptr [0x104], 0  ; 0000:02E4
+loc_002E9:
+  002E9  c6064f0200     mov      byte ptr [0x24f], 0  ; 0000:02E9
+  002EE  c606cc0000     mov      byte ptr [0xcc], 0  ; 0000:02EE
+  002F3  c606e00000     mov      byte ptr [0xe0], 0  ; 0000:02F3
+  002F8  c746fe0000     mov      word ptr [bp - 2], 0  ; 0000:02F8
+loc_002FD:
+  002FD  b82f00         mov      ax, 0x2f  ; 0000:02FD
+  00300  f76efe         imul     word ptr [bp - 2]  ; 0000:0300
+  00303  8bd8           mov      bx, ax  ; 0000:0303
+  00305  c7873501ffff   mov      word ptr [bx + 0x135], 0xffff  ; 0000:0305
+  0030B  ff46fe         inc      word ptr [bp - 2]  ; 0000:030B
+  0030E  837efe04       cmp      word ptr [bp - 2], 4  ; 0000:030E
+  00312  7ce9           jl       loc_002FD  ; 0000:0312
+  00314  8d46ec         lea      ax, [bp - 0x14]  ; 0000:0314
+  00317  50             push     ax  ; 0000:0317
+  00318  e8e821         call     sub_02503  ; 0000:0318
+  0031B  83c402         add      sp, 2  ; 0000:031B
+  0031E  b8d20b         mov      ax, 0xbd2  ; 0000:031E
+  00321  50             push     ax  ; 0000:0321
+  00322  8d46ee         lea      ax, [bp - 0x12]  ; 0000:0322
+  00325  50             push     ax  ; 0000:0325
+  00326  e87543         call     sub_0469E  ; 0000:0326
+  00329  83c404         add      sp, 4  ; 0000:0329
+  0032C  0bc0           or       ax, ax  ; 0000:032C
+  0032E  7505           jne      loc_00335  ; 0000:032E
+  00330  c606fd0000     mov      byte ptr [0xfd], 0  ; 0000:0330
+loc_00335:
+  00335  b84c02         mov      ax, 0x24c  ; 0000:0335
+  00338  50             push     ax  ; 0000:0338
+  00339  e8cd21         call     sub_02509  ; 0000:0339
+  0033C  83c402         add      sp, 2  ; 0000:033C
+  0033F  5e             pop      si  ; 0000:033F
+  00340  8be5           mov      sp, bp  ; 0000:0340
+  00342  5d             pop      bp  ; 0000:0342
+  00343  c3             ret        ; 0000:0343
+
+
+; ---- sub_00344 ----
+; --- dmserv_parseMargin: Parse margin value from user input
+dmserv_parseMargin:  ; was sub_00344
+  00344  55             push     bp  ; 0000:0344
+  00345  8bec           mov      bp, sp  ; 0000:0345
+  00347  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0347
+  0034A  807f0200       cmp      byte ptr [bx + 2], 0  ; 0000:034A
+  0034E  750c           jne      loc_0035C  ; 0000:034E
+  00350  c6061c0100     mov      byte ptr [0x11c], 0  ; 0000:0350
+  00355  c606f60100     mov      byte ptr [0x1f6], 0  ; 0000:0355
+  0035A  eb0a           jmp      loc_00366  ; 0000:035A
+loc_0035C:
+  0035C  c6061c0101     mov      byte ptr [0x11c], 1  ; 0000:035C
+  00361  c606f60101     mov      byte ptr [0x1f6], 1  ; 0000:0361
+loc_00366:
+  00366  807f0300       cmp      byte ptr [bx + 3], 0  ; 0000:0366
+  0036A  750c           jne      loc_00378  ; 0000:036A
+  0036C  c6064b0100     mov      byte ptr [0x14b], 0  ; 0000:036C
+  00371  c606fe0100     mov      byte ptr [0x1fe], 0  ; 0000:0371
+  00376  eb0a           jmp      loc_00382  ; 0000:0376
+loc_00378:
+  00378  c6064b0101     mov      byte ptr [0x14b], 1  ; 0000:0378
+  0037D  c606fe0101     mov      byte ptr [0x1fe], 1  ; 0000:037D
+loc_00382:
+  00382  807f0400       cmp      byte ptr [bx + 4], 0  ; 0000:0382
+  00386  750c           jne      loc_00394  ; 0000:0386
+  00388  c6067a0100     mov      byte ptr [0x17a], 0  ; 0000:0388
+  0038D  c606060200     mov      byte ptr [0x206], 0  ; 0000:038D
+  00392  eb0a           jmp      loc_0039E  ; 0000:0392
+loc_00394:
+  00394  c6067a0101     mov      byte ptr [0x17a], 1  ; 0000:0394
+  00399  c606060201     mov      byte ptr [0x206], 1  ; 0000:0399
+loc_0039E:
+  0039E  807f0500       cmp      byte ptr [bx + 5], 0  ; 0000:039E
+  003A2  750c           jne      loc_003B0  ; 0000:03A2
+  003A4  c606a90100     mov      byte ptr [0x1a9], 0  ; 0000:03A4
+  003A9  c6060e0200     mov      byte ptr [0x20e], 0  ; 0000:03A9
+  003AE  eb0a           jmp      loc_003BA  ; 0000:03AE
+loc_003B0:
+  003B0  c606a90101     mov      byte ptr [0x1a9], 1  ; 0000:03B0
+  003B5  c6060e0201     mov      byte ptr [0x20e], 1  ; 0000:03B5
+loc_003BA:
+  003BA  807f0600       cmp      byte ptr [bx + 6], 0  ; 0000:03BA
+  003BE  750c           jne      loc_003CC  ; 0000:03BE
+  003C0  c606d80100     mov      byte ptr [0x1d8], 0  ; 0000:03C0
+  003C5  c606160200     mov      byte ptr [0x216], 0  ; 0000:03C5
+  003CA  eb0a           jmp      loc_003D6  ; 0000:03CA
+loc_003CC:
+  003CC  c606d80101     mov      byte ptr [0x1d8], 1  ; 0000:03CC
+  003D1  c606160201     mov      byte ptr [0x216], 1  ; 0000:03D1
+loc_003D6:
+  003D6  c606380201     mov      byte ptr [0x238], 1  ; 0000:03D6
+  003DB  c606390201     mov      byte ptr [0x239], 1  ; 0000:03DB
+  003E0  5d             pop      bp  ; 0000:03E0
+  003E1  c3             ret        ; 0000:03E1
+
+
+; ---- sub_003E2 ----
+sub_003E2:
+  003E2  55             push     bp  ; 0000:03E2
+  003E3  8bec           mov      bp, sp  ; 0000:03E3
+  003E5  b80a00         mov      ax, 0xa  ; 0000:03E5
+  003E8  50             push     ax  ; 0000:03E8
+  003E9  b8b211         mov      ax, 0x11b2  ; 0000:03E9
+  003EC  50             push     ax  ; 0000:03EC
+  003ED  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:03ED
+  003F0  8a07           mov      al, byte ptr [bx]  ; 0000:03F0
+  003F2  2ae4           sub      ah, ah  ; 0000:03F2
+  003F4  50             push     ax  ; 0000:03F4
+  003F5  e8f641         call     sub_045EE  ; 0000:03F5
+  003F8  83c406         add      sp, 6  ; 0000:03F8
+  003FB  b80a00         mov      ax, 0xa  ; 0000:03FB
+  003FE  50             push     ax  ; 0000:03FE
+  003FF  b88611         mov      ax, 0x1186  ; 0000:03FF
+  00402  50             push     ax  ; 0000:0402
+  00403  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0403
+  00406  8a4701         mov      al, byte ptr [bx + 1]  ; 0000:0406
+  00409  2ae4           sub      ah, ah  ; 0000:0409
+  0040B  50             push     ax  ; 0000:040B
+  0040C  e8df41         call     sub_045EE  ; 0000:040C
+  0040F  83c406         add      sp, 6  ; 0000:040F
+  00412  b80a00         mov      ax, 0xa  ; 0000:0412
+  00415  50             push     ax  ; 0000:0415
+  00416  b88211         mov      ax, 0x1182  ; 0000:0416
+  00419  50             push     ax  ; 0000:0419
+  0041A  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:041A
+  0041D  8a4702         mov      al, byte ptr [bx + 2]  ; 0000:041D
+  00420  2ae4           sub      ah, ah  ; 0000:0420
+  00422  50             push     ax  ; 0000:0422
+  00423  e8c841         call     sub_045EE  ; 0000:0423
+  00426  83c406         add      sp, 6  ; 0000:0426
+  00429  b80a00         mov      ax, 0xa  ; 0000:0429
+  0042C  50             push     ax  ; 0000:042C
+  0042D  b87e11         mov      ax, 0x117e  ; 0000:042D
+  00430  50             push     ax  ; 0000:0430
+  00431  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0431
+  00434  8a4703         mov      al, byte ptr [bx + 3]  ; 0000:0434
+  00437  2ae4           sub      ah, ah  ; 0000:0437
+  00439  50             push     ax  ; 0000:0439
+  0043A  e8b141         call     sub_045EE  ; 0000:043A
+  0043D  83c406         add      sp, 6  ; 0000:043D
+  00440  5d             pop      bp  ; 0000:0440
+  00441  c3             ret        ; 0000:0441
+
+
+; ---- sub_00442 ----
+sub_00442:
+  00442  55             push     bp  ; 0000:0442
+  00443  8bec           mov      bp, sp  ; 0000:0443
+  00445  83ec08         sub      sp, 8  ; 0000:0445
+  00448  56             push     si  ; 0000:0448
+  00449  b8b211         mov      ax, 0x11b2  ; 0000:0449
+  0044C  50             push     ax  ; 0000:044C
+  0044D  e85a41         call     sub_045AA  ; 0000:044D
+  00450  83c402         add      sp, 2  ; 0000:0450
+  00453  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0453
+  00456  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0456
+  00459  3907           cmp      word ptr [bx], ax  ; 0000:0459
+  0045B  7e0a           jle      loc_00467  ; 0000:045B
+loc_0045D:
+  0045D  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:045D
+  00460  8b7608         mov      si, word ptr [bp + 8]  ; 0000:0460
+  00463  8a04           mov      al, byte ptr [si]  ; 0000:0463
+  00465  eb11           jmp      loc_00478  ; 0000:0465
+loc_00467:
+  00467  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0467
+  0046A  8b46f8         mov      ax, word ptr [bp - 8]  ; 0000:046A
+  0046D  394702         cmp      word ptr [bx + 2], ax  ; 0000:046D
+  00470  7ceb           jl       loc_0045D  ; 0000:0470
+  00472  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0472
+  00475  8a46f8         mov      al, byte ptr [bp - 8]  ; 0000:0475
+loc_00478:
+  00478  8807           mov      byte ptr [bx], al  ; 0000:0478
+  0047A  b88611         mov      ax, 0x1186  ; 0000:047A
+  0047D  50             push     ax  ; 0000:047D
+  0047E  e82941         call     sub_045AA  ; 0000:047E
+  00481  83c402         add      sp, 2  ; 0000:0481
+  00484  8946fa         mov      word ptr [bp - 6], ax  ; 0000:0484
+  00487  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0487
+  0048A  394704         cmp      word ptr [bx + 4], ax  ; 0000:048A
+  0048D  7e0b           jle      loc_0049A  ; 0000:048D
+loc_0048F:
+  0048F  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:048F
+  00492  8b7608         mov      si, word ptr [bp + 8]  ; 0000:0492
+  00495  8a4401         mov      al, byte ptr [si + 1]  ; 0000:0495
+  00498  eb11           jmp      loc_004AB  ; 0000:0498
+loc_0049A:
+  0049A  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:049A
+  0049D  8b46fa         mov      ax, word ptr [bp - 6]  ; 0000:049D
+  004A0  394706         cmp      word ptr [bx + 6], ax  ; 0000:04A0
+  004A3  7cea           jl       loc_0048F  ; 0000:04A3
+  004A5  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:04A5
+  004A8  8a46fa         mov      al, byte ptr [bp - 6]  ; 0000:04A8
+loc_004AB:
+  004AB  884701         mov      byte ptr [bx + 1], al  ; 0000:04AB
+  004AE  8b46f8         mov      ax, word ptr [bp - 8]  ; 0000:04AE
+  004B1  0346fa         add      ax, word ptr [bp - 6]  ; 0000:04B1
+  004B4  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:04B4
+  004B7  3b4706         cmp      ax, word ptr [bx + 6]  ; 0000:04B7
+  004BA  7e16           jle      loc_004D2  ; 0000:04BA
+  004BC  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:04BC
+  004BF  8b7608         mov      si, word ptr [bp + 8]  ; 0000:04BF
+  004C2  8a04           mov      al, byte ptr [si]  ; 0000:04C2
+  004C4  8807           mov      byte ptr [bx], al  ; 0000:04C4
+  004C6  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:04C6
+  004C9  8b7608         mov      si, word ptr [bp + 8]  ; 0000:04C9
+  004CC  8a4401         mov      al, byte ptr [si + 1]  ; 0000:04CC
+  004CF  884701         mov      byte ptr [bx + 1], al  ; 0000:04CF
+loc_004D2:
+  004D2  b88211         mov      ax, 0x1182  ; 0000:04D2
+  004D5  50             push     ax  ; 0000:04D5
+  004D6  e8d140         call     sub_045AA  ; 0000:04D6
+  004D9  83c402         add      sp, 2  ; 0000:04D9
+  004DC  8946fc         mov      word ptr [bp - 4], ax  ; 0000:04DC
+  004DF  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:04DF
+  004E2  394708         cmp      word ptr [bx + 8], ax  ; 0000:04E2
+  004E5  7e0b           jle      loc_004F2  ; 0000:04E5
+loc_004E7:
+  004E7  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:04E7
+  004EA  8b7608         mov      si, word ptr [bp + 8]  ; 0000:04EA
+  004ED  8a4402         mov      al, byte ptr [si + 2]  ; 0000:04ED
+  004F0  eb11           jmp      loc_00503  ; 0000:04F0
+loc_004F2:
+  004F2  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:04F2
+  004F5  8b46fc         mov      ax, word ptr [bp - 4]  ; 0000:04F5
+  004F8  39470a         cmp      word ptr [bx + 0xa], ax  ; 0000:04F8
+  004FB  7cea           jl       loc_004E7  ; 0000:04FB
+  004FD  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:04FD
+  00500  8a46fc         mov      al, byte ptr [bp - 4]  ; 0000:0500
+loc_00503:
+  00503  884702         mov      byte ptr [bx + 2], al  ; 0000:0503
+  00506  b87e11         mov      ax, 0x117e  ; 0000:0506
+  00509  50             push     ax  ; 0000:0509
+  0050A  e89d40         call     sub_045AA  ; 0000:050A
+  0050D  83c402         add      sp, 2  ; 0000:050D
+  00510  8946fe         mov      word ptr [bp - 2], ax  ; 0000:0510
+  00513  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0513
+  00516  39470c         cmp      word ptr [bx + 0xc], ax  ; 0000:0516
+  00519  7e0b           jle      loc_00526  ; 0000:0519
+loc_0051B:
+  0051B  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:051B
+  0051E  8b7608         mov      si, word ptr [bp + 8]  ; 0000:051E
+  00521  8a4403         mov      al, byte ptr [si + 3]  ; 0000:0521
+  00524  eb11           jmp      loc_00537  ; 0000:0524
+loc_00526:
+  00526  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0526
+  00529  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:0529
+  0052C  39470e         cmp      word ptr [bx + 0xe], ax  ; 0000:052C
+  0052F  7cea           jl       loc_0051B  ; 0000:052F
+  00531  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0531
+  00534  8a46fe         mov      al, byte ptr [bp - 2]  ; 0000:0534
+loc_00537:
+  00537  884703         mov      byte ptr [bx + 3], al  ; 0000:0537
+  0053A  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:053A
+  0053D  3946fc         cmp      word ptr [bp - 4], ax  ; 0000:053D
+  00540  7d09           jge      loc_0054B  ; 0000:0540
+  00542  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0542
+  00545  8a46fc         mov      al, byte ptr [bp - 4]  ; 0000:0545
+  00548  884703         mov      byte ptr [bx + 3], al  ; 0000:0548
+loc_0054B:
+  0054B  5e             pop      si  ; 0000:054B
+  0054C  8be5           mov      sp, bp  ; 0000:054C
+  0054E  5d             pop      bp  ; 0000:054E
+  0054F  c3             ret        ; 0000:054F
+
+
+; ---- sub_00550 ----
+sub_00550:
+  00550  55             push     bp  ; 0000:0550
+  00551  8bec           mov      bp, sp  ; 0000:0551
+  00553  56             push     si  ; 0000:0553
+  00554  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0554
+  00557  8b37           mov      si, word ptr [bx]  ; 0000:0557
+  00559  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0559
+  0055C  8a07           mov      al, byte ptr [bx]  ; 0000:055C
+  0055E  98             cwde       ; 0000:055E
+  0055F  3bc6           cmp      ax, si  ; 0000:055F
+  00561  7d04           jge      loc_00567  ; 0000:0561
+  00563  8bc6           mov      ax, si  ; 0000:0563
+  00565  eb14           jmp      loc_0057B  ; 0000:0565
+loc_00567:
+  00567  8a07           mov      al, byte ptr [bx]  ; 0000:0567
+  00569  98             cwde       ; 0000:0569
+  0056A  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:056A
+  0056D  394702         cmp      word ptr [bx + 2], ax  ; 0000:056D
+  00570  7d0b           jge      loc_0057D  ; 0000:0570
+  00572  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0572
+  00575  8b7606         mov      si, word ptr [bp + 6]  ; 0000:0575
+  00578  8a4402         mov      al, byte ptr [si + 2]  ; 0000:0578
+loc_0057B:
+  0057B  8807           mov      byte ptr [bx], al  ; 0000:057B
+loc_0057D:
+  0057D  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:057D
+  00580  8a4701         mov      al, byte ptr [bx + 1]  ; 0000:0580
+  00583  98             cwde       ; 0000:0583
+  00584  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0584
+  00587  3b4704         cmp      ax, word ptr [bx + 4]  ; 0000:0587
+  0058A  7d0b           jge      loc_00597  ; 0000:058A
+  0058C  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:058C
+  0058F  8b7606         mov      si, word ptr [bp + 6]  ; 0000:058F
+  00592  8a4404         mov      al, byte ptr [si + 4]  ; 0000:0592
+  00595  eb18           jmp      loc_005AF  ; 0000:0595
+loc_00597:
+  00597  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0597
+  0059A  8a4701         mov      al, byte ptr [bx + 1]  ; 0000:059A
+  0059D  98             cwde       ; 0000:059D
+  0059E  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:059E
+  005A1  3b4706         cmp      ax, word ptr [bx + 6]  ; 0000:05A1
+  005A4  7e0c           jle      loc_005B2  ; 0000:05A4
+  005A6  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05A6
+  005A9  8b7606         mov      si, word ptr [bp + 6]  ; 0000:05A9
+  005AC  8a4406         mov      al, byte ptr [si + 6]  ; 0000:05AC
+loc_005AF:
+  005AF  884701         mov      byte ptr [bx + 1], al  ; 0000:05AF
+loc_005B2:
+  005B2  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05B2
+  005B5  8a4702         mov      al, byte ptr [bx + 2]  ; 0000:05B5
+  005B8  98             cwde       ; 0000:05B8
+  005B9  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:05B9
+  005BC  3b4708         cmp      ax, word ptr [bx + 8]  ; 0000:05BC
+  005BF  7d0b           jge      loc_005CC  ; 0000:05BF
+  005C1  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05C1
+  005C4  8b7606         mov      si, word ptr [bp + 6]  ; 0000:05C4
+  005C7  8a4408         mov      al, byte ptr [si + 8]  ; 0000:05C7
+  005CA  eb18           jmp      loc_005E4  ; 0000:05CA
+loc_005CC:
+  005CC  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05CC
+  005CF  8a4702         mov      al, byte ptr [bx + 2]  ; 0000:05CF
+  005D2  98             cwde       ; 0000:05D2
+  005D3  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:05D3
+  005D6  3b470a         cmp      ax, word ptr [bx + 0xa]  ; 0000:05D6
+  005D9  7e0c           jle      loc_005E7  ; 0000:05D9
+  005DB  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05DB
+  005DE  8b7606         mov      si, word ptr [bp + 6]  ; 0000:05DE
+  005E1  8a440a         mov      al, byte ptr [si + 0xa]  ; 0000:05E1
+loc_005E4:
+  005E4  884702         mov      byte ptr [bx + 2], al  ; 0000:05E4
+loc_005E7:
+  005E7  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05E7
+  005EA  8a4703         mov      al, byte ptr [bx + 3]  ; 0000:05EA
+  005ED  98             cwde       ; 0000:05ED
+  005EE  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:05EE
+  005F1  3b470c         cmp      ax, word ptr [bx + 0xc]  ; 0000:05F1
+  005F4  7d0b           jge      loc_00601  ; 0000:05F4
+  005F6  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:05F6
+  005F9  8b7606         mov      si, word ptr [bp + 6]  ; 0000:05F9
+  005FC  8a440c         mov      al, byte ptr [si + 0xc]  ; 0000:05FC
+  005FF  eb18           jmp      loc_00619  ; 0000:05FF
+loc_00601:
+  00601  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0601
+  00604  8a4703         mov      al, byte ptr [bx + 3]  ; 0000:0604
+  00607  98             cwde       ; 0000:0607
+  00608  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0608
+  0060B  3b470e         cmp      ax, word ptr [bx + 0xe]  ; 0000:060B
+  0060E  7e0c           jle      loc_0061C  ; 0000:060E
+  00610  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0610
+  00613  8b7606         mov      si, word ptr [bp + 6]  ; 0000:0613
+  00616  8a440e         mov      al, byte ptr [si + 0xe]  ; 0000:0616
+loc_00619:
+  00619  884703         mov      byte ptr [bx + 3], al  ; 0000:0619
+loc_0061C:
+  0061C  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:061C
+  0061F  8bf3           mov      si, bx  ; 0000:061F
+  00621  8a4402         mov      al, byte ptr [si + 2]  ; 0000:0621
+  00624  384703         cmp      byte ptr [bx + 3], al  ; 0000:0624
+  00627  7e03           jle      loc_0062C  ; 0000:0627
+  00629  884703         mov      byte ptr [bx + 3], al  ; 0000:0629
+loc_0062C:
+  0062C  5e             pop      si  ; 0000:062C
+  0062D  5d             pop      bp  ; 0000:062D
+  0062E  c3             ret        ; 0000:062E
+
+
+; ---- sub_0062F ----
+; --- dmserv_printPreview: Print preview rendering
+dmserv_printPreview:  ; was sub_0062F
+  0062F  55             push     bp  ; 0000:062F
+  00630  8bec           mov      bp, sp  ; 0000:0630
+  00632  81ec8000       sub      sp, 0x80  ; 0000:0632
+  00636  56             push     si  ; 0000:0636
+  00637  b8b211         mov      ax, 0x11b2  ; 0000:0637
+  0063A  50             push     ax  ; 0000:063A
+  0063B  e86c3f         call     sub_045AA  ; 0000:063B
+  0063E  83c402         add      sp, 2  ; 0000:063E
+  00641  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0641
+  00644  b88611         mov      ax, 0x1186  ; 0000:0644
+  00647  50             push     ax  ; 0000:0647
+  00648  e85f3f         call     sub_045AA  ; 0000:0648
+  0064B  83c402         add      sp, 2  ; 0000:064B
+  0064E  8946fa         mov      word ptr [bp - 6], ax  ; 0000:064E
+  00651  b88211         mov      ax, 0x1182  ; 0000:0651
+  00654  50             push     ax  ; 0000:0654
+  00655  e8523f         call     sub_045AA  ; 0000:0655
+  00658  83c402         add      sp, 2  ; 0000:0658
+  0065B  8946fc         mov      word ptr [bp - 4], ax  ; 0000:065B
+  0065E  b87e11         mov      ax, 0x117e  ; 0000:065E
+  00661  50             push     ax  ; 0000:0661
+  00662  e8453f         call     sub_045AA  ; 0000:0662
+  00665  83c402         add      sp, 2  ; 0000:0665
+  00668  8946fe         mov      word ptr [bp - 2], ax  ; 0000:0668
+  0066B  837e0800       cmp      word ptr [bp + 8], 0  ; 0000:066B
+  0066F  7505           jne      loc_00676  ; 0000:066F
+  00671  b8f802         mov      ax, 0x2f8  ; 0000:0671
+  00674  eb09           jmp      loc_0067F  ; 0000:0674
+loc_00676:
+  00676  837e0801       cmp      word ptr [bp + 8], 1  ; 0000:0676
+  0067A  750e           jne      loc_0068A  ; 0000:067A
+  0067C  b80a03         mov      ax, 0x30a  ; 0000:067C
+loc_0067F:
+  0067F  50             push     ax  ; 0000:067F
+  00680  b8ca10         mov      ax, 0x10ca  ; 0000:0680
+  00683  50             push     ax  ; 0000:0683
+  00684  e8d53e         call     sub_0455C  ; 0000:0684
+  00687  83c404         add      sp, 4  ; 0000:0687
+loc_0068A:
+  0068A  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:068A
+  0068D  8b37           mov      si, word ptr [bx]  ; 0000:068D
+  0068F  3976f8         cmp      word ptr [bp - 8], si  ; 0000:068F
+  00692  7d38           jge      loc_006CC  ; 0000:0692
+  00694  56             push     si  ; 0000:0694
+  00695  b81c03         mov      ax, 0x31c  ; 0000:0695
+loc_00698:
+  00698  50             push     ax  ; 0000:0698
+  00699  8d4680         lea      ax, [bp - 0x80]  ; 0000:0699
+  0069C  50             push     ax  ; 0000:069C
+  0069D  e8dd01         call     sub_0087D  ; 0000:069D
+  006A0  83c406         add      sp, 6  ; 0000:06A0
+  006A3  8d4680         lea      ax, [bp - 0x80]  ; 0000:06A3
+  006A6  50             push     ax  ; 0000:06A6
+  006A7  b8ca10         mov      ax, 0x10ca  ; 0000:06A7
+  006AA  50             push     ax  ; 0000:06AA
+  006AB  e86e3e         call     sub_0451C  ; 0000:06AB
+  006AE  83c404         add      sp, 4  ; 0000:06AE
+  006B1  b86202         mov      ax, 0x262  ; 0000:06B1
+  006B4  50             push     ax  ; 0000:06B4
+  006B5  e85d1e         call     sub_02515  ; 0000:06B5
+  006B8  83c402         add      sp, 2  ; 0000:06B8
+  006BB  c6064f0201     mov      byte ptr [0x24f], 1  ; 0000:06BB
+  006C0  c7063501ffff   mov      word ptr [0x135], 0xffff  ; 0000:06C0
+loc_006C6:
+  006C6  b80100         mov      ax, 1  ; 0000:06C6
+  006C9  e9ac01         jmp      loc_00878  ; 0000:06C9
+loc_006CC:
+  006CC  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:06CC
+  006CF  8b46f8         mov      ax, word ptr [bp - 8]  ; 0000:06CF
+  006D2  394702         cmp      word ptr [bx + 2], ax  ; 0000:06D2
+  006D5  7d08           jge      loc_006DF  ; 0000:06D5
+  006D7  ff7702         push     word ptr [bx + 2]  ; 0000:06D7
+  006DA  b83e03         mov      ax, 0x33e  ; 0000:06DA
+  006DD  ebb9           jmp      loc_00698  ; 0000:06DD
+loc_006DF:
+  006DF  8b46fa         mov      ax, word ptr [bp - 6]  ; 0000:06DF
+  006E2  394704         cmp      word ptr [bx + 4], ax  ; 0000:06E2
+  006E5  7e36           jle      loc_0071D  ; 0000:06E5
+  006E7  ff7704         push     word ptr [bx + 4]  ; 0000:06E7
+  006EA  b86003         mov      ax, 0x360  ; 0000:06EA
+  006ED  50             push     ax  ; 0000:06ED
+  006EE  8d4680         lea      ax, [bp - 0x80]  ; 0000:06EE
+  006F1  50             push     ax  ; 0000:06F1
+  006F2  e88801         call     sub_0087D  ; 0000:06F2
+  006F5  83c406         add      sp, 6  ; 0000:06F5
+  006F8  8d4680         lea      ax, [bp - 0x80]  ; 0000:06F8
+  006FB  50             push     ax  ; 0000:06FB
+  006FC  b8ca10         mov      ax, 0x10ca  ; 0000:06FC
+  006FF  50             push     ax  ; 0000:06FF
+  00700  e8193e         call     sub_0451C  ; 0000:0700
+  00703  83c404         add      sp, 4  ; 0000:0703
+  00706  b86202         mov      ax, 0x262  ; 0000:0706
+  00709  50             push     ax  ; 0000:0709
+  0070A  e8081e         call     sub_02515  ; 0000:070A
+  0070D  83c402         add      sp, 2  ; 0000:070D
+  00710  c6064f0202     mov      byte ptr [0x24f], 2  ; 0000:0710
+loc_00715:
+  00715  c7066401ffff   mov      word ptr [0x164], 0xffff  ; 0000:0715
+  0071B  eba9           jmp      loc_006C6  ; 0000:071B
+loc_0071D:
+  0071D  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:071D
+  00720  8b46fa         mov      ax, word ptr [bp - 6]  ; 0000:0720
+  00723  394706         cmp      word ptr [bx + 6], ax  ; 0000:0723
+  00726  7d30           jge      loc_00758  ; 0000:0726
+  00728  ff7706         push     word ptr [bx + 6]  ; 0000:0728
+  0072B  b88003         mov      ax, 0x380  ; 0000:072B
+  0072E  50             push     ax  ; 0000:072E
+  0072F  8d4680         lea      ax, [bp - 0x80]  ; 0000:072F
+  00732  50             push     ax  ; 0000:0732
+  00733  e84701         call     sub_0087D  ; 0000:0733
+  00736  83c406         add      sp, 6  ; 0000:0736
+  00739  8d4680         lea      ax, [bp - 0x80]  ; 0000:0739
+  0073C  50             push     ax  ; 0000:073C
+  0073D  b8ca10         mov      ax, 0x10ca  ; 0000:073D
+  00740  50             push     ax  ; 0000:0740
+  00741  e8d83d         call     sub_0451C  ; 0000:0741
+  00744  83c404         add      sp, 4  ; 0000:0744
+  00747  c6064f0202     mov      byte ptr [0x24f], 2  ; 0000:0747
+  0074C  b86202         mov      ax, 0x262  ; 0000:074C
+  0074F  50             push     ax  ; 0000:074F
+  00750  e8c21d         call     sub_02515  ; 0000:0750
+  00753  83c402         add      sp, 2  ; 0000:0753
+  00756  ebbd           jmp      loc_00715  ; 0000:0756
+loc_00758:
+  00758  8b46f8         mov      ax, word ptr [bp - 8]  ; 0000:0758
+  0075B  0346fa         add      ax, word ptr [bp - 6]  ; 0000:075B
+  0075E  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:075E
+  00761  3b4706         cmp      ax, word ptr [bx + 6]  ; 0000:0761
+  00764  7e31           jle      loc_00797  ; 0000:0764
+  00766  ff7706         push     word ptr [bx + 6]  ; 0000:0766
+  00769  b8a003         mov      ax, 0x3a0  ; 0000:0769
+  0076C  50             push     ax  ; 0000:076C
+  0076D  8d4680         lea      ax, [bp - 0x80]  ; 0000:076D
+  00770  50             push     ax  ; 0000:0770
+  00771  e80901         call     sub_0087D  ; 0000:0771
+  00774  83c406         add      sp, 6  ; 0000:0774
+  00777  8d4680         lea      ax, [bp - 0x80]  ; 0000:0777
+  0077A  50             push     ax  ; 0000:077A
+  0077B  b8ca10         mov      ax, 0x10ca  ; 0000:077B
+  0077E  50             push     ax  ; 0000:077E
+  0077F  e89a3d         call     sub_0451C  ; 0000:077F
+  00782  83c404         add      sp, 4  ; 0000:0782
+  00785  b86202         mov      ax, 0x262  ; 0000:0785
+  00788  50             push     ax  ; 0000:0788
+  00789  e8891d         call     sub_02515  ; 0000:0789
+  0078C  83c402         add      sp, 2  ; 0000:078C
+  0078F  c6064f0201     mov      byte ptr [0x24f], 1  ; 0000:078F
+  00794  e97eff         jmp      loc_00715  ; 0000:0794
+loc_00797:
+  00797  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0797
+  0079A  8b46fc         mov      ax, word ptr [bp - 4]  ; 0000:079A
+  0079D  394708         cmp      word ptr [bx + 8], ax  ; 0000:079D
+  007A0  7e37           jle      loc_007D9  ; 0000:07A0
+  007A2  ff7708         push     word ptr [bx + 8]  ; 0000:07A2
+  007A5  b8c603         mov      ax, 0x3c6  ; 0000:07A5
+loc_007A8:
+  007A8  50             push     ax  ; 0000:07A8
+  007A9  8d4680         lea      ax, [bp - 0x80]  ; 0000:07A9
+  007AC  50             push     ax  ; 0000:07AC
+  007AD  e8cd00         call     sub_0087D  ; 0000:07AD
+  007B0  83c406         add      sp, 6  ; 0000:07B0
+  007B3  8d4680         lea      ax, [bp - 0x80]  ; 0000:07B3
+  007B6  50             push     ax  ; 0000:07B6
+  007B7  b8ca10         mov      ax, 0x10ca  ; 0000:07B7
+  007BA  50             push     ax  ; 0000:07BA
+  007BB  e85e3d         call     sub_0451C  ; 0000:07BB
+  007BE  83c404         add      sp, 4  ; 0000:07BE
+  007C1  b86202         mov      ax, 0x262  ; 0000:07C1
+  007C4  50             push     ax  ; 0000:07C4
+  007C5  e84d1d         call     sub_02515  ; 0000:07C5
+  007C8  83c402         add      sp, 2  ; 0000:07C8
+  007CB  c6064f0203     mov      byte ptr [0x24f], 3  ; 0000:07CB
+  007D0  c7069301ffff   mov      word ptr [0x193], 0xffff  ; 0000:07D0
+  007D6  e9edfe         jmp      loc_006C6  ; 0000:07D6
+loc_007D9:
+  007D9  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:07D9
+  007DC  8b46fc         mov      ax, word ptr [bp - 4]  ; 0000:07DC
+  007DF  39470a         cmp      word ptr [bx + 0xa], ax  ; 0000:07DF
+  007E2  7d08           jge      loc_007EC  ; 0000:07E2
+  007E4  ff770a         push     word ptr [bx + 0xa]  ; 0000:07E4
+  007E7  b8e803         mov      ax, 0x3e8  ; 0000:07E7
+  007EA  ebbc           jmp      loc_007A8  ; 0000:07EA
+loc_007EC:
+  007EC  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:07EC
+  007EF  39470c         cmp      word ptr [bx + 0xc], ax  ; 0000:07EF
+  007F2  7e37           jle      loc_0082B  ; 0000:07F2
+  007F4  ff770c         push     word ptr [bx + 0xc]  ; 0000:07F4
+  007F7  b80a04         mov      ax, 0x40a  ; 0000:07F7
+loc_007FA:
+  007FA  50             push     ax  ; 0000:07FA
+  007FB  8d4680         lea      ax, [bp - 0x80]  ; 0000:07FB
+  007FE  50             push     ax  ; 0000:07FE
+  007FF  e87b00         call     sub_0087D  ; 0000:07FF
+  00802  83c406         add      sp, 6  ; 0000:0802
+  00805  8d4680         lea      ax, [bp - 0x80]  ; 0000:0805
+  00808  50             push     ax  ; 0000:0808
+  00809  b8ca10         mov      ax, 0x10ca  ; 0000:0809
+  0080C  50             push     ax  ; 0000:080C
+  0080D  e80c3d         call     sub_0451C  ; 0000:080D
+loc_00810:
+  00810  83c404         add      sp, 4  ; 0000:0810
+  00813  b86202         mov      ax, 0x262  ; 0000:0813
+  00816  50             push     ax  ; 0000:0816
+  00817  e8fb1c         call     sub_02515  ; 0000:0817
+  0081A  83c402         add      sp, 2  ; 0000:081A
+  0081D  c6064f0204     mov      byte ptr [0x24f], 4  ; 0000:081D
+  00822  c706c201ffff   mov      word ptr [0x1c2], 0xffff  ; 0000:0822
+  00828  e99bfe         jmp      loc_006C6  ; 0000:0828
+loc_0082B:
+  0082B  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:082B
+  0082E  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:082E
+  00831  39470e         cmp      word ptr [bx + 0xe], ax  ; 0000:0831
+  00834  7d08           jge      loc_0083E  ; 0000:0834
+  00836  ff770e         push     word ptr [bx + 0xe]  ; 0000:0836
+  00839  b82e04         mov      ax, 0x42e  ; 0000:0839
+  0083C  ebbc           jmp      loc_007FA  ; 0000:083C
+loc_0083E:
+  0083E  8b46fc         mov      ax, word ptr [bp - 4]  ; 0000:083E
+  00841  3946fe         cmp      word ptr [bp - 2], ax  ; 0000:0841
+  00844  7e0d           jle      loc_00853  ; 0000:0844
+  00846  b85204         mov      ax, 0x452  ; 0000:0846
+  00849  50             push     ax  ; 0000:0849
+  0084A  b8ca10         mov      ax, 0x10ca  ; 0000:084A
+  0084D  50             push     ax  ; 0000:084D
+  0084E  e80b3d         call     sub_0455C  ; 0000:084E
+  00851  ebbd           jmp      loc_00810  ; 0000:0851
+loc_00853:
+  00853  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0853
+  00856  8a46f8         mov      al, byte ptr [bp - 8]  ; 0000:0856
+  00859  8807           mov      byte ptr [bx], al  ; 0000:0859
+  0085B  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:085B
+  0085E  8a46fa         mov      al, byte ptr [bp - 6]  ; 0000:085E
+  00861  884701         mov      byte ptr [bx + 1], al  ; 0000:0861
+  00864  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0864
+  00867  8a46fc         mov      al, byte ptr [bp - 4]  ; 0000:0867
+  0086A  884702         mov      byte ptr [bx + 2], al  ; 0000:086A
+  0086D  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:086D
+  00870  8a46fe         mov      al, byte ptr [bp - 2]  ; 0000:0870
+  00873  884703         mov      byte ptr [bx + 3], al  ; 0000:0873
+  00876  2bc0           sub      ax, ax  ; 0000:0876
+loc_00878:
+  00878  5e             pop      si  ; 0000:0878
+  00879  8be5           mov      sp, bp  ; 0000:0879
+  0087B  5d             pop      bp  ; 0000:087B
+  0087C  c3             ret        ; 0000:087C
+
+
+; ---- sub_0087D ----
+sub_0087D:
+  0087D  55             push     bp  ; 0000:087D
+  0087E  8bec           mov      bp, sp  ; 0000:087E
+  00880  83ec06         sub      sp, 6  ; 0000:0880
+  00883  b80a00         mov      ax, 0xa  ; 0000:0883
+  00886  50             push     ax  ; 0000:0886
+  00887  8d46fa         lea      ax, [bp - 6]  ; 0000:0887
+  0088A  50             push     ax  ; 0000:088A
+  0088B  8a4608         mov      al, byte ptr [bp + 8]  ; 0000:088B
+  0088E  2ae4           sub      ah, ah  ; 0000:088E
+  00890  50             push     ax  ; 0000:0890
+  00891  e85a3d         call     sub_045EE  ; 0000:0891
+  00894  83c406         add      sp, 6  ; 0000:0894
+  00897  ff7606         push     word ptr [bp + 6]  ; 0000:0897
+  0089A  ff7604         push     word ptr [bp + 4]  ; 0000:089A
+  0089D  e8bc3c         call     sub_0455C  ; 0000:089D
+  008A0  83c404         add      sp, 4  ; 0000:08A0
+  008A3  8d46fa         lea      ax, [bp - 6]  ; 0000:08A3
+  008A6  50             push     ax  ; 0000:08A6
+  008A7  ff7604         push     word ptr [bp + 4]  ; 0000:08A7
+  008AA  e86f3c         call     sub_0451C  ; 0000:08AA
+  008AD  83c404         add      sp, 4  ; 0000:08AD
+  008B0  b8db0b         mov      ax, 0xbdb  ; 0000:08B0
+  008B3  50             push     ax  ; 0000:08B3
+  008B4  ff7604         push     word ptr [bp + 4]  ; 0000:08B4
+  008B7  e8623c         call     sub_0451C  ; 0000:08B7
+  008BA  8be5           mov      sp, bp  ; 0000:08BA
+  008BC  5d             pop      bp  ; 0000:08BC
+  008BD  c3             ret        ; 0000:08BD
+
+
+; ---- sub_008BE ----
+sub_008BE:
+  008BE  55             push     bp  ; 0000:08BE
+  008BF  8bec           mov      bp, sp  ; 0000:08BF
+  008C1  83ec08         sub      sp, 8  ; 0000:08C1
+  008C4  8d46f8         lea      ax, [bp - 8]  ; 0000:08C4
+  008C7  50             push     ax  ; 0000:08C7
+  008C8  e89c1b         call     sub_02467  ; 0000:08C8
+  008CB  83c402         add      sp, 2  ; 0000:08CB
+  008CE  807efa01       cmp      byte ptr [bp - 6], 1  ; 0000:08CE
+  008D2  7503           jne      loc_008D7  ; 0000:08D2
+  008D4  e88a1b         call     sub_02461  ; 0000:08D4
+loc_008D7:
+  008D7  e8b71b         call     sub_02491  ; 0000:08D7
+  008DA  a34211         mov      word ptr [0x1142], ax  ; 0000:08DA
+  008DD  e83819         call     sub_02218  ; 0000:08DD
+  008E0  e81300         call     sub_008F6  ; 0000:08E0
+  008E3  e86e19         call     sub_02254  ; 0000:08E3
+  008E6  e8ae1b         call     sub_02497  ; 0000:08E6
+  008E9  807efa01       cmp      byte ptr [bp - 6], 1  ; 0000:08E9
+  008ED  7503           jne      loc_008F2  ; 0000:08ED
+  008EF  e8691b         call     sub_0245B  ; 0000:08EF
+loc_008F2:
+  008F2  8be5           mov      sp, bp  ; 0000:08F2
+  008F4  5d             pop      bp  ; 0000:08F4
+  008F5  c3             ret        ; 0000:08F5
+
+
+; ---- sub_008F6 ----
+; --- dmserv_configManager: Configuration management dispatcher
+dmserv_configManager:  ; was sub_008F6
+  008F6  55             push     bp  ; 0000:08F6
+  008F7  8bec           mov      bp, sp  ; 0000:08F7
+  008F9  83ec38         sub      sp, 0x38  ; 0000:08F9
+  008FC  56             push     si  ; 0000:08FC
+  008FD  8d46ca         lea      ax, [bp - 0x36]  ; 0000:08FD
+  00900  50             push     ax  ; 0000:0900
+  00901  8d46fe         lea      ax, [bp - 2]  ; 0000:0901
+  00904  50             push     ax  ; 0000:0904
+  00905  8d46c8         lea      ax, [bp - 0x38]  ; 0000:0905
+  00908  50             push     ax  ; 0000:0908
+  00909  e8d900         call     sub_009E5  ; 0000:0909
+  0090C  83c406         add      sp, 6  ; 0000:090C
+  0090F  e8e201         call     sub_00AF4  ; 0000:090F
+  00912  2bc0           sub      ax, ax  ; 0000:0912
+  00914  50             push     ax  ; 0000:0914
+  00915  e8a914         call     sub_01DC1  ; 0000:0915
+  00918  83c402         add      sp, 2  ; 0000:0918
+  0091B  e8a211         call     sub_01AC0  ; 0000:091B
+loc_0091E:
+  0091E  8d46e2         lea      ax, [bp - 0x1e]  ; 0000:091E
+  00921  50             push     ax  ; 0000:0921
+  00922  e84e1b         call     sub_02473  ; 0000:0922
+  00925  83c402         add      sp, 2  ; 0000:0925
+  00928  807ee206       cmp      byte ptr [bp - 0x1e], 6  ; 0000:0928
+  0092C  7521           jne      loc_0094F  ; 0000:092C
+  0092E  837ee303       cmp      word ptr [bp - 0x1d], 3  ; 0000:092E
+  00932  7510           jne      loc_00944  ; 0000:0932
+  00934  837ee50a       cmp      word ptr [bp - 0x1b], 0xa  ; 0000:0934
+  00938  750a           jne      loc_00944  ; 0000:0938
+  0093A  e81514         call     sub_01D52  ; 0000:093A
+  0093D  c746e300f5     mov      word ptr [bp - 0x1d], 0xf500  ; 0000:093D
+  00942  eb24           jmp      loc_00968  ; 0000:0942
+loc_00944:
+  00944  837ee301       cmp      word ptr [bp - 0x1d], 1  ; 0000:0944
+  00948  751e           jne      loc_00968  ; 0000:0948
+  0094A  e8a701         call     sub_00AF4  ; 0000:094A
+  0094D  eb19           jmp      loc_00968  ; 0000:094D
+loc_0094F:
+  0094F  807ee204       cmp      byte ptr [bp - 0x1e], 4  ; 0000:094F
+  00953  7505           jne      loc_0095A  ; 0000:0953
+  00955  e8fef6         call     sub_00056  ; 0000:0955
+  00958  eb0e           jmp      loc_00968  ; 0000:0958
+loc_0095A:
+  0095A  8a46e2         mov      al, byte ptr [bp - 0x1e]  ; 0000:095A
+  0095D  98             cwde       ; 0000:095D
+  0095E  50             push     ax  ; 0000:095E
+  0095F  ff76e3         push     word ptr [bp - 0x1d]  ; 0000:095F
+  00962  e83e03         call     sub_00CA3  ; 0000:0962
+  00965  83c404         add      sp, 4  ; 0000:0965
+loc_00968:
+  00968  817ee300f5     cmp      word ptr [bp - 0x1d], 0xf500  ; 0000:0968
+  0096D  75af           jne      loc_0091E  ; 0000:096D
+  0096F  e8e31a         call     sub_02455  ; 0000:096F
+  00972  e8521b         call     sub_024C7  ; 0000:0972
+  00975  b80f00         mov      ax, 0xf  ; 0000:0975
+  00978  50             push     ax  ; 0000:0978
+  00979  ff360a0f       push     word ptr [0xf0a]  ; 0000:0979
+  0097D  ff36080f       push     word ptr [0xf08]  ; 0000:097D
+  00981  ff36060f       push     word ptr [0xf06]  ; 0000:0981
+  00985  ff36040f       push     word ptr [0xf04]  ; 0000:0985
+  00989  8d46ea         lea      ax, [bp - 0x16]  ; 0000:0989
+  0098C  50             push     ax  ; 0000:098C
+  0098D  e88111         call     sub_01B11  ; 0000:098D
+  00990  83c40c         add      sp, 0xc  ; 0000:0990
+  00993  c746d4880c     mov      word ptr [bp - 0x2c], 0xc88  ; 0000:0993
+  00998  c746d6930c     mov      word ptr [bp - 0x2a], 0xc93  ; 0000:0998
+  0099D  c646d803       mov      byte ptr [bp - 0x28], 3  ; 0000:099D
+  009A1  c746d99c0c     mov      word ptr [bp - 0x27], 0xc9c  ; 0000:09A1
+  009A6  8d46ea         lea      ax, [bp - 0x16]  ; 0000:09A6
+  009A9  8946db         mov      word ptr [bp - 0x25], ax  ; 0000:09A9
+  009AC  8c56dd         mov      word ptr [bp - 0x23], ss  ; 0000:09AC
+  009AF  c746df0f00     mov      word ptr [bp - 0x21], 0xf  ; 0000:09AF
+  009B4  8d46d4         lea      ax, [bp - 0x2c]  ; 0000:09B4
+  009B7  50             push     ax  ; 0000:09B7
+  009B8  e8b619         call     sub_02371  ; 0000:09B8
+  009BB  83c402         add      sp, 2  ; 0000:09BB
+  009BE  2bf6           sub      si, si  ; 0000:09BE
+loc_009C0:
+  009C0  b81400         mov      ax, 0x14  ; 0000:09C0
+  009C3  f7ee           imul     si  ; 0000:09C3
+  009C5  05ae04         add      ax, 0x4ae  ; 0000:09C5
+  009C8  50             push     ax  ; 0000:09C8
+  009C9  8bde           mov      bx, si  ; 0000:09C9
+  009CB  d1e3           shl      bx, 1  ; 0000:09CB
+  009CD  ffb74411       push     word ptr [bx + 0x1144]  ; 0000:09CD
+  009D1  e8b71a         call     sub_0248B  ; 0000:09D1
+  009D4  83c404         add      sp, 4  ; 0000:09D4
+  009D7  46             inc      si  ; 0000:09D7
+  009D8  83fe19         cmp      si, 0x19  ; 0000:09D8
+  009DB  7ce3           jl       loc_009C0  ; 0000:09DB
+  009DD  e86f1a         call     sub_0244F  ; 0000:09DD
+  009E0  5e             pop      si  ; 0000:09E0
+  009E1  8be5           mov      sp, bp  ; 0000:09E1
+  009E3  5d             pop      bp  ; 0000:09E3
+  009E4  c3             ret        ; 0000:09E4
+
+
+; ---- sub_009E5 ----
+; --- dmserv_applyConfig: Apply configuration changes
+dmserv_applyConfig:  ; was sub_009E5
+  009E5  55             push     bp  ; 0000:09E5
+  009E6  8bec           mov      bp, sp  ; 0000:09E6
+  009E8  83ec26         sub      sp, 0x26  ; 0000:09E8
+  009EB  57             push     di  ; 0000:09EB
+  009EC  56             push     si  ; 0000:09EC
+  009ED  8d1ece0c       lea      bx, [0xcce]  ; 0000:09ED
+  009F1  e80a1d         call     sub_026FE  ; 0000:09F1
+  009F4  8d1e7611       lea      bx, [0x1176]  ; 0000:09F4
+  009F8  e8a01e         call     sub_0289B  ; 0000:09F8
+  009FB  c746dea30c     mov      word ptr [bp - 0x22], 0xca3  ; 0000:09FB
+  00A00  c746e0ae0c     mov      word ptr [bp - 0x20], 0xcae  ; 0000:0A00
+  00A05  c646e203       mov      byte ptr [bp - 0x1e], 3  ; 0000:0A05
+  00A09  c746e3b70c     mov      word ptr [bp - 0x1d], 0xcb7  ; 0000:0A09
+  00A0E  8d46de         lea      ax, [bp - 0x22]  ; 0000:0A0E
+  00A11  50             push     ax  ; 0000:0A11
+  00A12  e85619         call     sub_0236B  ; 0000:0A12
+  00A15  83c402         add      sp, 2  ; 0000:0A15
+  00A18  8946da         mov      word ptr [bp - 0x26], ax  ; 0000:0A18
+  00A1B  3dffff         cmp      ax, 0xffff  ; 0000:0A1B
+  00A1E  751a           jne      loc_00A3A  ; 0000:0A1E
+  00A20  8d46de         lea      ax, [bp - 0x22]  ; 0000:0A20
+  00A23  50             push     ax  ; 0000:0A23
+  00A24  e83e19         call     sub_02365  ; 0000:0A24
+  00A27  83c402         add      sp, 2  ; 0000:0A27
+  00A2A  8d1ece0c       lea      bx, [0xcce]  ; 0000:0A2A
+  00A2E  e8cd1c         call     sub_026FE  ; 0000:0A2E
+  00A31  8d1e040f       lea      bx, [0xf04]  ; 0000:0A31
+  00A35  e8631e         call     sub_0289B  ; 0000:0A35
+  00A38  eb2e           jmp      loc_00A68  ; 0000:0A38
+loc_00A3A:
+  00A3A  2bf6           sub      si, si  ; 0000:0A3A
+  00A3C  eb0a           jmp      loc_00A48  ; 0000:0A3C
+loc_00A3E:
+  00A3E  c45ee5         les      bx, ptr [bp - 0x1b]  ; 0000:0A3E
+  00A41  268a00         mov      al, byte ptr es:[bx + si]  ; 0000:0A41
+  00A44  8842ec         mov      byte ptr [bp + si - 0x14], al  ; 0000:0A44
+  00A47  46             inc      si  ; 0000:0A47
+loc_00A48:
+  00A48  3976e9         cmp      word ptr [bp - 0x17], si  ; 0000:0A48
+  00A4B  7ff1           jg       loc_00A3E  ; 0000:0A4B
+  00A4D  c642ec00       mov      byte ptr [bp + si - 0x14], 0  ; 0000:0A4D
+  00A51  8d46ec         lea      ax, [bp - 0x14]  ; 0000:0A51
+  00A54  50             push     ax  ; 0000:0A54
+  00A55  e8563b         call     sub_045AE  ; 0000:0A55
+  00A58  83c402         add      sp, 2  ; 0000:0A58
+  00A5B  56             push     si  ; 0000:0A5B
+  00A5C  bf040f         mov      di, 0xf04  ; 0000:0A5C
+  00A5F  8bf0           mov      si, ax  ; 0000:0A5F
+  00A61  1e             push     ds  ; 0000:0A61
+  00A62  07             pop      es  ; 0000:0A62
+  00A63  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:0A63
+  00A64  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:0A64
+  00A65  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:0A65
+  00A66  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:0A66
+  00A67  5e             pop      si  ; 0000:0A67
+loc_00A68:
+  00A68  8d1ece0c       lea      bx, [0xcce]  ; 0000:0A68
+  00A6C  e88f1c         call     sub_026FE  ; 0000:0A6C
+  00A6F  8d1ec210       lea      bx, [0x10c2]  ; 0000:0A6F
+  00A73  e8251e         call     sub_0289B  ; 0000:0A73
+  00A76  c6061e0f20     mov      byte ptr [0xf1e], 0x20  ; 0000:0A76
+  00A7B  2bc0           sub      ax, ax  ; 0000:0A7B
+  00A7D  a3fe0e         mov      word ptr [0xefe], ax  ; 0000:0A7D
+  00A80  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:0A80
+  00A83  2bf6           sub      si, si  ; 0000:0A83
+loc_00A85:
+  00A85  2bc0           sub      ax, ax  ; 0000:0A85
+  00A87  50             push     ax  ; 0000:0A87
+  00A88  e84c0f         call     sub_019D7  ; 0000:0A88
+  00A8B  83c402         add      sp, 2  ; 0000:0A8B
+  00A8E  46             inc      si  ; 0000:0A8E
+  00A8F  83fe08         cmp      si, 8  ; 0000:0A8F
+  00A92  7cf1           jl       loc_00A85  ; 0000:0A92
+  00A94  b8be0c         mov      ax, 0xcbe  ; 0000:0A94
+  00A97  50             push     ax  ; 0000:0A97
+  00A98  b80e0f         mov      ax, 0xf0e  ; 0000:0A98
+  00A9B  50             push     ax  ; 0000:0A9B
+  00A9C  e8bd3a         call     sub_0455C  ; 0000:0A9C
+  00A9F  83c404         add      sp, 4  ; 0000:0A9F
+  00AA2  c706020f0000   mov      word ptr [0xf02], 0  ; 0000:0AA2
+  00AA8  c7060c0f0000   mov      word ptr [0xf0c], 0  ; 0000:0AA8
+  00AAE  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:0AAE
+  00AB1  c7074006       mov      word ptr [bx], 0x640  ; 0000:0AB1
+  00AB5  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:0AB5
+  00AB8  c74702e006     mov      word ptr [bx + 2], 0x6e0  ; 0000:0AB8
+  00ABD  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:0ABD
+  00AC0  c74704c012     mov      word ptr [bx + 4], 0x12c0  ; 0000:0AC0
+  00AC5  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:0AC5
+  00AC8  c747069808     mov      word ptr [bx + 6], 0x898  ; 0000:0AC8
+  00ACD  e8d919         call     sub_024A9  ; 0000:0ACD
+  00AD0  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0AD0
+  00AD3  8907           mov      word ptr [bx], ax  ; 0000:0AD3
+  00AD5  ff7608         push     word ptr [bp + 8]  ; 0000:0AD5
+  00AD8  e8c219         call     sub_0249D  ; 0000:0AD8
+  00ADB  83c402         add      sp, 2  ; 0000:0ADB
+  00ADE  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0ADE
+  00AE1  8907           mov      word ptr [bx], ax  ; 0000:0AE1
+  00AE3  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0AE3
+  00AE6  ff37           push     word ptr [bx]  ; 0000:0AE6
+  00AE8  e8b819         call     sub_024A3  ; 0000:0AE8
+  00AEB  83c402         add      sp, 2  ; 0000:0AEB
+  00AEE  5e             pop      si  ; 0000:0AEE
+  00AEF  5f             pop      di  ; 0000:0AEF
+  00AF0  8be5           mov      sp, bp  ; 0000:0AF0
+  00AF2  5d             pop      bp  ; 0000:0AF2
+  00AF3  c3             ret        ; 0000:0AF3
+
+
+; ---- sub_00AF4 ----
+; --- dmserv_readConfig: Read page setup configuration
+dmserv_readConfig:  ; was sub_00AF4
+  00AF4  55             push     bp  ; 0000:0AF4
+  00AF5  8bec           mov      bp, sp  ; 0000:0AF5
+  00AF7  83ec04         sub      sp, 4  ; 0000:0AF7
+  00AFA  56             push     si  ; 0000:0AFA
+  00AFB  e85719         call     sub_02455  ; 0000:0AFB
+  00AFE  b80300         mov      ax, 3  ; 0000:0AFE
+  00B01  50             push     ax  ; 0000:0B01
+  00B02  b80200         mov      ax, 2  ; 0000:0B02
+  00B05  50             push     ax  ; 0000:0B05
+  00B06  e8c419         call     sub_024CD  ; 0000:0B06
+  00B09  83c404         add      sp, 4  ; 0000:0B09
+  00B0C  ff36a906       push     word ptr [0x6a9]  ; 0000:0B0C
+  00B10  ff36a706       push     word ptr [0x6a7]  ; 0000:0B10
+  00B14  ff36a506       push     word ptr [0x6a5]  ; 0000:0B14
+  00B18  ff36a306       push     word ptr [0x6a3]  ; 0000:0B18
+  00B1C  e8d219         call     sub_024F1  ; 0000:0B1C
+  00B1F  83c408         add      sp, 8  ; 0000:0B1F
+  00B22  2bc0           sub      ax, ax  ; 0000:0B22
+  00B24  50             push     ax  ; 0000:0B24
+  00B25  b80100         mov      ax, 1  ; 0000:0B25
+  00B28  50             push     ax  ; 0000:0B28
+  00B29  e8a119         call     sub_024CD  ; 0000:0B29
+  00B2C  83c404         add      sp, 4  ; 0000:0B2C
+  00B2F  ff36a906       push     word ptr [0x6a9]  ; 0000:0B2F
+  00B33  b8a406         mov      ax, 0x6a4  ; 0000:0B33
+  00B36  50             push     ax  ; 0000:0B36
+  00B37  ff36a506       push     word ptr [0x6a5]  ; 0000:0B37
+  00B3B  b8c20b         mov      ax, 0xbc2  ; 0000:0B3B
+  00B3E  50             push     ax  ; 0000:0B3E
+  00B3F  e8af19         call     sub_024F1  ; 0000:0B3F
+  00B42  83c408         add      sp, 8  ; 0000:0B42
+  00B45  b8c20b         mov      ax, 0xbc2  ; 0000:0B45
+  00B48  50             push     ax  ; 0000:0B48
+  00B49  e86319         call     sub_024AF  ; 0000:0B49
+  00B4C  83c402         add      sp, 2  ; 0000:0B4C
+  00B4F  50             push     ax  ; 0000:0B4F
+  00B50  e86219         call     sub_024B5  ; 0000:0B50
+  00B53  83c402         add      sp, 2  ; 0000:0B53
+  00B56  8946fe         mov      word ptr [bp - 2], ax  ; 0000:0B56
+  00B59  a1a506         mov      ax, word ptr [0x6a5]  ; 0000:0B59
+  00B5C  0306a906       add      ax, word ptr [0x6a9]  ; 0000:0B5C
+  00B60  50             push     ax  ; 0000:0B60
+  00B61  ff76fe         push     word ptr [bp - 2]  ; 0000:0B61
+  00B64  ff36a506       push     word ptr [0x6a5]  ; 0000:0B64
+  00B68  ff76fe         push     word ptr [bp - 2]  ; 0000:0B68
+  00B6B  e87119         call     sub_024DF  ; 0000:0B6B
+  00B6E  83c408         add      sp, 8  ; 0000:0B6E
+  00B71  b80300         mov      ax, 3  ; 0000:0B71
+  00B74  50             push     ax  ; 0000:0B74
+  00B75  b80200         mov      ax, 2  ; 0000:0B75
+  00B78  50             push     ax  ; 0000:0B78
+  00B79  e85119         call     sub_024CD  ; 0000:0B79
+  00B7C  83c404         add      sp, 4  ; 0000:0B7C
+  00B7F  b8a206         mov      ax, 0x6a2  ; 0000:0B7F
+  00B82  50             push     ax  ; 0000:0B82
+  00B83  e86519         call     sub_024EB  ; 0000:0B83
+  00B86  83c402         add      sp, 2  ; 0000:0B86
+  00B89  2bf6           sub      si, si  ; 0000:0B89
+loc_00B8B:
+  00B8B  b81400         mov      ax, 0x14  ; 0000:0B8B
+  00B8E  f7ee           imul     si  ; 0000:0B8E
+  00B90  05ae04         add      ax, 0x4ae  ; 0000:0B90
+  00B93  50             push     ax  ; 0000:0B93
+  00B94  e8e818         call     sub_0247F  ; 0000:0B94
+  00B97  83c402         add      sp, 2  ; 0000:0B97
+  00B9A  8bde           mov      bx, si  ; 0000:0B9A
+  00B9C  d1e3           shl      bx, 1  ; 0000:0B9C
+  00B9E  89874411       mov      word ptr [bx + 0x1144], ax  ; 0000:0B9E
+  00BA2  b81400         mov      ax, 0x14  ; 0000:0BA2
+  00BA5  f7ee           imul     si  ; 0000:0BA5
+  00BA7  05ae04         add      ax, 0x4ae  ; 0000:0BA7
+  00BAA  50             push     ax  ; 0000:0BAA
+  00BAB  8bde           mov      bx, si  ; 0000:0BAB
+  00BAD  d1e3           shl      bx, 1  ; 0000:0BAD
+  00BAF  ffb74411       push     word ptr [bx + 0x1144]  ; 0000:0BAF
+  00BB3  e8cf18         call     sub_02485  ; 0000:0BB3
+  00BB6  83c404         add      sp, 4  ; 0000:0BB6
+  00BB9  46             inc      si  ; 0000:0BB9
+  00BBA  83fe19         cmp      si, 0x19  ; 0000:0BBA
+  00BBD  7ccc           jl       loc_00B8B  ; 0000:0BBD
+  00BBF  2bc0           sub      ax, ax  ; 0000:0BBF
+  00BC1  50             push     ax  ; 0000:0BC1
+  00BC2  b8d401         mov      ax, 0x1d4  ; 0000:0BC2
+  00BC5  50             push     ax  ; 0000:0BC5
+  00BC6  b85a08         mov      ax, 0x85a  ; 0000:0BC6
+  00BC9  50             push     ax  ; 0000:0BC9
+  00BCA  b8a500         mov      ax, 0xa5  ; 0000:0BCA
+  00BCD  50             push     ax  ; 0000:0BCD
+  00BCE  b88301         mov      ax, 0x183  ; 0000:0BCE
+  00BD1  50             push     ax  ; 0000:0BD1
+  00BD2  e81019         call     sub_024E5  ; 0000:0BD2
+  00BD5  83c40a         add      sp, 0xa  ; 0000:0BD5
+  00BD8  b8dc00         mov      ax, 0xdc  ; 0000:0BD8
+  00BDB  50             push     ax  ; 0000:0BDB
+  00BDC  b8d007         mov      ax, 0x7d0  ; 0000:0BDC
+  00BDF  50             push     ax  ; 0000:0BDF
+  00BE0  e8d818         call     sub_024BB  ; 0000:0BE0
+  00BE3  83c404         add      sp, 4  ; 0000:0BE3
+  00BE6  e8d818         call     sub_024C1  ; 0000:0BE6
+  00BE9  8d1ece0c       lea      bx, [0xcce]  ; 0000:0BE9
+  00BED  e80e1b         call     sub_026FE  ; 0000:0BED
+  00BF0  8d1e040f       lea      bx, [0xf04]  ; 0000:0BF0
+  00BF4  e8071b         call     sub_026FE  ; 0000:0BF4
+  00BF7  e86c1f         call     sub_02B66  ; 0000:0BF7
+  00BFA  7418           je       loc_00C14  ; 0000:0BFA
+  00BFC  b8dc00         mov      ax, 0xdc  ; 0000:0BFC
+  00BFF  50             push     ax  ; 0000:0BFF
+  00C00  b8c800         mov      ax, 0xc8  ; 0000:0C00
+  00C03  50             push     ax  ; 0000:0C03
+  00C04  e8b418         call     sub_024BB  ; 0000:0C04
+  00C07  83c404         add      sp, 4  ; 0000:0C07
+  00C0A  b84d00         mov      ax, 0x4d  ; 0000:0C0A
+  00C0D  50             push     ax  ; 0000:0C0D
+  00C0E  e8c218         call     sub_024D3  ; 0000:0C0E
+  00C11  83c402         add      sp, 2  ; 0000:0C11
+loc_00C14:
+  00C14  e83818         call     sub_0244F  ; 0000:0C14
+  00C17  2bc0           sub      ax, ax  ; 0000:0C17
+  00C19  5e             pop      si  ; 0000:0C19
+  00C1A  8be5           mov      sp, bp  ; 0000:0C1A
+  00C1C  5d             pop      bp  ; 0000:0C1C
+  00C1D  c3             ret        ; 0000:0C1D
+
+
+; ---- sub_00C1E ----
+sub_00C1E:
+  00C1E  55             push     bp  ; 0000:0C1E
+  00C1F  8bec           mov      bp, sp  ; 0000:0C1F
+  00C21  56             push     si  ; 0000:0C21
+  00C22  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0C22
+  00C25  8a07           mov      al, byte ptr [bx]  ; 0000:0C25
+  00C27  98             cwde       ; 0000:0C27
+  00C28  50             push     ax  ; 0000:0C28
+  00C29  e8583a         call     sub_04684  ; 0000:0C29
+  00C2C  83c402         add      sp, 2  ; 0000:0C2C
+  00C2F  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0C2F
+  00C32  8bc8           mov      cx, ax  ; 0000:0C32
+  00C34  8a07           mov      al, byte ptr [bx]  ; 0000:0C34
+  00C36  98             cwde       ; 0000:0C36
+  00C37  50             push     ax  ; 0000:0C37
+  00C38  8bf1           mov      si, cx  ; 0000:0C38
+  00C3A  e8473a         call     sub_04684  ; 0000:0C3A
+  00C3D  83c402         add      sp, 2  ; 0000:0C3D
+  00C40  3bc6           cmp      ax, si  ; 0000:0C40
+  00C42  7556           jne      loc_00C9A  ; 0000:0C42
+  00C44  ff7606         push     word ptr [bp + 6]  ; 0000:0C44
+  00C47  e84439         call     sub_0458E  ; 0000:0C47
+  00C4A  83c402         add      sp, 2  ; 0000:0C4A
+  00C4D  3d0100         cmp      ax, 1  ; 0000:0C4D
+  00C50  7506           jne      loc_00C58  ; 0000:0C50
+loc_00C52:
+  00C52  8b4608         mov      ax, word ptr [bp + 8]  ; 0000:0C52
+  00C55  5e             pop      si  ; 0000:0C55
+  00C56  5d             pop      bp  ; 0000:0C56
+  00C57  c3             ret        ; 0000:0C57
+loc_00C58:
+  00C58  ff7604         push     word ptr [bp + 4]  ; 0000:0C58
+  00C5B  e83039         call     sub_0458E  ; 0000:0C5B
+  00C5E  83c402         add      sp, 2  ; 0000:0C5E
+  00C61  3d0100         cmp      ax, 1  ; 0000:0C61
+  00C64  7510           jne      loc_00C76  ; 0000:0C64
+  00C66  e80418         call     sub_0246D  ; 0000:0C66
+  00C69  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0C69
+  00C6C  884701         mov      byte ptr [bx + 1], al  ; 0000:0C6C
+  00C6F  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0C6F
+  00C72  c6470200       mov      byte ptr [bx + 2], 0  ; 0000:0C72
+loc_00C76:
+  00C76  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:0C76
+  00C79  8a4701         mov      al, byte ptr [bx + 1]  ; 0000:0C79
+  00C7C  98             cwde       ; 0000:0C7C
+  00C7D  50             push     ax  ; 0000:0C7D
+  00C7E  e8033a         call     sub_04684  ; 0000:0C7E
+  00C81  83c402         add      sp, 2  ; 0000:0C81
+  00C84  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0C84
+  00C87  8bc8           mov      cx, ax  ; 0000:0C87
+  00C89  8a4701         mov      al, byte ptr [bx + 1]  ; 0000:0C89
+  00C8C  98             cwde       ; 0000:0C8C
+  00C8D  50             push     ax  ; 0000:0C8D
+  00C8E  8bf1           mov      si, cx  ; 0000:0C8E
+  00C90  e8f139         call     sub_04684  ; 0000:0C90
+  00C93  83c402         add      sp, 2  ; 0000:0C93
+  00C96  3bc6           cmp      ax, si  ; 0000:0C96
+  00C98  74b8           je       loc_00C52  ; 0000:0C98
+loc_00C9A:
+  00C9A  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:0C9A
+  00C9D  8a07           mov      al, byte ptr [bx]  ; 0000:0C9D
+  00C9F  98             cwde       ; 0000:0C9F
+  00CA0  5e             pop      si  ; 0000:0CA0
+  00CA1  5d             pop      bp  ; 0000:0CA1
+  00CA2  c3             ret        ; 0000:0CA2
+
+
+; ---- sub_00CA3 ----
+; --- dmserv_writeConfig: Write page setup configuration
+dmserv_writeConfig:  ; was sub_00CA3
+  00CA3  55             push     bp  ; 0000:0CA3
+  00CA4  8bec           mov      bp, sp  ; 0000:0CA4
+  00CA6  83ec08         sub      sp, 8  ; 0000:0CA6
+  00CA9  e81b18         call     sub_024C7  ; 0000:0CA9
+  00CAC  837e0601       cmp      word ptr [bp + 6], 1  ; 0000:0CAC
+  00CB0  7403           je       loc_00CB5  ; 0000:0CB0
+  00CB2  e9dd00         jmp      loc_00D92  ; 0000:0CB2
+loc_00CB5:
+  00CB5  f7460400ff     test     word ptr [bp + 4], 0xff00  ; 0000:0CB5
+  00CBA  7403           je       loc_00CBF  ; 0000:0CBA
+  00CBC  e9d300         jmp      loc_00D92  ; 0000:0CBC
+loc_00CBF:
+  00CBF  8a4604         mov      al, byte ptr [bp + 4]  ; 0000:0CBF
+  00CC2  8846fc         mov      byte ptr [bp - 4], al  ; 0000:0CC2
+  00CC5  c646fd00       mov      byte ptr [bp - 3], 0  ; 0000:0CC5
+  00CC9  b804f5         mov      ax, 0xf504  ; 0000:0CC9
+  00CCC  50             push     ax  ; 0000:0CCC
+  00CCD  b8fc06         mov      ax, 0x6fc  ; 0000:0CCD
+  00CD0  50             push     ax  ; 0000:0CD0
+  00CD1  8d46fc         lea      ax, [bp - 4]  ; 0000:0CD1
+  00CD4  50             push     ax  ; 0000:0CD4
+  00CD5  e846ff         call     sub_00C1E  ; 0000:0CD5
+  00CD8  83c406         add      sp, 6  ; 0000:0CD8
+  00CDB  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0CDB
+  00CDE  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0CDE
+  00CE1  3946f8         cmp      word ptr [bp - 8], ax  ; 0000:0CE1
+  00CE4  7515           jne      loc_00CFB  ; 0000:0CE4
+  00CE6  b805f5         mov      ax, 0xf505  ; 0000:0CE6
+  00CE9  50             push     ax  ; 0000:0CE9
+  00CEA  b8fe06         mov      ax, 0x6fe  ; 0000:0CEA
+  00CED  50             push     ax  ; 0000:0CED
+  00CEE  8d46fc         lea      ax, [bp - 4]  ; 0000:0CEE
+  00CF1  50             push     ax  ; 0000:0CF1
+  00CF2  e829ff         call     sub_00C1E  ; 0000:0CF2
+  00CF5  83c406         add      sp, 6  ; 0000:0CF5
+  00CF8  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0CF8
+loc_00CFB:
+  00CFB  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0CFB
+  00CFE  3946f8         cmp      word ptr [bp - 8], ax  ; 0000:0CFE
+  00D01  7515           jne      loc_00D18  ; 0000:0D01
+  00D03  b806f5         mov      ax, 0xf506  ; 0000:0D03
+  00D06  50             push     ax  ; 0000:0D06
+  00D07  b80207         mov      ax, 0x702  ; 0000:0D07
+  00D0A  50             push     ax  ; 0000:0D0A
+  00D0B  8d46fc         lea      ax, [bp - 4]  ; 0000:0D0B
+  00D0E  50             push     ax  ; 0000:0D0E
+  00D0F  e80cff         call     sub_00C1E  ; 0000:0D0F
+  00D12  83c406         add      sp, 6  ; 0000:0D12
+  00D15  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0D15
+loc_00D18:
+  00D18  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0D18
+  00D1B  3946f8         cmp      word ptr [bp - 8], ax  ; 0000:0D1B
+  00D1E  7515           jne      loc_00D35  ; 0000:0D1E
+  00D20  b807f5         mov      ax, 0xf507  ; 0000:0D20
+  00D23  50             push     ax  ; 0000:0D23
+  00D24  b80607         mov      ax, 0x706  ; 0000:0D24
+  00D27  50             push     ax  ; 0000:0D27
+  00D28  8d46fc         lea      ax, [bp - 4]  ; 0000:0D28
+  00D2B  50             push     ax  ; 0000:0D2B
+  00D2C  e8effe         call     sub_00C1E  ; 0000:0D2C
+  00D2F  83c406         add      sp, 6  ; 0000:0D2F
+  00D32  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0D32
+loc_00D35:
+  00D35  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0D35
+  00D38  3946f8         cmp      word ptr [bp - 8], ax  ; 0000:0D38
+  00D3B  7515           jne      loc_00D52  ; 0000:0D3B
+  00D3D  b808f5         mov      ax, 0xf508  ; 0000:0D3D
+  00D40  50             push     ax  ; 0000:0D40
+  00D41  b80a07         mov      ax, 0x70a  ; 0000:0D41
+  00D44  50             push     ax  ; 0000:0D44
+  00D45  8d46fc         lea      ax, [bp - 4]  ; 0000:0D45
+  00D48  50             push     ax  ; 0000:0D48
+  00D49  e8d2fe         call     sub_00C1E  ; 0000:0D49
+  00D4C  83c406         add      sp, 6  ; 0000:0D4C
+  00D4F  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0D4F
+loc_00D52:
+  00D52  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0D52
+  00D55  3946f8         cmp      word ptr [bp - 8], ax  ; 0000:0D55
+  00D58  7515           jne      loc_00D6F  ; 0000:0D58
+  00D5A  b80ff5         mov      ax, 0xf50f  ; 0000:0D5A
+  00D5D  50             push     ax  ; 0000:0D5D
+  00D5E  b80e07         mov      ax, 0x70e  ; 0000:0D5E
+  00D61  50             push     ax  ; 0000:0D61
+  00D62  8d46fc         lea      ax, [bp - 4]  ; 0000:0D62
+  00D65  50             push     ax  ; 0000:0D65
+  00D66  e8b5fe         call     sub_00C1E  ; 0000:0D66
+  00D69  83c406         add      sp, 6  ; 0000:0D69
+  00D6C  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0D6C
+loc_00D6F:
+  00D6F  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0D6F
+  00D72  3946f8         cmp      word ptr [bp - 8], ax  ; 0000:0D72
+  00D75  7515           jne      loc_00D8C  ; 0000:0D75
+  00D77  b810f5         mov      ax, 0xf510  ; 0000:0D77
+  00D7A  50             push     ax  ; 0000:0D7A
+  00D7B  b81207         mov      ax, 0x712  ; 0000:0D7B
+  00D7E  50             push     ax  ; 0000:0D7E
+  00D7F  8d46fc         lea      ax, [bp - 4]  ; 0000:0D7F
+  00D82  50             push     ax  ; 0000:0D82
+  00D83  e898fe         call     sub_00C1E  ; 0000:0D83
+  00D86  83c406         add      sp, 6  ; 0000:0D86
+  00D89  8946f8         mov      word ptr [bp - 8], ax  ; 0000:0D89
+loc_00D8C:
+  00D8C  8b46f8         mov      ax, word ptr [bp - 8]  ; 0000:0D8C
+  00D8F  894604         mov      word ptr [bp + 4], ax  ; 0000:0D8F
+loc_00D92:
+  00D92  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:0D92
+  00D95  3d15f5         cmp      ax, 0xf515  ; 0000:0D95
+  00D98  7503           jne      loc_00D9D  ; 0000:0D98
+  00D9A  e9d701         jmp      loc_00F74  ; 0000:0D9A
+loc_00D9D:
+  00D9D  7e03           jle      loc_00DA2  ; 0000:0D9D
+  00D9F  e9af03         jmp      loc_01151  ; 0000:0D9F
+loc_00DA2:
+  00DA2  2d00f5         sub      ax, 0xf500  ; 0000:0DA2
+  00DA5  3d1400         cmp      ax, 0x14  ; 0000:0DA5
+  00DA8  7723           ja       loc_00DCD  ; 0000:0DA8
+  00DAA  03c0           add      ax, ax  ; 0000:0DAA
+  00DAC  93             xchg     bx, ax  ; 0000:0DAC
+  00DAD  2effa72711     jmp      word ptr cs:[bx + 0x1127]  ; 0000:0DAD
+loc_00DB2:
+  00DB2  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0DB2
+  00DB7  7514           jne      loc_00DCD  ; 0000:0DB7
+  00DB9  b81400         mov      ax, 0x14  ; 0000:0DB9
+  00DBC  50             push     ax  ; 0000:0DBC
+  00DBD  e85904         call     sub_01219  ; 0000:0DBD
+  00DC0  83c402         add      sp, 2  ; 0000:0DC0
+  00DC3  b83000         mov      ax, 0x30  ; 0000:0DC3
+loc_00DC6:
+  00DC6  50             push     ax  ; 0000:0DC6
+  00DC7  e8b204         call     sub_0127C  ; 0000:0DC7
+loc_00DCA:
+  00DCA  83c402         add      sp, 2  ; 0000:0DCA
+loc_00DCD:
+  00DCD  b8dc00         mov      ax, 0xdc  ; 0000:0DCD
+  00DD0  50             push     ax  ; 0000:0DD0
+  00DD1  b8d007         mov      ax, 0x7d0  ; 0000:0DD1
+  00DD4  50             push     ax  ; 0000:0DD4
+  00DD5  e8e316         call     sub_024BB  ; 0000:0DD5
+  00DD8  83c404         add      sp, 4  ; 0000:0DD8
+  00DDB  e8e316         call     sub_024C1  ; 0000:0DDB
+  00DDE  2bc0           sub      ax, ax  ; 0000:0DDE
+  00DE0  e93204         jmp      loc_01215  ; 0000:0DE0
+loc_00DE3:
+  00DE3  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0DE3
+  00DE8  75e3           jne      loc_00DCD  ; 0000:0DE8
+  00DEA  b81100         mov      ax, 0x11  ; 0000:0DEA
+  00DED  50             push     ax  ; 0000:0DED
+  00DEE  e82804         call     sub_01219  ; 0000:0DEE
+  00DF1  83c402         add      sp, 2  ; 0000:0DF1
+  00DF4  b83100         mov      ax, 0x31  ; 0000:0DF4
+  00DF7  ebcd           jmp      loc_00DC6  ; 0000:0DF7
+loc_00DF9:
+  00DF9  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0DF9
+  00DFE  75cd           jne      loc_00DCD  ; 0000:0DFE
+  00E00  b81200         mov      ax, 0x12  ; 0000:0E00
+  00E03  50             push     ax  ; 0000:0E03
+  00E04  e81204         call     sub_01219  ; 0000:0E04
+  00E07  83c402         add      sp, 2  ; 0000:0E07
+  00E0A  b83200         mov      ax, 0x32  ; 0000:0E0A
+  00E0D  ebb7           jmp      loc_00DC6  ; 0000:0E0D
+loc_00E0F:
+  00E0F  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0E0F
+  00E14  75b7           jne      loc_00DCD  ; 0000:0E14
+  00E16  b81300         mov      ax, 0x13  ; 0000:0E16
+  00E19  50             push     ax  ; 0000:0E19
+  00E1A  e8fc03         call     sub_01219  ; 0000:0E1A
+  00E1D  83c402         add      sp, 2  ; 0000:0E1D
+  00E20  b83300         mov      ax, 0x33  ; 0000:0E20
+  00E23  eba1           jmp      loc_00DC6  ; 0000:0E23
+loc_00E25:
+  00E25  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0E25
+  00E2A  75a1           jne      loc_00DCD  ; 0000:0E2A
+  00E2C  b80900         mov      ax, 9  ; 0000:0E2C
+  00E2F  50             push     ax  ; 0000:0E2F
+  00E30  e8e603         call     sub_01219  ; 0000:0E30
+  00E33  83c402         add      sp, 2  ; 0000:0E33
+  00E36  b83400         mov      ax, 0x34  ; 0000:0E36
+  00E39  eb8b           jmp      loc_00DC6  ; 0000:0E39
+loc_00E3B:
+  00E3B  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0E3B
+  00E40  758b           jne      loc_00DCD  ; 0000:0E40
+  00E42  b80a00         mov      ax, 0xa  ; 0000:0E42
+  00E45  50             push     ax  ; 0000:0E45
+  00E46  e8d003         call     sub_01219  ; 0000:0E46
+  00E49  83c402         add      sp, 2  ; 0000:0E49
+  00E4C  b83500         mov      ax, 0x35  ; 0000:0E4C
+  00E4F  e974ff         jmp      loc_00DC6  ; 0000:0E4F
+loc_00E52:
+  00E52  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0E52
+  00E57  7403           je       loc_00E5C  ; 0000:0E57
+  00E59  e971ff         jmp      loc_00DCD  ; 0000:0E59
+loc_00E5C:
+  00E5C  b80b00         mov      ax, 0xb  ; 0000:0E5C
+  00E5F  50             push     ax  ; 0000:0E5F
+  00E60  e8b603         call     sub_01219  ; 0000:0E60
+  00E63  83c402         add      sp, 2  ; 0000:0E63
+  00E66  b83600         mov      ax, 0x36  ; 0000:0E66
+  00E69  e95aff         jmp      loc_00DC6  ; 0000:0E69
+loc_00E6C:
+  00E6C  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0E6C
+  00E71  7403           je       loc_00E76  ; 0000:0E71
+  00E73  e957ff         jmp      loc_00DCD  ; 0000:0E73
+loc_00E76:
+  00E76  b80100         mov      ax, 1  ; 0000:0E76
+  00E79  50             push     ax  ; 0000:0E79
+  00E7A  e89c03         call     sub_01219  ; 0000:0E7A
+  00E7D  83c402         add      sp, 2  ; 0000:0E7D
+  00E80  b83700         mov      ax, 0x37  ; 0000:0E80
+  00E83  e940ff         jmp      loc_00DC6  ; 0000:0E83
+loc_00E86:
+  00E86  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0E86
+  00E8B  7403           je       loc_00E90  ; 0000:0E8B
+  00E8D  e93dff         jmp      loc_00DCD  ; 0000:0E8D
+loc_00E90:
+  00E90  b80200         mov      ax, 2  ; 0000:0E90
+  00E93  50             push     ax  ; 0000:0E93
+  00E94  e88203         call     sub_01219  ; 0000:0E94
+  00E97  83c402         add      sp, 2  ; 0000:0E97
+  00E9A  b83800         mov      ax, 0x38  ; 0000:0E9A
+  00E9D  e926ff         jmp      loc_00DC6  ; 0000:0E9D
+loc_00EA0:
+  00EA0  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0EA0
+  00EA5  7403           je       loc_00EAA  ; 0000:0EA5
+  00EA7  e923ff         jmp      loc_00DCD  ; 0000:0EA7
+loc_00EAA:
+  00EAA  b80300         mov      ax, 3  ; 0000:0EAA
+  00EAD  50             push     ax  ; 0000:0EAD
+  00EAE  e86803         call     sub_01219  ; 0000:0EAE
+  00EB1  83c402         add      sp, 2  ; 0000:0EB1
+  00EB4  b83900         mov      ax, 0x39  ; 0000:0EB4
+  00EB7  e90cff         jmp      loc_00DC6  ; 0000:0EB7
+loc_00EBA:
+  00EBA  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0EBA
+  00EBF  7403           je       loc_00EC4  ; 0000:0EBF
+  00EC1  e909ff         jmp      loc_00DCD  ; 0000:0EC1
+loc_00EC4:
+  00EC4  b80c00         mov      ax, 0xc  ; 0000:0EC4
+  00EC7  50             push     ax  ; 0000:0EC7
+  00EC8  e84e03         call     sub_01219  ; 0000:0EC8
+  00ECB  83c402         add      sp, 2  ; 0000:0ECB
+  00ECE  b82e00         mov      ax, 0x2e  ; 0000:0ECE
+  00ED1  e9f2fe         jmp      loc_00DC6  ; 0000:0ED1
+  00ED4  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0ED4
+  00ED9  7403           je       loc_00EDE  ; 0000:0ED9
+  00EDB  e9effe         jmp      loc_00DCD  ; 0000:0EDB
+loc_00EDE:
+  00EDE  b80700         mov      ax, 7  ; 0000:0EDE
+  00EE1  50             push     ax  ; 0000:0EE1
+  00EE2  e83403         call     sub_01219  ; 0000:0EE2
+  00EE5  83c402         add      sp, 2  ; 0000:0EE5
+  00EE8  b82b00         mov      ax, 0x2b  ; 0000:0EE8
+loc_00EEB:
+  00EEB  50             push     ax  ; 0000:0EEB
+  00EEC  e85005         call     sub_0143F  ; 0000:0EEC
+  00EEF  e9d8fe         jmp      loc_00DCA  ; 0000:0EEF
+  00EF2  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0EF2
+  00EF7  7403           je       loc_00EFC  ; 0000:0EF7
+  00EF9  e9d1fe         jmp      loc_00DCD  ; 0000:0EF9
+loc_00EFC:
+  00EFC  b80800         mov      ax, 8  ; 0000:0EFC
+  00EFF  50             push     ax  ; 0000:0EFF
+  00F00  e81603         call     sub_01219  ; 0000:0F00
+  00F03  83c402         add      sp, 2  ; 0000:0F03
+  00F06  b82d00         mov      ax, 0x2d  ; 0000:0F06
+  00F09  ebe0           jmp      loc_00EEB  ; 0000:0F09
+  00F0B  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0F0B
+  00F10  7403           je       loc_00F15  ; 0000:0F10
+  00F12  e9b8fe         jmp      loc_00DCD  ; 0000:0F12
+loc_00F15:
+  00F15  b80f00         mov      ax, 0xf  ; 0000:0F15
+  00F18  50             push     ax  ; 0000:0F18
+  00F19  e8fd02         call     sub_01219  ; 0000:0F19
+  00F1C  83c402         add      sp, 2  ; 0000:0F1C
+  00F1F  b84300         mov      ax, 0x43  ; 0000:0F1F
+  00F22  ebc7           jmp      loc_00EEB  ; 0000:0F22
+  00F24  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0F24
+  00F29  7403           je       loc_00F2E  ; 0000:0F29
+  00F2B  e99ffe         jmp      loc_00DCD  ; 0000:0F2B
+loc_00F2E:
+  00F2E  b81000         mov      ax, 0x10  ; 0000:0F2E
+  00F31  50             push     ax  ; 0000:0F31
+  00F32  e8e402         call     sub_01219  ; 0000:0F32
+  00F35  83c402         add      sp, 2  ; 0000:0F35
+  00F38  b85200         mov      ax, 0x52  ; 0000:0F38
+  00F3B  ebae           jmp      loc_00EEB  ; 0000:0F3B
+loc_00F3D:
+  00F3D  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0F3D
+  00F42  7403           je       loc_00F47  ; 0000:0F42
+  00F44  e986fe         jmp      loc_00DCD  ; 0000:0F44
+loc_00F47:
+  00F47  b80d00         mov      ax, 0xd  ; 0000:0F47
+  00F4A  50             push     ax  ; 0000:0F4A
+  00F4B  e8cb02         call     sub_01219  ; 0000:0F4B
+  00F4E  83c402         add      sp, 2  ; 0000:0F4E
+  00F51  b82b00         mov      ax, 0x2b  ; 0000:0F51
+loc_00F54:
+  00F54  50             push     ax  ; 0000:0F54
+  00F55  e87b06         call     sub_015D3  ; 0000:0F55
+  00F58  e96ffe         jmp      loc_00DCA  ; 0000:0F58
+loc_00F5B:
+  00F5B  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0F5B
+  00F60  7403           je       loc_00F65  ; 0000:0F60
+  00F62  e968fe         jmp      loc_00DCD  ; 0000:0F62
+loc_00F65:
+  00F65  b80e00         mov      ax, 0xe  ; 0000:0F65
+  00F68  50             push     ax  ; 0000:0F68
+  00F69  e8ad02         call     sub_01219  ; 0000:0F69
+  00F6C  83c402         add      sp, 2  ; 0000:0F6C
+  00F6F  b82d00         mov      ax, 0x2d  ; 0000:0F6F
+  00F72  ebe0           jmp      loc_00F54  ; 0000:0F72
+loc_00F74:
+  00F74  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0F74
+  00F79  7403           je       loc_00F7E  ; 0000:0F79
+  00F7B  e94ffe         jmp      loc_00DCD  ; 0000:0F7B
+loc_00F7E:
+  00F7E  b81500         mov      ax, 0x15  ; 0000:0F7E
+  00F81  50             push     ax  ; 0000:0F81
+  00F82  e89402         call     sub_01219  ; 0000:0F82
+  00F85  83c402         add      sp, 2  ; 0000:0F85
+  00F88  b82a00         mov      ax, 0x2a  ; 0000:0F88
+  00F8B  ebc7           jmp      loc_00F54  ; 0000:0F8B
+loc_00F8D:
+  00F8D  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0F8D
+  00F92  7403           je       loc_00F97  ; 0000:0F92
+  00F94  e936fe         jmp      loc_00DCD  ; 0000:0F94
+loc_00F97:
+  00F97  b81700         mov      ax, 0x17  ; 0000:0F97
+  00F9A  50             push     ax  ; 0000:0F9A
+  00F9B  e87b02         call     sub_01219  ; 0000:0F9B
+  00F9E  83c402         add      sp, 2  ; 0000:0F9E
+  00FA1  b82500         mov      ax, 0x25  ; 0000:0FA1
+  00FA4  ebae           jmp      loc_00F54  ; 0000:0FA4
+loc_00FA6:
+  00FA6  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0FA6
+  00FAB  7403           je       loc_00FB0  ; 0000:0FAB
+  00FAD  e91dfe         jmp      loc_00DCD  ; 0000:0FAD
+loc_00FB0:
+  00FB0  b81600         mov      ax, 0x16  ; 0000:0FB0
+  00FB3  50             push     ax  ; 0000:0FB3
+  00FB4  e86202         call     sub_01219  ; 0000:0FB4
+  00FB7  83c402         add      sp, 2  ; 0000:0FB7
+  00FBA  b82f00         mov      ax, 0x2f  ; 0000:0FBA
+  00FBD  eb95           jmp      loc_00F54  ; 0000:0FBD
+  00FBF  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0FBF
+  00FC4  7403           je       loc_00FC9  ; 0000:0FC4
+  00FC6  e904fe         jmp      loc_00DCD  ; 0000:0FC6
+loc_00FC9:
+  00FC9  b80500         mov      ax, 5  ; 0000:0FC9
+  00FCC  50             push     ax  ; 0000:0FCC
+  00FCD  e84902         call     sub_01219  ; 0000:0FCD
+  00FD0  83c402         add      sp, 2  ; 0000:0FD0
+  00FD3  b84500         mov      ax, 0x45  ; 0000:0FD3
+loc_00FD6:
+  00FD6  50             push     ax  ; 0000:0FD6
+  00FD7  e85508         call     sub_0182F  ; 0000:0FD7
+  00FDA  e9edfd         jmp      loc_00DCA  ; 0000:0FDA
+  00FDD  b80600         mov      ax, 6  ; 0000:0FDD
+  00FE0  50             push     ax  ; 0000:0FE0
+  00FE1  e83502         call     sub_01219  ; 0000:0FE1
+  00FE4  83c402         add      sp, 2  ; 0000:0FE4
+  00FE7  b84100         mov      ax, 0x41  ; 0000:0FE7
+  00FEA  ebea           jmp      loc_00FD6  ; 0000:0FEA
+  00FEC  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:0FEC
+  00FF1  7403           je       loc_00FF6  ; 0000:0FF1
+  00FF3  e9d7fd         jmp      loc_00DCD  ; 0000:0FF3
+loc_00FF6:
+  00FF6  b80400         mov      ax, 4  ; 0000:0FF6
+  00FF9  50             push     ax  ; 0000:0FF9
+  00FFA  e81c02         call     sub_01219  ; 0000:0FFA
+  00FFD  83c402         add      sp, 2  ; 0000:0FFD
+  01000  8d1ece0c       lea      bx, [0xcce]  ; 0000:1000
+  01004  e8f716         call     sub_026FE  ; 0000:1004
+  01007  8d1e7611       lea      bx, [0x1176]  ; 0000:1007
+  0100B  e8f016         call     sub_026FE  ; 0000:100B
+  0100E  e8551b         call     sub_02B66  ; 0000:100E
+  01011  7503           jne      loc_01016  ; 0000:1011
+  01013  e99b00         jmp      loc_010B1  ; 0000:1013
+loc_01016:
+  01016  8d1e7611       lea      bx, [0x1176]  ; 0000:1016
+  0101A  e8e116         call     sub_026FE  ; 0000:101A
+  0101D  e88b19         call     sub_029AB  ; 0000:101D
+  01020  8d1e7611       lea      bx, [0x1176]  ; 0000:1020
+  01024  e87418         call     sub_0289B  ; 0000:1024
+  01027  8d1ece0c       lea      bx, [0xcce]  ; 0000:1027
+  0102B  e8d016         call     sub_026FE  ; 0000:102B
+  0102E  8d1e7611       lea      bx, [0x1176]  ; 0000:102E
+  01032  e8c916         call     sub_026FE  ; 0000:1032
+  01035  e82e1b         call     sub_02B66  ; 0000:1035
+  01038  7629           jbe      loc_01063  ; 0000:1038
+  0103A  c746faffff     mov      word ptr [bp - 6], 0xffff  ; 0000:103A
+loc_0103F:
+  0103F  ff46fa         inc      word ptr [bp - 6]  ; 0000:103F
+  01042  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:1042
+  01045  80bf0e0f2d     cmp      byte ptr [bx + 0xf0e], 0x2d  ; 0000:1045
+  0104A  7505           jne      loc_01051  ; 0000:104A
+  0104C  c6870e0f20     mov      byte ptr [bx + 0xf0e], 0x20  ; 0000:104C
+loc_01051:
+  01051  837efa0f       cmp      word ptr [bp - 6], 0xf  ; 0000:1051
+  01055  7d30           jge      loc_01087  ; 0000:1055
+  01057  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:1057
+  0105A  80bf0e0f20     cmp      byte ptr [bx + 0xf0e], 0x20  ; 0000:105A
+  0105F  74de           je       loc_0103F  ; 0000:105F
+  01061  eb24           jmp      loc_01087  ; 0000:1061
+loc_01063:
+  01063  c746fa0000     mov      word ptr [bp - 6], 0  ; 0000:1063
+loc_01068:
+  01068  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:1068
+  0106B  80bf0e0f20     cmp      byte ptr [bx + 0xf0e], 0x20  ; 0000:106B
+  01070  7515           jne      loc_01087  ; 0000:1070
+  01072  80bf0f0f20     cmp      byte ptr [bx + 0xf0f], 0x20  ; 0000:1072
+  01077  7405           je       loc_0107E  ; 0000:1077
+  01079  c6870e0f2d     mov      byte ptr [bx + 0xf0e], 0x2d  ; 0000:1079
+loc_0107E:
+  0107E  ff46fa         inc      word ptr [bp - 6]  ; 0000:107E
+  01081  837efa0f       cmp      word ptr [bp - 6], 0xf  ; 0000:1081
+  01085  7ce1           jl       loc_01068  ; 0000:1085
+loc_01087:
+  01087  b8dc00         mov      ax, 0xdc  ; 0000:1087
+  0108A  50             push     ax  ; 0000:108A
+  0108B  b85802         mov      ax, 0x258  ; 0000:108B
+  0108E  50             push     ax  ; 0000:108E
+  0108F  e82914         call     sub_024BB  ; 0000:108F
+  01092  83c404         add      sp, 4  ; 0000:1092
+  01095  b80f00         mov      ax, 0xf  ; 0000:1095
+  01098  50             push     ax  ; 0000:1098
+  01099  b80e0f         mov      ax, 0xf0e  ; 0000:1099
+  0109C  50             push     ax  ; 0000:109C
+  0109D  e83914         call     sub_024D9  ; 0000:109D
+  010A0  83c404         add      sp, 4  ; 0000:10A0
+  010A3  b8dc00         mov      ax, 0xdc  ; 0000:10A3
+  010A6  50             push     ax  ; 0000:10A6
+  010A7  b8d007         mov      ax, 0x7d0  ; 0000:10A7
+  010AA  50             push     ax  ; 0000:10AA
+  010AB  e80d14         call     sub_024BB  ; 0000:10AB
+  010AE  83c404         add      sp, 4  ; 0000:10AE
+loc_010B1:
+  010B1  a1fc0e         mov      ax, word ptr [0xefc]  ; 0000:10B1
+  010B4  0b06fe0e       or       ax, word ptr [0xefe]  ; 0000:10B4
+  010B8  7403           je       loc_010BD  ; 0000:10B8
+  010BA  e910fd         jmp      loc_00DCD  ; 0000:10BA
+loc_010BD:
+  010BD  8d1ec210       lea      bx, [0x10c2]  ; 0000:10BD
+  010C1  e83a16         call     sub_026FE  ; 0000:10C1
+  010C4  e8e418         call     sub_029AB  ; 0000:10C4
+  010C7  8d1ec210       lea      bx, [0x10c2]  ; 0000:10C7
+  010CB  e8cd17         call     sub_0289B  ; 0000:10CB
+  010CE  2bc0           sub      ax, ax  ; 0000:10CE
+  010D0  50             push     ax  ; 0000:10D0
+  010D1  e80309         call     sub_019D7  ; 0000:10D1
+  010D4  83c402         add      sp, 2  ; 0000:10D4
+  010D7  b8c406         mov      ax, 0x6c4  ; 0000:10D7
+  010DA  50             push     ax  ; 0000:10DA
+  010DB  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:10DB
+  010DF  d1e3           shl      bx, 1  ; 0000:10DF
+  010E1  ffb79c04       push     word ptr [bx + 0x49c]  ; 0000:10E1
+  010E5  e87434         call     sub_0455C  ; 0000:10E5
+  010E8  83c404         add      sp, 4  ; 0000:10E8
+  010EB  b80100         mov      ax, 1  ; 0000:10EB
+  010EE  50             push     ax  ; 0000:10EE
+  010EF  e8e508         call     sub_019D7  ; 0000:10EF
+  010F2  83c402         add      sp, 2  ; 0000:10F2
+  010F5  2bc0           sub      ax, ax  ; 0000:10F5
+  010F7  50             push     ax  ; 0000:10F7
+  010F8  e8dc08         call     sub_019D7  ; 0000:10F8
+  010FB  83c402         add      sp, 2  ; 0000:10FB
+  010FE  e84f08         call     sub_01950  ; 0000:10FE
+  01101  e9c9fc         jmp      loc_00DCD  ; 0000:1101
+loc_01104:
+  01104  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:1104
+  01109  7403           je       loc_0110E  ; 0000:1109
+  0110B  e9bffc         jmp      loc_00DCD  ; 0000:110B
+loc_0110E:
+  0110E  b81800         mov      ax, 0x18  ; 0000:110E
+  01111  50             push     ax  ; 0000:1111
+  01112  e80401         call     sub_01219  ; 0000:1112
+  01115  83c402         add      sp, 2  ; 0000:1115
+  01118  e8ab07         call     sub_018C6  ; 0000:1118
+  0111B  e9affc         jmp      loc_00DCD  ; 0000:111B
+  0111E  2bc0           sub      ax, ax  ; 0000:111E
+  01120  50             push     ax  ; 0000:1120
+  01121  e8f500         call     sub_01219  ; 0000:1121
+  01124  e9a3fc         jmp      loc_00DCA  ; 0000:1124
+  01127  1e             push     ds  ; 0000:1127
+  01128  116c0e         adc      word ptr [si + 0xe], bp  ; 0000:1128
+  0112B  860ea00e       xchg     byte ptr [0xea0], cl  ; 0000:112B
+  0112F  ec             in       al, dx  ; 0000:112F
+  01130  0fbf0f         movsx    cx, word ptr [bx]  ; 0000:1130
+  01133  dd0f           fisttp   qword ptr [bx]  ; 0000:1133
+  01135  d40e           aam      0xe  ; 0000:1135
+  01137  f20e           push     cs  ; 0000:1137
+  01139  250e3b         and      ax, 0x3b0e  ; 0000:1139
+  0113C  0e             push     cs  ; 0000:113C
+  0113D  52             push     dx  ; 0000:113D
+  0113E  0e             push     cs  ; 0000:113E
+  0113F  ba0e3d         mov      dx, 0x3d0e  ; 0000:113F
+  01142  0f5b0f         cvtdq2ps xmm1, xmmword ptr [bx]  ; 0000:1142
+  01145  0b0f           or       cx, word ptr [bx]  ; 0000:1145
+  01147  240f           and      al, 0xf  ; 0000:1147
+  01149  e30d           jcxz     loc_01158  ; 0000:1149
+  0114B  f9             stc        ; 0000:114B
+  0114C  0d0f0e         or       ax, 0xe0f  ; 0000:114C
+  0114F  b20d           mov      dl, 0xd  ; 0000:114F
+loc_01151:
+  01151  3d3000         cmp      ax, 0x30  ; 0000:1151
+  01154  7503           jne      loc_01159  ; 0000:1154
+  01156  e959fc         jmp      loc_00DB2  ; 0000:1156
+loc_01159:
+  01159  7f52           jg       loc_011AD  ; 0000:1159
+  0115B  3d2500         cmp      ax, 0x25  ; 0000:115B
+  0115E  7503           jne      loc_01163  ; 0000:115E
+  01160  e92afe         jmp      loc_00F8D  ; 0000:1160
+loc_01163:
+  01163  7f1d           jg       loc_01182  ; 0000:1163
+  01165  3d16f5         cmp      ax, 0xf516  ; 0000:1165
+  01168  7503           jne      loc_0116D  ; 0000:1168
+  0116A  e939fe         jmp      loc_00FA6  ; 0000:116A
+loc_0116D:
+  0116D  3d17f5         cmp      ax, 0xf517  ; 0000:116D
+  01170  7503           jne      loc_01175  ; 0000:1170
+  01172  e918fe         jmp      loc_00F8D  ; 0000:1172
+loc_01175:
+  01175  3d18f5         cmp      ax, 0xf518  ; 0000:1175
+  01178  748a           je       loc_01104  ; 0000:1178
+  0117A  3d0d00         cmp      ax, 0xd  ; 0000:117A
+  0117D  7485           je       loc_01104  ; 0000:117D
+  0117F  e94bfc         jmp      loc_00DCD  ; 0000:117F
+loc_01182:
+  01182  3d2a00         cmp      ax, 0x2a  ; 0000:1182
+  01185  7503           jne      loc_0118A  ; 0000:1185
+  01187  e9eafd         jmp      loc_00F74  ; 0000:1187
+loc_0118A:
+  0118A  3d2b00         cmp      ax, 0x2b  ; 0000:118A
+  0118D  7503           jne      loc_01192  ; 0000:118D
+  0118F  e9abfd         jmp      loc_00F3D  ; 0000:118F
+loc_01192:
+  01192  3d2d00         cmp      ax, 0x2d  ; 0000:1192
+  01195  7503           jne      loc_0119A  ; 0000:1195
+  01197  e9c1fd         jmp      loc_00F5B  ; 0000:1197
+loc_0119A:
+  0119A  3d2e00         cmp      ax, 0x2e  ; 0000:119A
+  0119D  7503           jne      loc_011A2  ; 0000:119D
+  0119F  e918fd         jmp      loc_00EBA  ; 0000:119F
+loc_011A2:
+  011A2  3d2f00         cmp      ax, 0x2f  ; 0000:11A2
+  011A5  7503           jne      loc_011AA  ; 0000:11A5
+  011A7  e9fcfd         jmp      loc_00FA6  ; 0000:11A7
+loc_011AA:
+  011AA  e920fc         jmp      loc_00DCD  ; 0000:11AA
+loc_011AD:
+  011AD  3d3600         cmp      ax, 0x36  ; 0000:11AD
+  011B0  7503           jne      loc_011B5  ; 0000:11B0
+  011B2  e99dfc         jmp      loc_00E52  ; 0000:11B2
+loc_011B5:
+  011B5  7f2b           jg       loc_011E2  ; 0000:11B5
+  011B7  3d3100         cmp      ax, 0x31  ; 0000:11B7
+  011BA  7503           jne      loc_011BF  ; 0000:11BA
+  011BC  e924fc         jmp      loc_00DE3  ; 0000:11BC
+loc_011BF:
+  011BF  3d3200         cmp      ax, 0x32  ; 0000:11BF
+  011C2  7503           jne      loc_011C7  ; 0000:11C2
+  011C4  e932fc         jmp      loc_00DF9  ; 0000:11C4
+loc_011C7:
+  011C7  3d3300         cmp      ax, 0x33  ; 0000:11C7
+  011CA  7503           jne      loc_011CF  ; 0000:11CA
+  011CC  e940fc         jmp      loc_00E0F  ; 0000:11CC
+loc_011CF:
+  011CF  3d3400         cmp      ax, 0x34  ; 0000:11CF
+  011D2  7503           jne      loc_011D7  ; 0000:11D2
+  011D4  e94efc         jmp      loc_00E25  ; 0000:11D4
+loc_011D7:
+  011D7  3d3500         cmp      ax, 0x35  ; 0000:11D7
+  011DA  7503           jne      loc_011DF  ; 0000:11DA
+  011DC  e95cfc         jmp      loc_00E3B  ; 0000:11DC
+loc_011DF:
+  011DF  e9ebfb         jmp      loc_00DCD  ; 0000:11DF
+loc_011E2:
+  011E2  3d3700         cmp      ax, 0x37  ; 0000:11E2
+  011E5  7503           jne      loc_011EA  ; 0000:11E5
+  011E7  e982fc         jmp      loc_00E6C  ; 0000:11E7
+loc_011EA:
+  011EA  3d3800         cmp      ax, 0x38  ; 0000:11EA
+  011ED  7503           jne      loc_011F2  ; 0000:11ED
+  011EF  e994fc         jmp      loc_00E86  ; 0000:11EF
+loc_011F2:
+  011F2  3d3900         cmp      ax, 0x39  ; 0000:11F2
+  011F5  7503           jne      loc_011FA  ; 0000:11F5
+  011F7  e9a6fc         jmp      loc_00EA0  ; 0000:11F7
+loc_011FA:
+  011FA  3d3d00         cmp      ax, 0x3d  ; 0000:11FA
+  011FD  7503           jne      loc_01202  ; 0000:11FD
+  011FF  e902ff         jmp      loc_01104  ; 0000:11FF
+loc_01202:
+  01202  3d5800         cmp      ax, 0x58  ; 0000:1202
+  01205  7503           jne      loc_0120A  ; 0000:1205
+  01207  e96afd         jmp      loc_00F74  ; 0000:1207
+loc_0120A:
+  0120A  3d7800         cmp      ax, 0x78  ; 0000:120A
+  0120D  7503           jne      loc_01212  ; 0000:120D
+  0120F  e962fd         jmp      loc_00F74  ; 0000:120F
+loc_01212:
+  01212  e9b8fb         jmp      loc_00DCD  ; 0000:1212
+loc_01215:
+  01215  8be5           mov      sp, bp  ; 0000:1215
+  01217  5d             pop      bp  ; 0000:1217
+  01218  c3             ret        ; 0000:1218
+
+
+; ---- sub_01219 ----
+sub_01219:
+  01219  55             push     bp  ; 0000:1219
+  0121A  8bec           mov      bp, sp  ; 0000:121A
+  0121C  83ec02         sub      sp, 2  ; 0000:121C
+  0121F  56             push     si  ; 0000:121F
+  01220  e83212         call     sub_02455  ; 0000:1220
+  01223  b81400         mov      ax, 0x14  ; 0000:1223
+  01226  f76e04         imul     word ptr [bp + 4]  ; 0000:1226
+  01229  8bf0           mov      si, ax  ; 0000:1229
+  0122B  c684be0401     mov      byte ptr [si + 0x4be], 1  ; 0000:122B
+  01230  05ae04         add      ax, 0x4ae  ; 0000:1230
+  01233  50             push     ax  ; 0000:1233
+  01234  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:1234
+  01237  d1e3           shl      bx, 1  ; 0000:1237
+  01239  ffb74411       push     word ptr [bx + 0x1144]  ; 0000:1239
+  0123D  e84512         call     sub_02485  ; 0000:123D
+  01240  83c404         add      sp, 4  ; 0000:1240
+  01243  c746fe0000     mov      word ptr [bp - 2], 0  ; 0000:1243
+  01248  eb03           jmp      loc_0124D  ; 0000:1248
+loc_0124A:
+  0124A  ff46fe         inc      word ptr [bp - 2]  ; 0000:124A
+loc_0124D:
+  0124D  817efea00f     cmp      word ptr [bp - 2], 0xfa0  ; 0000:124D
+  01252  7cf6           jl       loc_0124A  ; 0000:1252
+  01254  b81400         mov      ax, 0x14  ; 0000:1254
+  01257  f76e04         imul     word ptr [bp + 4]  ; 0000:1257
+  0125A  8bf0           mov      si, ax  ; 0000:125A
+  0125C  c684be0400     mov      byte ptr [si + 0x4be], 0  ; 0000:125C
+  01261  05ae04         add      ax, 0x4ae  ; 0000:1261
+  01264  50             push     ax  ; 0000:1264
+  01265  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:1265
+  01268  d1e3           shl      bx, 1  ; 0000:1268
+  0126A  ffb74411       push     word ptr [bx + 0x1144]  ; 0000:126A
+  0126E  e81412         call     sub_02485  ; 0000:126E
+  01271  83c404         add      sp, 4  ; 0000:1271
+  01274  e8d811         call     sub_0244F  ; 0000:1274
+  01277  5e             pop      si  ; 0000:1277
+  01278  8be5           mov      sp, bp  ; 0000:1278
+  0127A  5d             pop      bp  ; 0000:127A
+  0127B  c3             ret        ; 0000:127B
+
+
+; ---- sub_0127C ----
+sub_0127C:
+  0127C  55             push     bp  ; 0000:127C
+  0127D  8bec           mov      bp, sp  ; 0000:127D
+  0127F  83ec04         sub      sp, 4  ; 0000:127F
+  01282  56             push     si  ; 0000:1282
+  01283  e8cf11         call     sub_02455  ; 0000:1283
+  01286  803e1e0f20     cmp      byte ptr [0xf1e], 0x20  ; 0000:1286
+  0128B  7506           jne      loc_01293  ; 0000:128B
+  0128D  c7060c0f0000   mov      word ptr [0xf0c], 0  ; 0000:128D
+loc_01293:
+  01293  833efe0e00     cmp      word ptr [0xefe], 0  ; 0000:1293
+  01298  7f2e           jg       loc_012C8  ; 0000:1298
+  0129A  7c07           jl       loc_012A3  ; 0000:129A
+  0129C  833efc0e01     cmp      word ptr [0xefc], 1  ; 0000:129C
+  012A1  7325           jae      loc_012C8  ; 0000:12A1
+loc_012A3:
+  012A3  e8d707         call     sub_01A7D  ; 0000:12A3
+  012A6  b8d60c         mov      ax, 0xcd6  ; 0000:12A6
+  012A9  50             push     ax  ; 0000:12A9
+  012AA  b80e0f         mov      ax, 0xf0e  ; 0000:12AA
+  012AD  50             push     ax  ; 0000:12AD
+  012AE  e8ab32         call     sub_0455C  ; 0000:12AE
+  012B1  83c404         add      sp, 4  ; 0000:12B1
+  012B4  8d1ee60c       lea      bx, [0xce6]  ; 0000:12B4
+  012B8  e84314         call     sub_026FE  ; 0000:12B8
+  012BB  8d1e200f       lea      bx, [0xf20]  ; 0000:12BB
+  012BF  e8d915         call     sub_0289B  ; 0000:12BF
+  012C2  c706280f0000   mov      word ptr [0xf28], 0  ; 0000:12C2
+loc_012C8:
+  012C8  8306fc0e01     add      word ptr [0xefc], 1  ; 0000:12C8
+  012CD  8316fe0e00     adc      word ptr [0xefe], 0  ; 0000:12CD
+  012D2  837e042e       cmp      word ptr [bp + 4], 0x2e  ; 0000:12D2
+  012D6  750a           jne      loc_012E2  ; 0000:12D6
+  012D8  833e280f00     cmp      word ptr [0xf28], 0  ; 0000:12D8
+  012DD  7403           je       loc_012E2  ; 0000:12DD
+  012DF  e98500         jmp      loc_01367  ; 0000:12DF
+loc_012E2:
+  012E2  2bf6           sub      si, si  ; 0000:12E2
+loc_012E4:
+  012E4  8a840f0f       mov      al, byte ptr [si + 0xf0f]  ; 0000:12E4
+  012E8  88840e0f       mov      byte ptr [si + 0xf0e], al  ; 0000:12E8
+  012EC  46             inc      si  ; 0000:12EC
+  012ED  83fe0e         cmp      si, 0xe  ; 0000:12ED
+  012F0  7cf2           jl       loc_012E4  ; 0000:12F0
+  012F2  8a4604         mov      al, byte ptr [bp + 4]  ; 0000:12F2
+  012F5  88840e0f       mov      byte ptr [si + 0xf0e], al  ; 0000:12F5
+  012F9  837e042e       cmp      word ptr [bp + 4], 0x2e  ; 0000:12F9
+  012FD  7508           jne      loc_01307  ; 0000:12FD
+  012FF  c706280f0100   mov      word ptr [0xf28], 1  ; 0000:12FF
+  01305  eb60           jmp      loc_01367  ; 0000:1305
+loc_01307:
+  01307  833e280f00     cmp      word ptr [0xf28], 0  ; 0000:1307
+  0130C  7434           je       loc_01342  ; 0000:130C
+  0130E  8d1eee0c       lea      bx, [0xcee]  ; 0000:130E
+  01312  e8e913         call     sub_026FE  ; 0000:1312
+  01315  8d1e200f       lea      bx, [0xf20]  ; 0000:1315
+  01319  53             push     bx  ; 0000:1319
+  0131A  e8c417         call     sub_02AE1  ; 0000:131A
+  0131D  5b             pop      bx  ; 0000:131D
+  0131E  e87a15         call     sub_0289B  ; 0000:131E
+  01321  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:1321
+  01324  2d3000         sub      ax, 0x30  ; 0000:1324
+  01327  8946fc         mov      word ptr [bp - 4], ax  ; 0000:1327
+  0132A  8d5efc         lea      bx, [bp - 4]  ; 0000:132A
+  0132D  e85514         call     sub_02785  ; 0000:132D
+  01330  8d1e200f       lea      bx, [0xf20]  ; 0000:1330
+  01334  e8c217         call     sub_02AF9  ; 0000:1334
+  01337  8d1e7611       lea      bx, [0x1176]  ; 0000:1337
+  0133B  53             push     bx  ; 0000:133B
+  0133C  e8ea17         call     sub_02B29  ; 0000:133C
+  0133F  5b             pop      bx  ; 0000:133F
+  01340  eb22           jmp      loc_01364  ; 0000:1340
+loc_01342:
+  01342  8d5e04         lea      bx, [bp + 4]  ; 0000:1342
+  01345  e83d14         call     sub_02785  ; 0000:1345
+  01348  8d1e7611       lea      bx, [0x1176]  ; 0000:1348
+  0134C  e8af13         call     sub_026FE  ; 0000:134C
+  0134F  8d1eee0c       lea      bx, [0xcee]  ; 0000:134F
+  01353  e88b17         call     sub_02AE1  ; 0000:1353
+  01356  e80818         call     sub_02B61  ; 0000:1356
+  01359  8d1ef60c       lea      bx, [0xcf6]  ; 0000:1359
+  0135D  e85117         call     sub_02AB1  ; 0000:135D
+  01360  8d1e7611       lea      bx, [0x1176]  ; 0000:1360
+loc_01364:
+  01364  e83415         call     sub_0289B  ; 0000:1364
+loc_01367:
+  01367  833efe0e00     cmp      word ptr [0xefe], 0  ; 0000:1367
+  0136C  7c1d           jl       loc_0138B  ; 0000:136C
+  0136E  7f08           jg       loc_01378  ; 0000:136E
+  01370  813efc0e9600   cmp      word ptr [0xefc], 0x96  ; 0000:1370
+  01376  7213           jb       loc_0138B  ; 0000:1376
+loc_01378:
+  01378  2bc0           sub      ax, ax  ; 0000:1378
+  0137A  a3fe0e         mov      word ptr [0xefe], ax  ; 0000:137A
+  0137D  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:137D
+  01380  c706000f0100   mov      word ptr [0xf00], 1  ; 0000:1380
+  01386  e83600         call     sub_013BF  ; 0000:1386
+  01389  eb2a           jmp      loc_013B5  ; 0000:1389
+loc_0138B:
+  0138B  b8dc00         mov      ax, 0xdc  ; 0000:138B
+  0138E  50             push     ax  ; 0000:138E
+  0138F  b85802         mov      ax, 0x258  ; 0000:138F
+  01392  50             push     ax  ; 0000:1392
+  01393  e82511         call     sub_024BB  ; 0000:1393
+  01396  83c404         add      sp, 4  ; 0000:1396
+  01399  b80f00         mov      ax, 0xf  ; 0000:1399
+  0139C  50             push     ax  ; 0000:139C
+  0139D  b80e0f         mov      ax, 0xf0e  ; 0000:139D
+  013A0  50             push     ax  ; 0000:13A0
+  013A1  e83511         call     sub_024D9  ; 0000:13A1
+  013A4  83c404         add      sp, 4  ; 0000:13A4
+  013A7  b8dc00         mov      ax, 0xdc  ; 0000:13A7
+  013AA  50             push     ax  ; 0000:13AA
+  013AB  b8d007         mov      ax, 0x7d0  ; 0000:13AB
+  013AE  50             push     ax  ; 0000:13AE
+  013AF  e80911         call     sub_024BB  ; 0000:13AF
+  013B2  83c404         add      sp, 4  ; 0000:13B2
+loc_013B5:
+  013B5  e89710         call     sub_0244F  ; 0000:13B5
+  013B8  2bc0           sub      ax, ax  ; 0000:13B8
+  013BA  5e             pop      si  ; 0000:13BA
+  013BB  8be5           mov      sp, bp  ; 0000:13BB
+  013BD  5d             pop      bp  ; 0000:13BD
+  013BE  c3             ret        ; 0000:13BE
+
+
+; ---- sub_013BF ----
+sub_013BF:
+  013BF  e89310         call     sub_02455  ; 0000:13BF
+  013C2  8d1ece0c       lea      bx, [0xcce]  ; 0000:13C2
+  013C6  e83513         call     sub_026FE  ; 0000:13C6
+  013C9  8d1ec210       lea      bx, [0x10c2]  ; 0000:13C9
+  013CD  e8cb14         call     sub_0289B  ; 0000:13CD
+  013D0  8d1ece0c       lea      bx, [0xcce]  ; 0000:13D0
+  013D4  e82713         call     sub_026FE  ; 0000:13D4
+  013D7  8d1e7611       lea      bx, [0x1176]  ; 0000:13D7
+  013DB  e8bd14         call     sub_0289B  ; 0000:13DB
+  013DE  e89c06         call     sub_01A7D  ; 0000:13DE
+  013E1  b8dc00         mov      ax, 0xdc  ; 0000:13E1
+  013E4  50             push     ax  ; 0000:13E4
+  013E5  b85802         mov      ax, 0x258  ; 0000:13E5
+  013E8  50             push     ax  ; 0000:13E8
+  013E9  e8cf10         call     sub_024BB  ; 0000:13E9
+  013EC  83c404         add      sp, 4  ; 0000:13EC
+  013EF  b8e406         mov      ax, 0x6e4  ; 0000:13EF
+  013F2  50             push     ax  ; 0000:13F2
+  013F3  e89831         call     sub_0458E  ; 0000:13F3
+  013F6  83c402         add      sp, 2  ; 0000:13F6
+  013F9  50             push     ax  ; 0000:13F9
+  013FA  b8e406         mov      ax, 0x6e4  ; 0000:13FA
+  013FD  50             push     ax  ; 0000:13FD
+  013FE  e8d810         call     sub_024D9  ; 0000:13FE
+  01401  83c404         add      sp, 4  ; 0000:1401
+  01404  b8dc00         mov      ax, 0xdc  ; 0000:1404
+  01407  50             push     ax  ; 0000:1407
+  01408  b8d007         mov      ax, 0x7d0  ; 0000:1408
+  0140B  50             push     ax  ; 0000:140B
+  0140C  e8ac10         call     sub_024BB  ; 0000:140C
+  0140F  83c404         add      sp, 4  ; 0000:140F
+  01412  2bc0           sub      ax, ax  ; 0000:1412
+  01414  50             push     ax  ; 0000:1414
+  01415  e8bf05         call     sub_019D7  ; 0000:1415
+  01418  83c402         add      sp, 2  ; 0000:1418
+  0141B  b8d406         mov      ax, 0x6d4  ; 0000:141B
+  0141E  50             push     ax  ; 0000:141E
+  0141F  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:141F
+  01423  d1e3           shl      bx, 1  ; 0000:1423
+  01425  ffb79c04       push     word ptr [bx + 0x49c]  ; 0000:1425
+  01429  e83031         call     sub_0455C  ; 0000:1429
+  0142C  83c404         add      sp, 4  ; 0000:142C
+  0142F  2bc0           sub      ax, ax  ; 0000:142F
+  01431  50             push     ax  ; 0000:1431
+  01432  e8a205         call     sub_019D7  ; 0000:1432
+  01435  83c402         add      sp, 2  ; 0000:1435
+  01438  e81505         call     sub_01950  ; 0000:1438
+  0143B  e81110         call     sub_0244F  ; 0000:143B
+  0143E  c3             ret        ; 0000:143E
+
+
+; ---- sub_0143F ----
+sub_0143F:
+  0143F  55             push     bp  ; 0000:143F
+  01440  8bec           mov      bp, sp  ; 0000:1440
+  01442  57             push     di  ; 0000:1442
+  01443  56             push     si  ; 0000:1443
+  01444  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:1444
+  01447  3d2b00         cmp      ax, 0x2b  ; 0000:1447
+  0144A  742a           je       loc_01476  ; 0000:144A
+  0144C  3d2d00         cmp      ax, 0x2d  ; 0000:144C
+  0144F  7503           jne      loc_01454  ; 0000:144F
+  01451  e90101         jmp      loc_01555  ; 0000:1451
+loc_01454:
+  01454  3d4300         cmp      ax, 0x43  ; 0000:1454
+  01457  7503           jne      loc_0145C  ; 0000:1457
+  01459  e90b01         jmp      loc_01567  ; 0000:1459
+loc_0145C:
+  0145C  3d5200         cmp      ax, 0x52  ; 0000:145C
+  0145F  7503           jne      loc_01464  ; 0000:145F
+  01461  e91401         jmp      loc_01578  ; 0000:1461
+loc_01464:
+  01464  3d6300         cmp      ax, 0x63  ; 0000:1464
+  01467  7503           jne      loc_0146C  ; 0000:1467
+  01469  e9fb00         jmp      loc_01567  ; 0000:1469
+loc_0146C:
+  0146C  3d7200         cmp      ax, 0x72  ; 0000:146C
+  0146F  7503           jne      loc_01474  ; 0000:146F
+  01471  e90401         jmp      loc_01578  ; 0000:1471
+loc_01474:
+  01474  eb1b           jmp      loc_01491  ; 0000:1474
+loc_01476:
+  01476  8d1e7611       lea      bx, [0x1176]  ; 0000:1476
+  0147A  e88112         call     sub_026FE  ; 0000:147A
+  0147D  8d1e040f       lea      bx, [0xf04]  ; 0000:147D
+  01481  53             push     bx  ; 0000:1481
+  01482  e8a416         call     sub_02B29  ; 0000:1482
+loc_01485:
+  01485  5b             pop      bx  ; 0000:1485
+  01486  e81214         call     sub_0289B  ; 0000:1486
+  01489  2bc0           sub      ax, ax  ; 0000:1489
+  0148B  a3fe0e         mov      word ptr [0xefe], ax  ; 0000:148B
+  0148E  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:148E
+loc_01491:
+  01491  8d1efe0c       lea      bx, [0xcfe]  ; 0000:1491
+  01495  e86612         call     sub_026FE  ; 0000:1495
+  01498  8d1e040f       lea      bx, [0xf04]  ; 0000:1498
+  0149C  e85f12         call     sub_026FE  ; 0000:149C
+  0149F  e8c416         call     sub_02B66  ; 0000:149F
+  014A2  7313           jae      loc_014B7  ; 0000:14A2
+  014A4  8d1e060d       lea      bx, [0xd06]  ; 0000:14A4
+  014A8  e85312         call     sub_026FE  ; 0000:14A8
+  014AB  8d1e040f       lea      bx, [0xf04]  ; 0000:14AB
+  014AF  e84c12         call     sub_026FE  ; 0000:14AF
+  014B2  e8b116         call     sub_02B66  ; 0000:14B2
+  014B5  7771           ja       loc_01528  ; 0000:14B5
+loc_014B7:
+  014B7  c706000f0100   mov      word ptr [0xf00], 1  ; 0000:14B7
+  014BD  8d1ece0c       lea      bx, [0xcce]  ; 0000:14BD
+  014C1  e83a12         call     sub_026FE  ; 0000:14C1
+  014C4  8d1e040f       lea      bx, [0xf04]  ; 0000:14C4
+  014C8  e8d013         call     sub_0289B  ; 0000:14C8
+  014CB  e8af05         call     sub_01A7D  ; 0000:14CB
+  014CE  b8dc00         mov      ax, 0xdc  ; 0000:14CE
+  014D1  50             push     ax  ; 0000:14D1
+  014D2  b85802         mov      ax, 0x258  ; 0000:14D2
+  014D5  50             push     ax  ; 0000:14D5
+  014D6  e8e20f         call     sub_024BB  ; 0000:14D6
+  014D9  83c404         add      sp, 4  ; 0000:14D9
+  014DC  b8e406         mov      ax, 0x6e4  ; 0000:14DC
+  014DF  50             push     ax  ; 0000:14DF
+  014E0  e8ab30         call     sub_0458E  ; 0000:14E0
+  014E3  83c402         add      sp, 2  ; 0000:14E3
+  014E6  50             push     ax  ; 0000:14E6
+  014E7  b8e406         mov      ax, 0x6e4  ; 0000:14E7
+  014EA  50             push     ax  ; 0000:14EA
+  014EB  e8eb0f         call     sub_024D9  ; 0000:14EB
+  014EE  83c404         add      sp, 4  ; 0000:14EE
+  014F1  b8dc00         mov      ax, 0xdc  ; 0000:14F1
+  014F4  50             push     ax  ; 0000:14F4
+  014F5  b8d007         mov      ax, 0x7d0  ; 0000:14F5
+  014F8  50             push     ax  ; 0000:14F8
+  014F9  e8bf0f         call     sub_024BB  ; 0000:14F9
+  014FC  83c404         add      sp, 4  ; 0000:14FC
+  014FF  2bc0           sub      ax, ax  ; 0000:14FF
+  01501  50             push     ax  ; 0000:1501
+  01502  e8d204         call     sub_019D7  ; 0000:1502
+  01505  83c402         add      sp, 2  ; 0000:1505
+  01508  b8d406         mov      ax, 0x6d4  ; 0000:1508
+  0150B  50             push     ax  ; 0000:150B
+  0150C  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:150C
+  01510  d1e3           shl      bx, 1  ; 0000:1510
+  01512  ffb79c04       push     word ptr [bx + 0x49c]  ; 0000:1512
+  01516  e84330         call     sub_0455C  ; 0000:1516
+  01519  83c404         add      sp, 4  ; 0000:1519
+  0151C  2bc0           sub      ax, ax  ; 0000:151C
+  0151E  50             push     ax  ; 0000:151E
+  0151F  e8b504         call     sub_019D7  ; 0000:151F
+  01522  83c402         add      sp, 2  ; 0000:1522
+  01525  e82804         call     sub_01950  ; 0000:1525
+loc_01528:
+  01528  b8dc00         mov      ax, 0xdc  ; 0000:1528
+  0152B  50             push     ax  ; 0000:152B
+  0152C  b8d007         mov      ax, 0x7d0  ; 0000:152C
+  0152F  50             push     ax  ; 0000:152F
+  01530  e8880f         call     sub_024BB  ; 0000:1530
+  01533  83c404         add      sp, 4  ; 0000:1533
+  01536  b8dc00         mov      ax, 0xdc  ; 0000:1536
+  01539  50             push     ax  ; 0000:1539
+  0153A  b8c800         mov      ax, 0xc8  ; 0000:153A
+  0153D  50             push     ax  ; 0000:153D
+  0153E  e87a0f         call     sub_024BB  ; 0000:153E
+  01541  83c404         add      sp, 4  ; 0000:1541
+  01544  837e0463       cmp      word ptr [bp + 4], 0x63  ; 0000:1544
+  01548  7406           je       loc_01550  ; 0000:1548
+  0154A  837e0443       cmp      word ptr [bp + 4], 0x43  ; 0000:154A
+  0154E  7567           jne      loc_015B7  ; 0000:154E
+loc_01550:
+  01550  b82000         mov      ax, 0x20  ; 0000:1550
+  01553  eb71           jmp      loc_015C6  ; 0000:1553
+loc_01555:
+  01555  8d1e7611       lea      bx, [0x1176]  ; 0000:1555
+  01559  e8a211         call     sub_026FE  ; 0000:1559
+  0155C  8d1e040f       lea      bx, [0xf04]  ; 0000:155C
+  01560  53             push     bx  ; 0000:1560
+  01561  e86515         call     sub_02AC9  ; 0000:1561
+  01564  e91eff         jmp      loc_01485  ; 0000:1564
+loc_01567:
+  01567  8d1ece0c       lea      bx, [0xcce]  ; 0000:1567
+  0156B  e89011         call     sub_026FE  ; 0000:156B
+  0156E  8d1e040f       lea      bx, [0xf04]  ; 0000:156E
+  01572  e82613         call     sub_0289B  ; 0000:1572
+  01575  e919ff         jmp      loc_01491  ; 0000:1575
+loc_01578:
+  01578  bf7611         mov      di, 0x1176  ; 0000:1578
+  0157B  be040f         mov      si, 0xf04  ; 0000:157B
+  0157E  1e             push     ds  ; 0000:157E
+  0157F  07             pop      es  ; 0000:157F
+  01580  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1580
+  01581  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1581
+  01582  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1582
+  01583  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1583
+  01584  b8dc00         mov      ax, 0xdc  ; 0000:1584
+  01587  50             push     ax  ; 0000:1587
+  01588  b8f401         mov      ax, 0x1f4  ; 0000:1588
+  0158B  50             push     ax  ; 0000:158B
+  0158C  e82c0f         call     sub_024BB  ; 0000:158C
+  0158F  83c404         add      sp, 4  ; 0000:158F
+  01592  b82000         mov      ax, 0x20  ; 0000:1592
+  01595  50             push     ax  ; 0000:1595
+  01596  e83a0f         call     sub_024D3  ; 0000:1596
+  01599  83c402         add      sp, 2  ; 0000:1599
+  0159C  e82105         call     sub_01AC0  ; 0000:159C
+  0159F  2bc0           sub      ax, ax  ; 0000:159F
+  015A1  a3fe0e         mov      word ptr [0xefe], ax  ; 0000:15A1
+  015A4  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:15A4
+  015A7  803e1e0f20     cmp      byte ptr [0xf1e], 0x20  ; 0000:15A7
+  015AC  7403           je       loc_015B1  ; 0000:15AC
+  015AE  e9e0fe         jmp      loc_01491  ; 0000:15AE
+loc_015B1:
+  015B1  a30c0f         mov      word ptr [0xf0c], ax  ; 0000:15B1
+  015B4  e9dafe         jmp      loc_01491  ; 0000:15B4
+loc_015B7:
+  015B7  837e042b       cmp      word ptr [bp + 4], 0x2b  ; 0000:15B7
+  015BB  7406           je       loc_015C3  ; 0000:15BB
+  015BD  837e042d       cmp      word ptr [bp + 4], 0x2d  ; 0000:15BD
+  015C1  750a           jne      loc_015CD  ; 0000:15C1
+loc_015C3:
+  015C3  b84d00         mov      ax, 0x4d  ; 0000:15C3
+loc_015C6:
+  015C6  50             push     ax  ; 0000:15C6
+  015C7  e8090f         call     sub_024D3  ; 0000:15C7
+  015CA  83c402         add      sp, 2  ; 0000:15CA
+loc_015CD:
+  015CD  2bc0           sub      ax, ax  ; 0000:15CD
+  015CF  5e             pop      si  ; 0000:15CF
+  015D0  5f             pop      di  ; 0000:15D0
+  015D1  5d             pop      bp  ; 0000:15D1
+  015D2  c3             ret        ; 0000:15D2
+
+
+; ---- sub_015D3 ----
+; --- dmserv_fontManager: Font management for page setup
+dmserv_fontManager:  ; was sub_015D3
+  015D3  55             push     bp  ; 0000:15D3
+  015D4  8bec           mov      bp, sp  ; 0000:15D4
+  015D6  57             push     di  ; 0000:15D6
+  015D7  56             push     si  ; 0000:15D7
+  015D8  8b7604         mov      si, word ptr [bp + 4]  ; 0000:15D8
+  015DB  803e1e0f20     cmp      byte ptr [0xf1e], 0x20  ; 0000:15DB
+  015E0  7406           je       loc_015E8  ; 0000:15E0
+  015E2  c7060c0f0100   mov      word ptr [0xf0c], 1  ; 0000:15E2
+loc_015E8:
+  015E8  83fe25         cmp      si, 0x25  ; 0000:15E8
+  015EB  754e           jne      loc_0163B  ; 0000:15EB
+  015ED  56             push     si  ; 0000:15ED
+  015EE  bfac06         mov      di, 0x6ac  ; 0000:15EE
+  015F1  be7611         mov      si, 0x1176  ; 0000:15F1
+  015F4  1e             push     ds  ; 0000:15F4
+  015F5  07             pop      es  ; 0000:15F5
+  015F6  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:15F6
+  015F7  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:15F7
+  015F8  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:15F8
+  015F9  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:15F9
+  015FA  5e             pop      si  ; 0000:15FA
+  015FB  8d1ec210       lea      bx, [0x10c2]  ; 0000:15FB
+  015FF  e8fc10         call     sub_026FE  ; 0000:15FF
+  01602  8d1e7611       lea      bx, [0x1176]  ; 0000:1602
+  01606  e8d814         call     sub_02AE1  ; 0000:1606
+  01609  8d1e0e0d       lea      bx, [0xd0e]  ; 0000:1609
+  0160D  e8e914         call     sub_02AF9  ; 0000:160D
+  01610  8d1e7611       lea      bx, [0x1176]  ; 0000:1610
+  01614  e88412         call     sub_0289B  ; 0000:1614
+  01617  e8a604         call     sub_01AC0  ; 0000:1617
+  0161A  c7062a0f0100   mov      word ptr [0xf2a], 1  ; 0000:161A
+  01620  56             push     si  ; 0000:1620
+  01621  bf7611         mov      di, 0x1176  ; 0000:1621
+  01624  beac06         mov      si, 0x6ac  ; 0000:1624
+  01627  1e             push     ds  ; 0000:1627
+  01628  07             pop      es  ; 0000:1628
+  01629  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1629
+  0162A  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:162A
+  0162B  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:162B
+  0162C  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:162C
+  0162D  5e             pop      si  ; 0000:162D
+  0162E  2bc0           sub      ax, ax  ; 0000:162E
+  01630  a3fe0e         mov      word ptr [0xefe], ax  ; 0000:1630
+  01633  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:1633
+loc_01636:
+  01636  2bc0           sub      ax, ax  ; 0000:1636
+  01638  e9f001         jmp      loc_0182B  ; 0000:1638
+loc_0163B:
+  0163B  833e0c0f00     cmp      word ptr [0xf0c], 0  ; 0000:163B
+  01640  7413           je       loc_01655  ; 0000:1640
+  01642  8d1eac06       lea      bx, [0x6ac]  ; 0000:1642
+  01646  e8b510         call     sub_026FE  ; 0000:1646
+  01649  8d1e7611       lea      bx, [0x1176]  ; 0000:1649
+  0164D  e8ae10         call     sub_026FE  ; 0000:164D
+  01650  e81315         call     sub_02B66  ; 0000:1650
+  01653  7406           je       loc_0165B  ; 0000:1653
+loc_01655:
+  01655  c7062a0f0000   mov      word ptr [0xf2a], 0  ; 0000:1655
+loc_0165B:
+  0165B  833e2a0f00     cmp      word ptr [0xf2a], 0  ; 0000:165B
+  01660  7439           je       loc_0169B  ; 0000:1660
+  01662  56             push     si  ; 0000:1662
+  01663  bf7611         mov      di, 0x1176  ; 0000:1663
+  01666  beac06         mov      si, 0x6ac  ; 0000:1666
+  01669  1e             push     ds  ; 0000:1669
+  0166A  07             pop      es  ; 0000:166A
+  0166B  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:166B
+  0166C  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:166C
+  0166D  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:166D
+  0166E  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:166E
+  0166F  5e             pop      si  ; 0000:166F
+  01670  b80200         mov      ax, 2  ; 0000:1670
+  01673  50             push     ax  ; 0000:1673
+  01674  e86003         call     sub_019D7  ; 0000:1674
+  01677  83c402         add      sp, 2  ; 0000:1677
+  0167A  e8d302         call     sub_01950  ; 0000:167A
+  0167D  8d1ec210       lea      bx, [0x10c2]  ; 0000:167D
+  01681  e87a10         call     sub_026FE  ; 0000:1681
+  01684  8d1e7611       lea      bx, [0x1176]  ; 0000:1684
+  01688  e85614         call     sub_02AE1  ; 0000:1688
+  0168B  8d1e0e0d       lea      bx, [0xd0e]  ; 0000:168B
+  0168F  e86714         call     sub_02AF9  ; 0000:168F
+  01692  8d1e7611       lea      bx, [0x1176]  ; 0000:1692
+  01696  e80212         call     sub_0289B  ; 0000:1696
+  01699  eb0d           jmp      loc_016A8  ; 0000:1699
+loc_0169B:
+  0169B  b80100         mov      ax, 1  ; 0000:169B
+  0169E  50             push     ax  ; 0000:169E
+  0169F  e83503         call     sub_019D7  ; 0000:169F
+  016A2  83c402         add      sp, 2  ; 0000:16A2
+  016A5  e8a802         call     sub_01950  ; 0000:16A5
+loc_016A8:
+  016A8  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:16A8
+  016AB  98             cwde       ; 0000:16AB
+  016AC  3d2b00         cmp      ax, 0x2b  ; 0000:16AC
+  016AF  745d           je       loc_0170E  ; 0000:16AF
+  016B1  7e03           jle      loc_016B6  ; 0000:16B1
+  016B3  e9bc00         jmp      loc_01772  ; 0000:16B3
+loc_016B6:
+  016B6  3d2000         cmp      ax, 0x20  ; 0000:16B6
+  016B9  7406           je       loc_016C1  ; 0000:16B9
+  016BB  3d2a00         cmp      ax, 0x2a  ; 0000:16BB
+  016BE  e9c300         jmp      loc_01784  ; 0000:16BE
+loc_016C1:
+  016C1  56             push     si  ; 0000:16C1
+  016C2  bfc210         mov      di, 0x10c2  ; 0000:16C2
+  016C5  be7611         mov      si, 0x1176  ; 0000:16C5
+  016C8  1e             push     ds  ; 0000:16C8
+  016C9  07             pop      es  ; 0000:16C9
+  016CA  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:16CA
+  016CB  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:16CB
+  016CC  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:16CC
+  016CD  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:16CD
+  016CE  5e             pop      si  ; 0000:16CE
+loc_016CF:
+  016CF  8d1efe0c       lea      bx, [0xcfe]  ; 0000:16CF
+  016D3  e82810         call     sub_026FE  ; 0000:16D3
+  016D6  8d1ec210       lea      bx, [0x10c2]  ; 0000:16D6
+  016DA  e82110         call     sub_026FE  ; 0000:16DA
+  016DD  e88614         call     sub_02B66  ; 0000:16DD
+  016E0  7313           jae      loc_016F5  ; 0000:16E0
+  016E2  8d1e060d       lea      bx, [0xd06]  ; 0000:16E2
+  016E6  e81510         call     sub_026FE  ; 0000:16E6
+  016E9  8d1ec210       lea      bx, [0x10c2]  ; 0000:16E9
+  016ED  e80e10         call     sub_026FE  ; 0000:16ED
+  016F0  e87314         call     sub_02B66  ; 0000:16F0
+  016F3  7706           ja       loc_016FB  ; 0000:16F3
+loc_016F5:
+  016F5  c706000f0100   mov      word ptr [0xf00], 1  ; 0000:16F5
+loc_016FB:
+  016FB  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:16FB
+  01700  7503           jne      loc_01705  ; 0000:1700
+  01702  e98400         jmp      loc_01789  ; 0000:1702
+loc_01705:
+  01705  be2000         mov      si, 0x20  ; 0000:1705
+  01708  e8b4fc         call     sub_013BF  ; 0000:1708
+  0170B  e91d01         jmp      loc_0182B  ; 0000:170B
+loc_0170E:
+  0170E  8d1e7611       lea      bx, [0x1176]  ; 0000:170E
+  01712  e8e90f         call     sub_026FE  ; 0000:1712
+  01715  8d1ec210       lea      bx, [0x10c2]  ; 0000:1715
+  01719  53             push     bx  ; 0000:1719
+  0171A  e80c14         call     sub_02B29  ; 0000:171A
+loc_0171D:
+  0171D  5b             pop      bx  ; 0000:171D
+  0171E  e87a11         call     sub_0289B  ; 0000:171E
+  01721  ebac           jmp      loc_016CF  ; 0000:1721
+loc_01723:
+  01723  8d1e7611       lea      bx, [0x1176]  ; 0000:1723
+  01727  e8d40f         call     sub_026FE  ; 0000:1727
+  0172A  8d1ec210       lea      bx, [0x10c2]  ; 0000:172A
+  0172E  53             push     bx  ; 0000:172E
+  0172F  e89713         call     sub_02AC9  ; 0000:172F
+  01732  ebe9           jmp      loc_0171D  ; 0000:1732
+loc_01734:
+  01734  8d1e7611       lea      bx, [0x1176]  ; 0000:1734
+  01738  e8c30f         call     sub_026FE  ; 0000:1738
+  0173B  8d1ec210       lea      bx, [0x10c2]  ; 0000:173B
+  0173F  53             push     bx  ; 0000:173F
+  01740  e89e13         call     sub_02AE1  ; 0000:1740
+  01743  ebd8           jmp      loc_0171D  ; 0000:1743
+loc_01745:
+  01745  8d1ece0c       lea      bx, [0xcce]  ; 0000:1745
+  01749  e8b20f         call     sub_026FE  ; 0000:1749
+  0174C  8d1e7611       lea      bx, [0x1176]  ; 0000:174C
+  01750  e8ab0f         call     sub_026FE  ; 0000:1750
+  01753  e81014         call     sub_02B66  ; 0000:1753
+  01756  7509           jne      loc_01761  ; 0000:1756
+  01758  c706000f0100   mov      word ptr [0xf00], 1  ; 0000:1758
+  0175E  e96eff         jmp      loc_016CF  ; 0000:175E
+loc_01761:
+  01761  8d1e7611       lea      bx, [0x1176]  ; 0000:1761
+  01765  e8960f         call     sub_026FE  ; 0000:1765
+  01768  8d1ec210       lea      bx, [0x10c2]  ; 0000:1768
+  0176C  53             push     bx  ; 0000:176C
+  0176D  e8a113         call     sub_02B11  ; 0000:176D
+  01770  ebab           jmp      loc_0171D  ; 0000:1770
+loc_01772:
+  01772  3d2d00         cmp      ax, 0x2d  ; 0000:1772
+  01775  74ac           je       loc_01723  ; 0000:1775
+  01777  3d2f00         cmp      ax, 0x2f  ; 0000:1777
+  0177A  74c9           je       loc_01745  ; 0000:177A
+  0177C  3d5800         cmp      ax, 0x58  ; 0000:177C
+  0177F  74b3           je       loc_01734  ; 0000:177F
+  01781  3d7800         cmp      ax, 0x78  ; 0000:1781
+loc_01784:
+  01784  74ae           je       loc_01734  ; 0000:1784
+  01786  e946ff         jmp      loc_016CF  ; 0000:1786
+loc_01789:
+  01789  833e0c0f00     cmp      word ptr [0xf0c], 0  ; 0000:1789
+  0178E  7466           je       loc_017F6  ; 0000:178E
+  01790  83fe20         cmp      si, 0x20  ; 0000:1790
+  01793  7561           jne      loc_017F6  ; 0000:1793
+  01795  803e1e0f20     cmp      byte ptr [0xf1e], 0x20  ; 0000:1795
+  0179A  745a           je       loc_017F6  ; 0000:179A
+  0179C  8d1e160d       lea      bx, [0xd16]  ; 0000:179C
+  017A0  e85b0f         call     sub_026FE  ; 0000:17A0
+  017A3  8d1ec210       lea      bx, [0x10c2]  ; 0000:17A3
+  017A7  e8540f         call     sub_026FE  ; 0000:17A7
+  017AA  e8b913         call     sub_02B66  ; 0000:17AA
+  017AD  7313           jae      loc_017C2  ; 0000:17AD
+  017AF  8d1ece0c       lea      bx, [0xcce]  ; 0000:17AF
+  017B3  e8480f         call     sub_026FE  ; 0000:17B3
+  017B6  8d1ec210       lea      bx, [0x10c2]  ; 0000:17B6
+  017BA  e8410f         call     sub_026FE  ; 0000:17BA
+  017BD  e8a613         call     sub_02B66  ; 0000:17BD
+  017C0  7726           ja       loc_017E8  ; 0000:17C0
+loc_017C2:
+  017C2  8d1ece0c       lea      bx, [0xcce]  ; 0000:17C2
+  017C6  e8350f         call     sub_026FE  ; 0000:17C6
+  017C9  8d1ec210       lea      bx, [0x10c2]  ; 0000:17C9
+  017CD  e82e0f         call     sub_026FE  ; 0000:17CD
+  017D0  e89313         call     sub_02B66  ; 0000:17D0
+  017D3  7321           jae      loc_017F6  ; 0000:17D3
+  017D5  8d1e1e0d       lea      bx, [0xd1e]  ; 0000:17D5
+  017D9  e8220f         call     sub_026FE  ; 0000:17D9
+  017DC  8d1ec210       lea      bx, [0x10c2]  ; 0000:17DC
+  017E0  e81b0f         call     sub_026FE  ; 0000:17E0
+  017E3  e88013         call     sub_02B66  ; 0000:17E3
+  017E6  760e           jbe      loc_017F6  ; 0000:17E6
+loc_017E8:
+  017E8  8d1ece0c       lea      bx, [0xcce]  ; 0000:17E8
+  017EC  e80f0f         call     sub_026FE  ; 0000:17EC
+  017EF  8d1ec210       lea      bx, [0x10c2]  ; 0000:17EF
+  017F3  e8a510         call     sub_0289B  ; 0000:17F3
+loc_017F6:
+  017F6  8bc6           mov      ax, si  ; 0000:17F6
+  017F8  a21e0f         mov      byte ptr [0xf1e], al  ; 0000:17F8
+  017FB  e87f02         call     sub_01A7D  ; 0000:17FB
+  017FE  b8dc00         mov      ax, 0xdc  ; 0000:17FE
+  01801  50             push     ax  ; 0000:1801
+  01802  b8f401         mov      ax, 0x1f4  ; 0000:1802
+  01805  50             push     ax  ; 0000:1805
+  01806  e8b20c         call     sub_024BB  ; 0000:1806
+  01809  83c404         add      sp, 4  ; 0000:1809
+  0180C  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:180C
+  0180F  98             cwde       ; 0000:180F
+  01810  50             push     ax  ; 0000:1810
+  01811  e8bf0c         call     sub_024D3  ; 0000:1811
+  01814  83c402         add      sp, 2  ; 0000:1814
+  01817  56             push     si  ; 0000:1817
+  01818  bf7611         mov      di, 0x1176  ; 0000:1818
+  0181B  bec210         mov      si, 0x10c2  ; 0000:181B
+  0181E  1e             push     ds  ; 0000:181E
+  0181F  07             pop      es  ; 0000:181F
+  01820  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1820
+  01821  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1821
+  01822  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1822
+  01823  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1823
+  01824  5e             pop      si  ; 0000:1824
+  01825  e89802         call     sub_01AC0  ; 0000:1825
+  01828  e90bfe         jmp      loc_01636  ; 0000:1828
+loc_0182B:
+  0182B  5e             pop      si  ; 0000:182B
+  0182C  5f             pop      di  ; 0000:182C
+  0182D  5d             pop      bp  ; 0000:182D
+  0182E  c3             ret        ; 0000:182E
+
+
+; ---- sub_0182F ----
+sub_0182F:
+  0182F  55             push     bp  ; 0000:182F
+  01830  8bec           mov      bp, sp  ; 0000:1830
+  01832  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:1832
+  01835  3d4100         cmp      ax, 0x41  ; 0000:1835
+  01838  7411           je       loc_0184B  ; 0000:1838
+  0183A  3d4500         cmp      ax, 0x45  ; 0000:183A
+  0183D  7469           je       loc_018A8  ; 0000:183D
+  0183F  3d6100         cmp      ax, 0x61  ; 0000:183F
+  01842  7407           je       loc_0184B  ; 0000:1842
+  01844  3d6500         cmp      ax, 0x65  ; 0000:1844
+  01847  745f           je       loc_018A8  ; 0000:1847
+  01849  eb59           jmp      loc_018A4  ; 0000:1849
+loc_0184B:
+  0184B  8d1ece0c       lea      bx, [0xcce]  ; 0000:184B
+  0184F  e8ac0e         call     sub_026FE  ; 0000:184F
+  01852  8d1ec210       lea      bx, [0x10c2]  ; 0000:1852
+  01856  e84210         call     sub_0289B  ; 0000:1856
+  01859  e82102         call     sub_01A7D  ; 0000:1859
+  0185C  c706000f0000   mov      word ptr [0xf00], 0  ; 0000:185C
+  01862  c7060c0f0000   mov      word ptr [0xf0c], 0  ; 0000:1862
+  01868  c6061e0f20     mov      byte ptr [0xf1e], 0x20  ; 0000:1868
+  0186D  2bc0           sub      ax, ax  ; 0000:186D
+  0186F  50             push     ax  ; 0000:186F
+  01870  e86401         call     sub_019D7  ; 0000:1870
+  01873  83c402         add      sp, 2  ; 0000:1873
+  01876  b8b406         mov      ax, 0x6b4  ; 0000:1876
+  01879  50             push     ax  ; 0000:1879
+  0187A  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:187A
+  0187E  d1e3           shl      bx, 1  ; 0000:187E
+  01880  ffb79c04       push     word ptr [bx + 0x49c]  ; 0000:1880
+  01884  e8d52c         call     sub_0455C  ; 0000:1884
+  01887  83c404         add      sp, 4  ; 0000:1887
+  0188A  2bc0           sub      ax, ax  ; 0000:188A
+  0188C  50             push     ax  ; 0000:188C
+  0188D  e84701         call     sub_019D7  ; 0000:188D
+  01890  83c402         add      sp, 2  ; 0000:1890
+  01893  e8ba00         call     sub_01950  ; 0000:1893
+loc_01896:
+  01896  b8dc00         mov      ax, 0xdc  ; 0000:1896
+  01899  50             push     ax  ; 0000:1899
+  0189A  b8d007         mov      ax, 0x7d0  ; 0000:189A
+  0189D  50             push     ax  ; 0000:189D
+  0189E  e81a0c         call     sub_024BB  ; 0000:189E
+  018A1  83c404         add      sp, 4  ; 0000:18A1
+loc_018A4:
+  018A4  2bc0           sub      ax, ax  ; 0000:18A4
+  018A6  5d             pop      bp  ; 0000:18A6
+  018A7  c3             ret        ; 0000:18A7
+loc_018A8:
+  018A8  e8d201         call     sub_01A7D  ; 0000:18A8
+  018AB  b8dc00         mov      ax, 0xdc  ; 0000:18AB
+  018AE  50             push     ax  ; 0000:18AE
+  018AF  b8f401         mov      ax, 0x1f4  ; 0000:18AF
+  018B2  50             push     ax  ; 0000:18B2
+  018B3  e8050c         call     sub_024BB  ; 0000:18B3
+  018B6  83c404         add      sp, 4  ; 0000:18B6
+  018B9  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:18B9
+  018BC  98             cwde       ; 0000:18BC
+  018BD  50             push     ax  ; 0000:18BD
+  018BE  e8120c         call     sub_024D3  ; 0000:18BE
+  018C1  83c402         add      sp, 2  ; 0000:18C1
+  018C4  ebd0           jmp      loc_01896  ; 0000:18C4
+
+
+; ---- sub_018C6 ----
+sub_018C6:
+  018C6  57             push     di  ; 0000:18C6
+  018C7  56             push     si  ; 0000:18C7
+  018C8  803e1e0f20     cmp      byte ptr [0xf1e], 0x20  ; 0000:18C8
+  018CD  7515           jne      loc_018E4  ; 0000:18CD
+  018CF  833e0c0f00     cmp      word ptr [0xf0c], 0  ; 0000:18CF
+  018D4  740e           je       loc_018E4  ; 0000:18D4
+  018D6  a02c0f         mov      al, byte ptr [0xf2c]  ; 0000:18D6
+  018D9  a21e0f         mov      byte ptr [0xf1e], al  ; 0000:18D9
+  018DC  bf7611         mov      di, 0x1176  ; 0000:18DC
+  018DF  be2e0f         mov      si, 0xf2e  ; 0000:18DF
+  018E2  eb0c           jmp      loc_018F0  ; 0000:18E2
+loc_018E4:
+  018E4  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:18E4
+  018E7  a22c0f         mov      byte ptr [0xf2c], al  ; 0000:18E7
+  018EA  bf2e0f         mov      di, 0xf2e  ; 0000:18EA
+  018ED  be7611         mov      si, 0x1176  ; 0000:18ED
+loc_018F0:
+  018F0  1e             push     ds  ; 0000:18F0
+  018F1  07             pop      es  ; 0000:18F1
+  018F2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:18F2
+  018F3  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:18F3
+  018F4  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:18F4
+  018F5  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:18F5
+  018F6  b82000         mov      ax, 0x20  ; 0000:18F6
+  018F9  50             push     ax  ; 0000:18F9
+  018FA  e8d6fc         call     sub_015D3  ; 0000:18FA
+  018FD  83c402         add      sp, 2  ; 0000:18FD
+  01900  833e000f00     cmp      word ptr [0xf00], 0  ; 0000:1900
+  01905  7533           jne      loc_0193A  ; 0000:1905
+  01907  b8dc00         mov      ax, 0xdc  ; 0000:1907
+  0190A  50             push     ax  ; 0000:190A
+  0190B  b8f401         mov      ax, 0x1f4  ; 0000:190B
+  0190E  50             push     ax  ; 0000:190E
+  0190F  e8a90b         call     sub_024BB  ; 0000:190F
+  01912  83c404         add      sp, 4  ; 0000:1912
+  01915  b83d00         mov      ax, 0x3d  ; 0000:1915
+  01918  50             push     ax  ; 0000:1918
+  01919  e8b70b         call     sub_024D3  ; 0000:1919
+  0191C  83c402         add      sp, 2  ; 0000:191C
+  0191F  c6061e0f3d     mov      byte ptr [0xf1e], 0x3d  ; 0000:191F
+  01924  b80100         mov      ax, 1  ; 0000:1924
+  01927  50             push     ax  ; 0000:1927
+  01928  e8ac00         call     sub_019D7  ; 0000:1928
+  0192B  83c402         add      sp, 2  ; 0000:192B
+  0192E  e81f00         call     sub_01950  ; 0000:192E
+  01931  2bc0           sub      ax, ax  ; 0000:1931
+  01933  50             push     ax  ; 0000:1933
+  01934  e8a000         call     sub_019D7  ; 0000:1934
+  01937  83c402         add      sp, 2  ; 0000:1937
+loc_0193A:
+  0193A  c6061e0f20     mov      byte ptr [0xf1e], 0x20  ; 0000:193A
+  0193F  b8dc00         mov      ax, 0xdc  ; 0000:193F
+  01942  50             push     ax  ; 0000:1942
+  01943  b8d007         mov      ax, 0x7d0  ; 0000:1943
+  01946  50             push     ax  ; 0000:1946
+  01947  e8710b         call     sub_024BB  ; 0000:1947
+  0194A  83c404         add      sp, 4  ; 0000:194A
+  0194D  5e             pop      si  ; 0000:194D
+  0194E  5f             pop      di  ; 0000:194E
+  0194F  c3             ret        ; 0000:194F
+
+
+; ---- sub_01950 ----
+sub_01950:
+  01950  55             push     bp  ; 0000:1950
+  01951  8bec           mov      bp, sp  ; 0000:1951
+  01953  83ec06         sub      sp, 6  ; 0000:1953
+  01956  56             push     si  ; 0000:1956
+  01957  e8fb0a         call     sub_02455  ; 0000:1957
+  0195A  be3200         mov      si, 0x32  ; 0000:195A
+  0195D  a1020f         mov      ax, word ptr [0xf02]  ; 0000:195D
+  01960  8946fe         mov      word ptr [bp - 2], ax  ; 0000:1960
+  01963  2bc0           sub      ax, ax  ; 0000:1963
+  01965  50             push     ax  ; 0000:1965
+  01966  b80100         mov      ax, 1  ; 0000:1966
+  01969  50             push     ax  ; 0000:1969
+  0196A  e8600b         call     sub_024CD  ; 0000:196A
+  0196D  83c404         add      sp, 4  ; 0000:196D
+  01970  c746fa0000     mov      word ptr [bp - 6], 0  ; 0000:1970
+loc_01975:
+  01975  8d446e         lea      ax, [si + 0x6e]  ; 0000:1975
+  01978  50             push     ax  ; 0000:1978
+  01979  b8c20b         mov      ax, 0xbc2  ; 0000:1979
+  0197C  50             push     ax  ; 0000:197C
+  0197D  e83b0b         call     sub_024BB  ; 0000:197D
+  01980  83c404         add      sp, 4  ; 0000:1980
+  01983  837efe08       cmp      word ptr [bp - 2], 8  ; 0000:1983
+  01987  7505           jne      loc_0198E  ; 0000:1987
+  01989  c746fe0000     mov      word ptr [bp - 2], 0  ; 0000:1989
+loc_0198E:
+  0198E  b81000         mov      ax, 0x10  ; 0000:198E
+  01991  50             push     ax  ; 0000:1991
+  01992  8b5efe         mov      bx, word ptr [bp - 2]  ; 0000:1992
+  01995  ff46fe         inc      word ptr [bp - 2]  ; 0000:1995
+  01998  d1e3           shl      bx, 1  ; 0000:1998
+  0199A  ffb79e04       push     word ptr [bx + 0x49e]  ; 0000:199A
+  0199E  e8380b         call     sub_024D9  ; 0000:199E
+  019A1  83c404         add      sp, 4  ; 0000:19A1
+  019A4  81c6dc00       add      si, 0xdc  ; 0000:19A4
+  019A8  ff46fa         inc      word ptr [bp - 6]  ; 0000:19A8
+  019AB  837efa08       cmp      word ptr [bp - 6], 8  ; 0000:19AB
+  019AF  7cc4           jl       loc_01975  ; 0000:19AF
+  019B1  b80300         mov      ax, 3  ; 0000:19B1
+  019B4  50             push     ax  ; 0000:19B4
+  019B5  b80200         mov      ax, 2  ; 0000:19B5
+  019B8  50             push     ax  ; 0000:19B8
+  019B9  e8110b         call     sub_024CD  ; 0000:19B9
+  019BC  83c404         add      sp, 4  ; 0000:19BC
+  019BF  b8dc00         mov      ax, 0xdc  ; 0000:19BF
+  019C2  50             push     ax  ; 0000:19C2
+  019C3  b8d007         mov      ax, 0x7d0  ; 0000:19C3
+  019C6  50             push     ax  ; 0000:19C6
+  019C7  e8f10a         call     sub_024BB  ; 0000:19C7
+  019CA  83c404         add      sp, 4  ; 0000:19CA
+  019CD  e87f0a         call     sub_0244F  ; 0000:19CD
+  019D0  2bc0           sub      ax, ax  ; 0000:19D0
+  019D2  5e             pop      si  ; 0000:19D2
+  019D3  8be5           mov      sp, bp  ; 0000:19D3
+  019D5  5d             pop      bp  ; 0000:19D5
+  019D6  c3             ret        ; 0000:19D6
+
+
+; ---- sub_019D7 ----
+sub_019D7:
+  019D7  55             push     bp  ; 0000:19D7
+  019D8  8bec           mov      bp, sp  ; 0000:19D8
+  019DA  833e020f08     cmp      word ptr [0xf02], 8  ; 0000:19DA
+  019DF  7506           jne      loc_019E7  ; 0000:19DF
+  019E1  c706020f0000   mov      word ptr [0xf02], 0  ; 0000:19E1
+loc_019E7:
+  019E7  837e0401       cmp      word ptr [bp + 4], 1  ; 0000:19E7
+  019EB  753a           jne      loc_01A27  ; 0000:19EB
+  019ED  b80f00         mov      ax, 0xf  ; 0000:19ED
+  019F0  50             push     ax  ; 0000:19F0
+  019F1  ff367c11       push     word ptr [0x117c]  ; 0000:19F1
+  019F5  ff367a11       push     word ptr [0x117a]  ; 0000:19F5
+  019F9  ff367811       push     word ptr [0x1178]  ; 0000:19F9
+  019FD  ff367611       push     word ptr [0x1176]  ; 0000:19FD
+  01A01  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:1A01
+  01A05  d1e3           shl      bx, 1  ; 0000:1A05
+  01A07  ffb79e04       push     word ptr [bx + 0x49e]  ; 0000:1A07
+  01A0B  e80301         call     sub_01B11  ; 0000:1A0B
+  01A0E  83c40c         add      sp, 0xc  ; 0000:1A0E
+loc_01A11:
+  01A11  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:1A11
+  01A15  ff06020f       inc      word ptr [0xf02]  ; 0000:1A15
+  01A19  d1e3           shl      bx, 1  ; 0000:1A19
+  01A1B  8b9f9e04       mov      bx, word ptr [bx + 0x49e]  ; 0000:1A1B
+  01A1F  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:1A1F
+  01A22  88470f         mov      byte ptr [bx + 0xf], al  ; 0000:1A22
+  01A25  eb52           jmp      loc_01A79  ; 0000:1A25
+loc_01A27:
+  01A27  837e0402       cmp      word ptr [bp + 4], 2  ; 0000:1A27
+  01A2B  7534           jne      loc_01A61  ; 0000:1A2B
+  01A2D  b80e00         mov      ax, 0xe  ; 0000:1A2D
+  01A30  50             push     ax  ; 0000:1A30
+  01A31  ff367c11       push     word ptr [0x117c]  ; 0000:1A31
+  01A35  ff367a11       push     word ptr [0x117a]  ; 0000:1A35
+  01A39  ff367811       push     word ptr [0x1178]  ; 0000:1A39
+  01A3D  ff367611       push     word ptr [0x1176]  ; 0000:1A3D
+  01A41  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:1A41
+  01A45  d1e3           shl      bx, 1  ; 0000:1A45
+  01A47  ffb79e04       push     word ptr [bx + 0x49e]  ; 0000:1A47
+  01A4B  e8c300         call     sub_01B11  ; 0000:1A4B
+  01A4E  83c40c         add      sp, 0xc  ; 0000:1A4E
+  01A51  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:1A51
+  01A55  d1e3           shl      bx, 1  ; 0000:1A55
+  01A57  8b9f9e04       mov      bx, word ptr [bx + 0x49e]  ; 0000:1A57
+  01A5B  c6470e25       mov      byte ptr [bx + 0xe], 0x25  ; 0000:1A5B
+  01A5F  ebb0           jmp      loc_01A11  ; 0000:1A5F
+loc_01A61:
+  01A61  b8260d         mov      ax, 0xd26  ; 0000:1A61
+  01A64  50             push     ax  ; 0000:1A64
+  01A65  8b1e020f       mov      bx, word ptr [0xf02]  ; 0000:1A65
+  01A69  ff06020f       inc      word ptr [0xf02]  ; 0000:1A69
+  01A6D  d1e3           shl      bx, 1  ; 0000:1A6D
+  01A6F  ffb79e04       push     word ptr [bx + 0x49e]  ; 0000:1A6F
+  01A73  e8e62a         call     sub_0455C  ; 0000:1A73
+  01A76  83c404         add      sp, 4  ; 0000:1A76
+loc_01A79:
+  01A79  2bc0           sub      ax, ax  ; 0000:1A79
+  01A7B  5d             pop      bp  ; 0000:1A7B
+  01A7C  c3             ret        ; 0000:1A7C
+
+
+; ---- sub_01A7D ----
+sub_01A7D:
+  01A7D  8d1ece0c       lea      bx, [0xcce]  ; 0000:1A7D
+  01A81  e87a0c         call     sub_026FE  ; 0000:1A81
+  01A84  8d1e7611       lea      bx, [0x1176]  ; 0000:1A84
+  01A88  e8100e         call     sub_0289B  ; 0000:1A88
+  01A8B  2bc0           sub      ax, ax  ; 0000:1A8B
+  01A8D  a3fe0e         mov      word ptr [0xefe], ax  ; 0000:1A8D
+  01A90  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:1A90
+  01A93  b8dc00         mov      ax, 0xdc  ; 0000:1A93
+  01A96  50             push     ax  ; 0000:1A96
+  01A97  b8f401         mov      ax, 0x1f4  ; 0000:1A97
+  01A9A  50             push     ax  ; 0000:1A9A
+  01A9B  e81d0a         call     sub_024BB  ; 0000:1A9B
+  01A9E  83c404         add      sp, 4  ; 0000:1A9E
+  01AA1  b81000         mov      ax, 0x10  ; 0000:1AA1
+  01AA4  50             push     ax  ; 0000:1AA4
+  01AA5  b8370d         mov      ax, 0xd37  ; 0000:1AA5
+  01AA8  50             push     ax  ; 0000:1AA8
+  01AA9  e82d0a         call     sub_024D9  ; 0000:1AA9
+  01AAC  83c404         add      sp, 4  ; 0000:1AAC
+  01AAF  b8dc00         mov      ax, 0xdc  ; 0000:1AAF
+  01AB2  50             push     ax  ; 0000:1AB2
+  01AB3  b8d007         mov      ax, 0x7d0  ; 0000:1AB3
+  01AB6  50             push     ax  ; 0000:1AB6
+  01AB7  e8010a         call     sub_024BB  ; 0000:1AB7
+  01ABA  83c404         add      sp, 4  ; 0000:1ABA
+  01ABD  2bc0           sub      ax, ax  ; 0000:1ABD
+  01ABF  c3             ret        ; 0000:1ABF
+
+
+; ---- sub_01AC0 ----
+sub_01AC0:
+  01AC0  55             push     bp  ; 0000:1AC0
+  01AC1  8bec           mov      bp, sp  ; 0000:1AC1
+  01AC3  83ec06         sub      sp, 6  ; 0000:1AC3
+  01AC6  b80f00         mov      ax, 0xf  ; 0000:1AC6
+  01AC9  50             push     ax  ; 0000:1AC9
+  01ACA  ff367c11       push     word ptr [0x117c]  ; 0000:1ACA
+  01ACE  ff367a11       push     word ptr [0x117a]  ; 0000:1ACE
+  01AD2  ff367811       push     word ptr [0x1178]  ; 0000:1AD2
+  01AD6  ff367611       push     word ptr [0x1176]  ; 0000:1AD6
+  01ADA  b80e0f         mov      ax, 0xf0e  ; 0000:1ADA
+  01ADD  50             push     ax  ; 0000:1ADD
+  01ADE  e83000         call     sub_01B11  ; 0000:1ADE
+  01AE1  83c40c         add      sp, 0xc  ; 0000:1AE1
+  01AE4  b8dc00         mov      ax, 0xdc  ; 0000:1AE4
+  01AE7  50             push     ax  ; 0000:1AE7
+  01AE8  b85802         mov      ax, 0x258  ; 0000:1AE8
+  01AEB  50             push     ax  ; 0000:1AEB
+  01AEC  e8cc09         call     sub_024BB  ; 0000:1AEC
+  01AEF  83c404         add      sp, 4  ; 0000:1AEF
+  01AF2  b80f00         mov      ax, 0xf  ; 0000:1AF2
+  01AF5  50             push     ax  ; 0000:1AF5
+  01AF6  b80e0f         mov      ax, 0xf0e  ; 0000:1AF6
+  01AF9  50             push     ax  ; 0000:1AF9
+  01AFA  e8dc09         call     sub_024D9  ; 0000:1AFA
+  01AFD  83c404         add      sp, 4  ; 0000:1AFD
+  01B00  b8dc00         mov      ax, 0xdc  ; 0000:1B00
+  01B03  50             push     ax  ; 0000:1B03
+  01B04  b8d007         mov      ax, 0x7d0  ; 0000:1B04
+  01B07  50             push     ax  ; 0000:1B07
+  01B08  e8b009         call     sub_024BB  ; 0000:1B08
+  01B0B  2bc0           sub      ax, ax  ; 0000:1B0B
+  01B0D  8be5           mov      sp, bp  ; 0000:1B0D
+  01B0F  5d             pop      bp  ; 0000:1B0F
+  01B10  c3             ret        ; 0000:1B10
+
+
+; ---- sub_01B11 ----
+; --- dmserv_pageCalc: Page layout calculation engine
+dmserv_pageCalc:  ; was sub_01B11
+  01B11  55             push     bp  ; 0000:1B11
+  01B12  8bec           mov      bp, sp  ; 0000:1B12
+  01B14  83ec1c         sub      sp, 0x1c  ; 0000:1B14
+  01B17  57             push     di  ; 0000:1B17
+  01B18  56             push     si  ; 0000:1B18
+  01B19  8d1e480d       lea      bx, [0xd48]  ; 0000:1B19
+  01B1D  e8de0b         call     sub_026FE  ; 0000:1B1D
+  01B20  8d5e06         lea      bx, [bp + 6]  ; 0000:1B20
+  01B23  e8d80b         call     sub_026FE  ; 0000:1B23
+  01B26  e83d10         call     sub_02B66  ; 0000:1B26
+  01B29  7712           ja       loc_01B3D  ; 0000:1B29
+  01B2B  8d1e500d       lea      bx, [0xd50]  ; 0000:1B2B
+  01B2F  e8cc0b         call     sub_026FE  ; 0000:1B2F
+  01B32  8d5e06         lea      bx, [bp + 6]  ; 0000:1B32
+  01B35  e8c60b         call     sub_026FE  ; 0000:1B35
+  01B38  e82b10         call     sub_02B66  ; 0000:1B38
+  01B3B  732a           jae      loc_01B67  ; 0000:1B3B
+loc_01B3D:
+  01B3D  8d1e580d       lea      bx, [0xd58]  ; 0000:1B3D
+  01B41  e8ba0b         call     sub_026FE  ; 0000:1B41
+  01B44  8d5e06         lea      bx, [bp + 6]  ; 0000:1B44
+  01B47  e8b40b         call     sub_026FE  ; 0000:1B47
+  01B4A  e81910         call     sub_02B66  ; 0000:1B4A
+  01B4D  7303           jae      loc_01B52  ; 0000:1B4D
+  01B4F  e98801         jmp      loc_01CDA  ; 0000:1B4F
+loc_01B52:
+  01B52  8d1e600d       lea      bx, [0xd60]  ; 0000:1B52
+  01B56  e8a50b         call     sub_026FE  ; 0000:1B56
+  01B59  8d5e06         lea      bx, [bp + 6]  ; 0000:1B59
+  01B5C  e89f0b         call     sub_026FE  ; 0000:1B5C
+  01B5F  e80410         call     sub_02B66  ; 0000:1B5F
+  01B62  7603           jbe      loc_01B67  ; 0000:1B62
+  01B64  e97301         jmp      loc_01CDA  ; 0000:1B64
+loc_01B67:
+  01B67  c746fa0100     mov      word ptr [bp - 6], 1  ; 0000:1B67
+  01B6C  8d1ece0c       lea      bx, [0xcce]  ; 0000:1B6C
+  01B70  e88b0b         call     sub_026FE  ; 0000:1B70
+  01B73  8d5e06         lea      bx, [bp + 6]  ; 0000:1B73
+  01B76  e8850b         call     sub_026FE  ; 0000:1B76
+  01B79  e8ea0f         call     sub_02B66  ; 0000:1B79
+  01B7C  760e           jbe      loc_01B8C  ; 0000:1B7C
+  01B7E  8d7ef2         lea      di, [bp - 0xe]  ; 0000:1B7E
+  01B81  8d7606         lea      si, [bp + 6]  ; 0000:1B81
+  01B84  16             push     ss  ; 0000:1B84
+  01B85  07             pop      es  ; 0000:1B85
+  01B86  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1B86
+  01B87  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1B87
+  01B88  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1B88
+  01B89  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1B89
+  01B8A  eb23           jmp      loc_01BAF  ; 0000:1B8A
+loc_01B8C:
+  01B8C  8d5e06         lea      bx, [bp + 6]  ; 0000:1B8C
+  01B8F  e86c0b         call     sub_026FE  ; 0000:1B8F
+  01B92  e8160e         call     sub_029AB  ; 0000:1B92
+  01B95  8d5ef2         lea      bx, [bp - 0xe]  ; 0000:1B95
+  01B98  eb12           jmp      loc_01BAC  ; 0000:1B98
+loc_01B9A:
+  01B9A  ff46fa         inc      word ptr [bp - 6]  ; 0000:1B9A
+  01B9D  8d1eee0c       lea      bx, [0xcee]  ; 0000:1B9D
+  01BA1  e85a0b         call     sub_026FE  ; 0000:1BA1
+  01BA4  8d5ef2         lea      bx, [bp - 0xe]  ; 0000:1BA4
+  01BA7  53             push     bx  ; 0000:1BA7
+  01BA8  e8660f         call     sub_02B11  ; 0000:1BA8
+  01BAB  5b             pop      bx  ; 0000:1BAB
+loc_01BAC:
+  01BAC  e8ec0c         call     sub_0289B  ; 0000:1BAC
+loc_01BAF:
+  01BAF  8d1eee0c       lea      bx, [0xcee]  ; 0000:1BAF
+  01BB3  e8480b         call     sub_026FE  ; 0000:1BB3
+  01BB6  8d5ef2         lea      bx, [bp - 0xe]  ; 0000:1BB6
+  01BB9  e8420b         call     sub_026FE  ; 0000:1BB9
+  01BBC  e8a70f         call     sub_02B66  ; 0000:1BBC
+  01BBF  77d9           ja       loc_01B9A  ; 0000:1BBF
+  01BC1  8b460e         mov      ax, word ptr [bp + 0xe]  ; 0000:1BC1
+  01BC4  2b46fa         sub      ax, word ptr [bp - 6]  ; 0000:1BC4
+  01BC7  48             dec      ax  ; 0000:1BC7
+  01BC8  48             dec      ax  ; 0000:1BC8
+  01BC9  8946f0         mov      word ptr [bp - 0x10], ax  ; 0000:1BC9
+  01BCC  8d46fc         lea      ax, [bp - 4]  ; 0000:1BCC
+  01BCF  50             push     ax  ; 0000:1BCF
+  01BD0  8d46fe         lea      ax, [bp - 2]  ; 0000:1BD0
+  01BD3  50             push     ax  ; 0000:1BD3
+  01BD4  ff76f0         push     word ptr [bp - 0x10]  ; 0000:1BD4
+  01BD7  8d5e06         lea      bx, [bp + 6]  ; 0000:1BD7
+  01BDA  e8210b         call     sub_026FE  ; 0000:1BDA
+  01BDD  83ec08         sub      sp, 8  ; 0000:1BDD
+  01BE0  8bdc           mov      bx, sp  ; 0000:1BE0
+  01BE2  e8b60c         call     sub_0289B  ; 0000:1BE2
+  01BE5  e86e2b         call     sub_04756  ; 0000:1BE5
+  01BE8  83c40e         add      sp, 0xe  ; 0000:1BE8
+  01BEB  8946e8         mov      word ptr [bp - 0x18], ax  ; 0000:1BEB
+  01BEE  8b460e         mov      ax, word ptr [bp + 0xe]  ; 0000:1BEE
+  01BF1  48             dec      ax  ; 0000:1BF1
+  01BF2  8946ea         mov      word ptr [bp - 0x16], ax  ; 0000:1BF2
+  01BF5  ff76e8         push     word ptr [bp - 0x18]  ; 0000:1BF5
+  01BF8  e89329         call     sub_0458E  ; 0000:1BF8
+  01BFB  83c402         add      sp, 2  ; 0000:1BFB
+  01BFE  48             dec      ax  ; 0000:1BFE
+  01BFF  8946ee         mov      word ptr [bp - 0x12], ax  ; 0000:1BFF
+  01C02  eb03           jmp      loc_01C07  ; 0000:1C02
+loc_01C04:
+  01C04  ff4eee         dec      word ptr [bp - 0x12]  ; 0000:1C04
+loc_01C07:
+  01C07  8b5eee         mov      bx, word ptr [bp - 0x12]  ; 0000:1C07
+  01C0A  8b76e8         mov      si, word ptr [bp - 0x18]  ; 0000:1C0A
+  01C0D  803830         cmp      byte ptr [bx + si], 0x30  ; 0000:1C0D
+  01C10  74f2           je       loc_01C04  ; 0000:1C10
+  01C12  8b76fe         mov      si, word ptr [bp - 2]  ; 0000:1C12
+  01C15  4e             dec      si  ; 0000:1C15
+  01C16  3bde           cmp      bx, si  ; 0000:1C16
+  01C18  7d03           jge      loc_01C1D  ; 0000:1C18
+  01C1A  8976ee         mov      word ptr [bp - 0x12], si  ; 0000:1C1A
+loc_01C1D:
+  01C1D  837efe01       cmp      word ptr [bp - 2], 1  ; 0000:1C1D
+  01C21  7c51           jl       loc_01C74  ; 0000:1C21
+  01C23  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:1C23
+  01C26  3946ee         cmp      word ptr [bp - 0x12], ax  ; 0000:1C26
+  01C29  7d0c           jge      loc_01C37  ; 0000:1C29
+loc_01C2B:
+  01C2B  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1C2B
+  01C2E  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1C2E
+  01C31  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1C31
+  01C34  c6002e         mov      byte ptr [bx + si], 0x2e  ; 0000:1C34
+loc_01C37:
+  01C37  837eee00       cmp      word ptr [bp - 0x12], 0  ; 0000:1C37
+  01C3B  7c74           jl       loc_01CB1  ; 0000:1C3B
+  01C3D  8b5eee         mov      bx, word ptr [bp - 0x12]  ; 0000:1C3D
+  01C40  ff4eee         dec      word ptr [bp - 0x12]  ; 0000:1C40
+  01C43  8b76e8         mov      si, word ptr [bp - 0x18]  ; 0000:1C43
+  01C46  8a00           mov      al, byte ptr [bx + si]  ; 0000:1C46
+  01C48  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1C48
+  01C4B  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1C4B
+  01C4E  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1C4E
+  01C51  8800           mov      byte ptr [bx + si], al  ; 0000:1C51
+  01C53  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:1C53
+  01C56  48             dec      ax  ; 0000:1C56
+  01C57  3b46ee         cmp      ax, word ptr [bp - 0x12]  ; 0000:1C57
+  01C5A  75db           jne      loc_01C37  ; 0000:1C5A
+  01C5C  ebcd           jmp      loc_01C2B  ; 0000:1C5C
+loc_01C5E:
+  01C5E  8b5eee         mov      bx, word ptr [bp - 0x12]  ; 0000:1C5E
+  01C61  ff4eee         dec      word ptr [bp - 0x12]  ; 0000:1C61
+  01C64  8b76e8         mov      si, word ptr [bp - 0x18]  ; 0000:1C64
+  01C67  8a00           mov      al, byte ptr [bx + si]  ; 0000:1C67
+  01C69  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1C69
+  01C6C  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1C6C
+  01C6F  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1C6F
+  01C72  8800           mov      byte ptr [bx + si], al  ; 0000:1C72
+loc_01C74:
+  01C74  837eee00       cmp      word ptr [bp - 0x12], 0  ; 0000:1C74
+  01C78  7de4           jge      loc_01C5E  ; 0000:1C78
+  01C7A  8b46fe         mov      ax, word ptr [bp - 2]  ; 0000:1C7A
+  01C7D  f7d8           neg      ax  ; 0000:1C7D
+  01C7F  8946fe         mov      word ptr [bp - 2], ax  ; 0000:1C7F
+  01C82  eb0f           jmp      loc_01C93  ; 0000:1C82
+loc_01C84:
+  01C84  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1C84
+  01C87  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1C87
+  01C8A  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1C8A
+  01C8D  c60030         mov      byte ptr [bx + si], 0x30  ; 0000:1C8D
+  01C90  ff4efe         dec      word ptr [bp - 2]  ; 0000:1C90
+loc_01C93:
+  01C93  837efe00       cmp      word ptr [bp - 2], 0  ; 0000:1C93
+  01C97  7feb           jg       loc_01C84  ; 0000:1C97
+  01C99  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1C99
+  01C9C  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1C9C
+  01C9F  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1C9F
+  01CA2  c6002e         mov      byte ptr [bx + si], 0x2e  ; 0000:1CA2
+  01CA5  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1CA5
+  01CA8  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1CA8
+  01CAB  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1CAB
+  01CAE  c60030         mov      byte ptr [bx + si], 0x30  ; 0000:1CAE
+loc_01CB1:
+  01CB1  837efc01       cmp      word ptr [bp - 4], 1  ; 0000:1CB1
+  01CB5  750c           jne      loc_01CC3  ; 0000:1CB5
+  01CB7  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1CB7
+  01CBA  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1CBA
+  01CBD  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1CBD
+  01CC0  c6002d         mov      byte ptr [bx + si], 0x2d  ; 0000:1CC0
+loc_01CC3:
+  01CC3  837eea00       cmp      word ptr [bp - 0x16], 0  ; 0000:1CC3
+  01CC7  7d03           jge      loc_01CCC  ; 0000:1CC7
+  01CC9  e98000         jmp      loc_01D4C  ; 0000:1CC9
+loc_01CCC:
+  01CCC  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1CCC
+  01CCF  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1CCF
+  01CD2  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1CD2
+  01CD5  c60020         mov      byte ptr [bx + si], 0x20  ; 0000:1CD5
+  01CD8  ebe9           jmp      loc_01CC3  ; 0000:1CD8
+loc_01CDA:
+  01CDA  8b460e         mov      ax, word ptr [bp + 0xe]  ; 0000:1CDA
+  01CDD  2d0800         sub      ax, 8  ; 0000:1CDD
+  01CE0  8946e6         mov      word ptr [bp - 0x1a], ax  ; 0000:1CE0
+  01CE3  ff7604         push     word ptr [bp + 4]  ; 0000:1CE3
+  01CE6  50             push     ax  ; 0000:1CE6
+  01CE7  8d5e06         lea      bx, [bp + 6]  ; 0000:1CE7
+  01CEA  e8110a         call     sub_026FE  ; 0000:1CEA
+  01CED  83ec08         sub      sp, 8  ; 0000:1CED
+  01CF0  8bdc           mov      bx, sp  ; 0000:1CF0
+  01CF2  e8a60b         call     sub_0289B  ; 0000:1CF2
+  01CF5  e8fe2a         call     sub_047F6  ; 0000:1CF5
+  01CF8  83c40c         add      sp, 0xc  ; 0000:1CF8
+  01CFB  ff7604         push     word ptr [bp + 4]  ; 0000:1CFB
+  01CFE  e88d28         call     sub_0458E  ; 0000:1CFE
+  01D01  83c402         add      sp, 2  ; 0000:1D01
+  01D04  8946e4         mov      word ptr [bp - 0x1c], ax  ; 0000:1D04
+  01D07  8b460e         mov      ax, word ptr [bp + 0xe]  ; 0000:1D07
+  01D0A  8946ea         mov      word ptr [bp - 0x16], ax  ; 0000:1D0A
+  01D0D  8b46e4         mov      ax, word ptr [bp - 0x1c]  ; 0000:1D0D
+  01D10  8946ec         mov      word ptr [bp - 0x14], ax  ; 0000:1D10
+  01D13  eb13           jmp      loc_01D28  ; 0000:1D13
+loc_01D15:
+  01D15  8b5eec         mov      bx, word ptr [bp - 0x14]  ; 0000:1D15
+  01D18  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1D18
+  01D1B  8a00           mov      al, byte ptr [bx + si]  ; 0000:1D1B
+  01D1D  8b5eea         mov      bx, word ptr [bp - 0x16]  ; 0000:1D1D
+  01D20  ff4eea         dec      word ptr [bp - 0x16]  ; 0000:1D20
+  01D23  8800           mov      byte ptr [bx + si], al  ; 0000:1D23
+  01D25  ff4eec         dec      word ptr [bp - 0x14]  ; 0000:1D25
+loc_01D28:
+  01D28  837eec00       cmp      word ptr [bp - 0x14], 0  ; 0000:1D28
+  01D2C  7de7           jge      loc_01D15  ; 0000:1D2C
+  01D2E  c746ec0000     mov      word ptr [bp - 0x14], 0  ; 0000:1D2E
+  01D33  eb0c           jmp      loc_01D41  ; 0000:1D33
+loc_01D35:
+  01D35  8b5eec         mov      bx, word ptr [bp - 0x14]  ; 0000:1D35
+  01D38  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1D38
+  01D3B  c60020         mov      byte ptr [bx + si], 0x20  ; 0000:1D3B
+  01D3E  ff46ec         inc      word ptr [bp - 0x14]  ; 0000:1D3E
+loc_01D41:
+  01D41  8b460e         mov      ax, word ptr [bp + 0xe]  ; 0000:1D41
+  01D44  2b46e4         sub      ax, word ptr [bp - 0x1c]  ; 0000:1D44
+  01D47  3b46ec         cmp      ax, word ptr [bp - 0x14]  ; 0000:1D47
+  01D4A  7fe9           jg       loc_01D35  ; 0000:1D4A
+loc_01D4C:
+  01D4C  5e             pop      si  ; 0000:1D4C
+  01D4D  5f             pop      di  ; 0000:1D4D
+  01D4E  8be5           mov      sp, bp  ; 0000:1D4E
+  01D50  5d             pop      bp  ; 0000:1D50
+  01D51  c3             ret        ; 0000:1D51
+
+
+; ---- sub_01D52 ----
+sub_01D52:
+  01D52  55             push     bp  ; 0000:1D52
+  01D53  8bec           mov      bp, sp  ; 0000:1D53
+  01D55  83ec12         sub      sp, 0x12  ; 0000:1D55
+  01D58  56             push     si  ; 0000:1D58
+  01D59  c746f2680d     mov      word ptr [bp - 0xe], 0xd68  ; 0000:1D59
+  01D5E  c746f4710d     mov      word ptr [bp - 0xc], 0xd71  ; 0000:1D5E
+  01D63  c646f603       mov      byte ptr [bp - 0xa], 3  ; 0000:1D63
+  01D67  c746f77a0d     mov      word ptr [bp - 9], 0xd7a  ; 0000:1D67
+  01D6C  8d46f2         lea      ax, [bp - 0xe]  ; 0000:1D6C
+  01D6F  50             push     ax  ; 0000:1D6F
+  01D70  e8f805         call     sub_0236B  ; 0000:1D70
+  01D73  83c402         add      sp, 2  ; 0000:1D73
+  01D76  8bf0           mov      si, ax  ; 0000:1D76
+  01D78  83feff         cmp      si, -1  ; 0000:1D78
+  01D7B  750a           jne      loc_01D87  ; 0000:1D7B
+  01D7D  8d46f2         lea      ax, [bp - 0xe]  ; 0000:1D7D
+  01D80  50             push     ax  ; 0000:1D80
+  01D81  e8e105         call     sub_02365  ; 0000:1D81
+  01D84  83c402         add      sp, 2  ; 0000:1D84
+loc_01D87:
+  01D87  c746f00000     mov      word ptr [bp - 0x10], 0  ; 0000:1D87
+  01D8C  8d46f0         lea      ax, [bp - 0x10]  ; 0000:1D8C
+  01D8F  8946f9         mov      word ptr [bp - 7], ax  ; 0000:1D8F
+  01D92  8c56fb         mov      word ptr [bp - 5], ss  ; 0000:1D92
+  01D95  c746fd0100     mov      word ptr [bp - 3], 1  ; 0000:1D95
+  01D9A  8d46f2         lea      ax, [bp - 0xe]  ; 0000:1D9A
+  01D9D  50             push     ax  ; 0000:1D9D
+  01D9E  e8d005         call     sub_02371  ; 0000:1D9E
+  01DA1  83c402         add      sp, 2  ; 0000:1DA1
+  01DA4  b80100         mov      ax, 1  ; 0000:1DA4
+  01DA7  50             push     ax  ; 0000:1DA7
+  01DA8  e81600         call     sub_01DC1  ; 0000:1DA8
+  01DAB  83c402         add      sp, 2  ; 0000:1DAB
+  01DAE  b8820d         mov      ax, 0xd82  ; 0000:1DAE
+  01DB1  50             push     ax  ; 0000:1DB1
+  01DB2  b8ff00         mov      ax, 0xff  ; 0000:1DB2
+  01DB5  50             push     ax  ; 0000:1DB5
+  01DB6  e8c405         call     sub_0237D  ; 0000:1DB6
+  01DB9  83c404         add      sp, 4  ; 0000:1DB9
+  01DBC  5e             pop      si  ; 0000:1DBC
+  01DBD  8be5           mov      sp, bp  ; 0000:1DBD
+  01DBF  5d             pop      bp  ; 0000:1DBF
+  01DC0  c3             ret        ; 0000:1DC0
+
+
+; ---- sub_01DC1 ----
+; --- dmserv_headerFooter: Header/footer editing and formatting
+dmserv_headerFooter:  ; was sub_01DC1
+  01DC1  55             push     bp  ; 0000:1DC1
+  01DC2  8bec           mov      bp, sp  ; 0000:1DC2
+  01DC4  81ecc200       sub      sp, 0xc2  ; 0000:1DC4
+  01DC8  57             push     di  ; 0000:1DC8
+  01DC9  56             push     si  ; 0000:1DC9
+  01DCA  c78640ff890d   mov      word ptr [bp - 0xc0], 0xd89  ; 0000:1DCA
+  01DD0  c78642ff900d   mov      word ptr [bp - 0xbe], 0xd90  ; 0000:1DD0
+  01DD6  c68644ff03     mov      byte ptr [bp - 0xbc], 3  ; 0000:1DD6
+  01DDB  c78645ff990d   mov      word ptr [bp - 0xbb], 0xd99  ; 0000:1DDB
+  01DE1  837e0401       cmp      word ptr [bp + 4], 1  ; 0000:1DE1
+  01DE5  7403           je       loc_01DEA  ; 0000:1DE5
+  01DE7  e99800         jmp      loc_01E82  ; 0000:1DE7
+loc_01DEA:
+  01DEA  8d8640ff       lea      ax, [bp - 0xc0]  ; 0000:1DEA
+  01DEE  50             push     ax  ; 0000:1DEE
+  01DEF  e87305         call     sub_02365  ; 0000:1DEF
+  01DF2  83c402         add      sp, 2  ; 0000:1DF2
+  01DF5  2bf6           sub      si, si  ; 0000:1DF5
+loc_01DF7:
+  01DF7  b81000         mov      ax, 0x10  ; 0000:1DF7
+  01DFA  50             push     ax  ; 0000:1DFA
+  01DFB  8bde           mov      bx, si  ; 0000:1DFB
+  01DFD  d1e3           shl      bx, 1  ; 0000:1DFD
+  01DFF  ffb79e04       push     word ptr [bx + 0x49e]  ; 0000:1DFF
+  01E03  8bfe           mov      di, si  ; 0000:1E03
+  01E05  b104           mov      cl, 4  ; 0000:1E05
+  01E07  d3e7           shl      di, cl  ; 0000:1E07
+  01E09  8d834eff       lea      ax, [bp + di - 0xb2]  ; 0000:1E09
+  01E0D  50             push     ax  ; 0000:1E0D
+  01E0E  e8cf28         call     sub_046E0  ; 0000:1E0E
+  01E11  83c406         add      sp, 6  ; 0000:1E11
+  01E14  46             inc      si  ; 0000:1E14
+  01E15  83fe08         cmp      si, 8  ; 0000:1E15
+  01E18  7cdd           jl       loc_01DF7  ; 0000:1E18
+  01E1A  b81000         mov      ax, 0x10  ; 0000:1E1A
+  01E1D  50             push     ax  ; 0000:1E1D
+  01E1E  b80e0f         mov      ax, 0xf0e  ; 0000:1E1E
+  01E21  50             push     ax  ; 0000:1E21
+  01E22  8d46d6         lea      ax, [bp - 0x2a]  ; 0000:1E22
+  01E25  50             push     ax  ; 0000:1E25
+  01E26  e8b728         call     sub_046E0  ; 0000:1E26
+  01E29  83c406         add      sp, 6  ; 0000:1E29
+  01E2C  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:1E2C
+  01E2F  8846e6         mov      byte ptr [bp - 0x1a], al  ; 0000:1E2F
+  01E32  a10c0f         mov      ax, word ptr [0xf0c]  ; 0000:1E32
+  01E35  8946e8         mov      word ptr [bp - 0x18], ax  ; 0000:1E35
+  01E38  a1020f         mov      ax, word ptr [0xf02]  ; 0000:1E38
+  01E3B  8946ea         mov      word ptr [bp - 0x16], ax  ; 0000:1E3B
+  01E3E  a1fc0e         mov      ax, word ptr [0xefc]  ; 0000:1E3E
+  01E41  8b16fe0e       mov      dx, word ptr [0xefe]  ; 0000:1E41
+  01E45  8946ec         mov      word ptr [bp - 0x14], ax  ; 0000:1E45
+  01E48  8956ee         mov      word ptr [bp - 0x12], dx  ; 0000:1E48
+  01E4B  56             push     si  ; 0000:1E4B
+  01E4C  8d7ef0         lea      di, [bp - 0x10]  ; 0000:1E4C
+  01E4F  be7611         mov      si, 0x1176  ; 0000:1E4F
+  01E52  16             push     ss  ; 0000:1E52
+  01E53  07             pop      es  ; 0000:1E53
+  01E54  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E54
+  01E55  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E55
+  01E56  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E56
+  01E57  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E57
+  01E58  5e             pop      si  ; 0000:1E58
+  01E59  56             push     si  ; 0000:1E59
+  01E5A  8d7ef8         lea      di, [bp - 8]  ; 0000:1E5A
+  01E5D  bec210         mov      si, 0x10c2  ; 0000:1E5D
+  01E60  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E60
+  01E61  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E61
+  01E62  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E62
+  01E63  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1E63
+  01E64  5e             pop      si  ; 0000:1E64
+  01E65  8d864eff       lea      ax, [bp - 0xb2]  ; 0000:1E65
+  01E69  898647ff       mov      word ptr [bp - 0xb9], ax  ; 0000:1E69
+  01E6D  8c9649ff       mov      word ptr [bp - 0xb7], ss  ; 0000:1E6D
+  01E71  c7864bffb200   mov      word ptr [bp - 0xb5], 0xb2  ; 0000:1E71
+  01E77  8d8640ff       lea      ax, [bp - 0xc0]  ; 0000:1E77
+  01E7B  50             push     ax  ; 0000:1E7B
+  01E7C  e8f204         call     sub_02371  ; 0000:1E7C
+  01E7F  e91201         jmp      loc_01F94  ; 0000:1E7F
+loc_01E82:
+  01E82  8d8640ff       lea      ax, [bp - 0xc0]  ; 0000:1E82
+  01E86  50             push     ax  ; 0000:1E86
+  01E87  e8db04         call     sub_02365  ; 0000:1E87
+  01E8A  83c402         add      sp, 2  ; 0000:1E8A
+  01E8D  8d8640ff       lea      ax, [bp - 0xc0]  ; 0000:1E8D
+  01E91  50             push     ax  ; 0000:1E91
+  01E92  e8d604         call     sub_0236B  ; 0000:1E92
+  01E95  83c402         add      sp, 2  ; 0000:1E95
+  01E98  40             inc      ax  ; 0000:1E98
+  01E99  7503           jne      loc_01E9E  ; 0000:1E99
+  01E9B  e9f900         jmp      loc_01F97  ; 0000:1E9B
+loc_01E9E:
+  01E9E  b88800         mov      ax, 0x88  ; 0000:1E9E
+  01EA1  50             push     ax  ; 0000:1EA1
+  01EA2  ffb649ff       push     word ptr [bp - 0xb7]  ; 0000:1EA2
+  01EA6  ffb647ff       push     word ptr [bp - 0xb9]  ; 0000:1EA6
+  01EAA  8d864eff       lea      ax, [bp - 0xb2]  ; 0000:1EAA
+  01EAE  50             push     ax  ; 0000:1EAE
+  01EAF  e8eb00         call     sub_01F9D  ; 0000:1EAF
+  01EB2  83c408         add      sp, 8  ; 0000:1EB2
+  01EB5  818647ff8800   add      word ptr [bp - 0xb9], 0x88  ; 0000:1EB5
+  01EBB  2bf6           sub      si, si  ; 0000:1EBB
+loc_01EBD:
+  01EBD  b81000         mov      ax, 0x10  ; 0000:1EBD
+  01EC0  50             push     ax  ; 0000:1EC0
+  01EC1  8bfe           mov      di, si  ; 0000:1EC1
+  01EC3  b104           mov      cl, 4  ; 0000:1EC3
+  01EC5  d3e7           shl      di, cl  ; 0000:1EC5
+  01EC7  8d834eff       lea      ax, [bp + di - 0xb2]  ; 0000:1EC7
+  01ECB  50             push     ax  ; 0000:1ECB
+  01ECC  8bde           mov      bx, si  ; 0000:1ECC
+  01ECE  d1e3           shl      bx, 1  ; 0000:1ECE
+  01ED0  ffb79e04       push     word ptr [bx + 0x49e]  ; 0000:1ED0
+  01ED4  e80928         call     sub_046E0  ; 0000:1ED4
+  01ED7  83c406         add      sp, 6  ; 0000:1ED7
+  01EDA  46             inc      si  ; 0000:1EDA
+  01EDB  83fe08         cmp      si, 8  ; 0000:1EDB
+  01EDE  7cdd           jl       loc_01EBD  ; 0000:1EDE
+  01EE0  b81000         mov      ax, 0x10  ; 0000:1EE0
+  01EE3  50             push     ax  ; 0000:1EE3
+  01EE4  ffb649ff       push     word ptr [bp - 0xb7]  ; 0000:1EE4
+  01EE8  ffb647ff       push     word ptr [bp - 0xb9]  ; 0000:1EE8
+  01EEC  b80e0f         mov      ax, 0xf0e  ; 0000:1EEC
+  01EEF  50             push     ax  ; 0000:1EEF
+  01EF0  e8aa00         call     sub_01F9D  ; 0000:1EF0
+  01EF3  83c408         add      sp, 8  ; 0000:1EF3
+  01EF6  838647ff10     add      word ptr [bp - 0xb9], 0x10  ; 0000:1EF6
+  01EFB  c49e47ff       les      bx, ptr [bp - 0xb9]  ; 0000:1EFB
+  01EFF  268a07         mov      al, byte ptr es:[bx]  ; 0000:1EFF
+  01F02  a21e0f         mov      byte ptr [0xf1e], al  ; 0000:1F02
+  01F05  838647ff02     add      word ptr [bp - 0xb9], 2  ; 0000:1F05
+  01F0A  8b9e47ff       mov      bx, word ptr [bp - 0xb9]  ; 0000:1F0A
+  01F0E  268b07         mov      ax, word ptr es:[bx]  ; 0000:1F0E
+  01F11  a30c0f         mov      word ptr [0xf0c], ax  ; 0000:1F11
+  01F14  838647ff02     add      word ptr [bp - 0xb9], 2  ; 0000:1F14
+  01F19  8b9e47ff       mov      bx, word ptr [bp - 0xb9]  ; 0000:1F19
+  01F1D  268b07         mov      ax, word ptr es:[bx]  ; 0000:1F1D
+  01F20  a3020f         mov      word ptr [0xf02], ax  ; 0000:1F20
+  01F23  838647ff02     add      word ptr [bp - 0xb9], 2  ; 0000:1F23
+  01F28  8b9e47ff       mov      bx, word ptr [bp - 0xb9]  ; 0000:1F28
+  01F2C  268b07         mov      ax, word ptr es:[bx]  ; 0000:1F2C
+  01F2F  268b5702       mov      dx, word ptr es:[bx + 2]  ; 0000:1F2F
+  01F33  a3fc0e         mov      word ptr [0xefc], ax  ; 0000:1F33
+  01F36  8916fe0e       mov      word ptr [0xefe], dx  ; 0000:1F36
+  01F3A  838647ff04     add      word ptr [bp - 0xb9], 4  ; 0000:1F3A
+  01F3F  8b8647ff       mov      ax, word ptr [bp - 0xb9]  ; 0000:1F3F
+  01F43  8cc2           mov      dx, es  ; 0000:1F43
+  01F45  56             push     si  ; 0000:1F45
+  01F46  bf7611         mov      di, 0x1176  ; 0000:1F46
+  01F49  8bf0           mov      si, ax  ; 0000:1F49
+  01F4B  1e             push     ds  ; 0000:1F4B
+  01F4C  07             pop      es  ; 0000:1F4C
+  01F4D  1e             push     ds  ; 0000:1F4D
+  01F4E  8eda           mov      ds, dx  ; 0000:1F4E
+  01F50  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F50
+  01F51  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F51
+  01F52  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F52
+  01F53  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F53
+  01F54  1f             pop      ds  ; 0000:1F54
+  01F55  5e             pop      si  ; 0000:1F55
+  01F56  838647ff08     add      word ptr [bp - 0xb9], 8  ; 0000:1F56
+  01F5B  8b8647ff       mov      ax, word ptr [bp - 0xb9]  ; 0000:1F5B
+  01F5F  56             push     si  ; 0000:1F5F
+  01F60  bfc210         mov      di, 0x10c2  ; 0000:1F60
+  01F63  8bf0           mov      si, ax  ; 0000:1F63
+  01F65  1e             push     ds  ; 0000:1F65
+  01F66  07             pop      es  ; 0000:1F66
+  01F67  1e             push     ds  ; 0000:1F67
+  01F68  8eda           mov      ds, dx  ; 0000:1F68
+  01F6A  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F6A
+  01F6B  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F6B
+  01F6C  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F6C
+  01F6D  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:1F6D
+  01F6E  1f             pop      ds  ; 0000:1F6E
+  01F6F  5e             pop      si  ; 0000:1F6F
+  01F70  8d8640ff       lea      ax, [bp - 0xc0]  ; 0000:1F70
+  01F74  50             push     ax  ; 0000:1F74
+  01F75  e8ff03         call     sub_02377  ; 0000:1F75
+  01F78  83c402         add      sp, 2  ; 0000:1F78
+  01F7B  e8d2f9         call     sub_01950  ; 0000:1F7B
+  01F7E  b8dc00         mov      ax, 0xdc  ; 0000:1F7E
+  01F81  50             push     ax  ; 0000:1F81
+  01F82  b8f401         mov      ax, 0x1f4  ; 0000:1F82
+  01F85  50             push     ax  ; 0000:1F85
+  01F86  e83205         call     sub_024BB  ; 0000:1F86
+  01F89  83c404         add      sp, 4  ; 0000:1F89
+  01F8C  a01e0f         mov      al, byte ptr [0xf1e]  ; 0000:1F8C
+  01F8F  98             cwde       ; 0000:1F8F
+  01F90  50             push     ax  ; 0000:1F90
+  01F91  e83f05         call     sub_024D3  ; 0000:1F91
+loc_01F94:
+  01F94  83c402         add      sp, 2  ; 0000:1F94
+loc_01F97:
+  01F97  5e             pop      si  ; 0000:1F97
+  01F98  5f             pop      di  ; 0000:1F98
+  01F99  8be5           mov      sp, bp  ; 0000:1F99
+  01F9B  5d             pop      bp  ; 0000:1F9B
+  01F9C  c3             ret        ; 0000:1F9C
+
+
+; ---- sub_01F9D ----
+sub_01F9D:
+  01F9D  55             push     bp  ; 0000:1F9D
+  01F9E  8bec           mov      bp, sp  ; 0000:1F9E
+  01FA0  83ec08         sub      sp, 8  ; 0000:1FA0
+  01FA3  57             push     di  ; 0000:1FA3
+  01FA4  56             push     si  ; 0000:1FA4
+  01FA5  8b7604         mov      si, word ptr [bp + 4]  ; 0000:1FA5
+  01FA8  8b4606         mov      ax, word ptr [bp + 6]  ; 0000:1FA8
+  01FAB  8b5608         mov      dx, word ptr [bp + 8]  ; 0000:1FAB
+  01FAE  8946fa         mov      word ptr [bp - 6], ax  ; 0000:1FAE
+  01FB1  8956fc         mov      word ptr [bp - 4], dx  ; 0000:1FB1
+  01FB4  2bff           sub      di, di  ; 0000:1FB4
+  01FB6  eb13           jmp      loc_01FCB  ; 0000:1FB6
+loc_01FB8:
+  01FB8  c45efa         les      bx, ptr [bp - 6]  ; 0000:1FB8
+  01FBB  268a07         mov      al, byte ptr es:[bx]  ; 0000:1FBB
+  01FBE  8804           mov      byte ptr [si], al  ; 0000:1FBE
+  01FC0  46             inc      si  ; 0000:1FC0
+  01FC1  8b46fa         mov      ax, word ptr [bp - 6]  ; 0000:1FC1
+  01FC4  8b56fc         mov      dx, word ptr [bp - 4]  ; 0000:1FC4
+  01FC7  ff46fa         inc      word ptr [bp - 6]  ; 0000:1FC7
+  01FCA  47             inc      di  ; 0000:1FCA
+loc_01FCB:
+  01FCB  397e0a         cmp      word ptr [bp + 0xa], di  ; 0000:1FCB
+  01FCE  7fe8           jg       loc_01FB8  ; 0000:1FCE
+  01FD0  5e             pop      si  ; 0000:1FD0
+  01FD1  5f             pop      di  ; 0000:1FD1
+  01FD2  8be5           mov      sp, bp  ; 0000:1FD2
+  01FD4  5d             pop      bp  ; 0000:1FD4
+  01FD5  c3             ret        ; 0000:1FD5
+
+
+; ---- sub_01FD6 ----
+sub_01FD6:
+  01FD6  06             push     es  ; 0000:1FD6
+  01FD7  53             push     bx  ; 0000:1FD7
+  01FD8  c706360f0000   mov      word ptr [0xf36], 0  ; 0000:1FD8
+  01FDE  e80404         call     sub_023E5  ; 0000:1FDE
+  01FE1  250080         and      ax, 0x8000  ; 0000:1FE1
+  01FE4  741f           je       loc_02005  ; 0000:1FE4
+  01FE6  e80204         call     sub_023EB  ; 0000:1FE6
+  01FE9  3d0037         cmp      ax, 0x3700  ; 0000:1FE9
+  01FEC  7517           jne      loc_02005  ; 0000:1FEC
+  01FEE  b89100         mov      ax, 0x91  ; 0000:1FEE
+  01FF1  cde0           int      0xe0  ; 0000:1FF1
+  01FF3  26803e4f0000   cmp      byte ptr es:[0x4f], 0  ; 0000:1FF3
+  01FF9  740a           je       loc_02005  ; 0000:1FF9
+  01FFB  26c6064f0002   mov      byte ptr es:[0x4f], 2  ; 0000:1FFB
+  02001  8c06360f       mov      word ptr [0xf36], es  ; 0000:2001
+loc_02005:
+  02005  5b             pop      bx  ; 0000:2005
+  02006  07             pop      es  ; 0000:2006
+  02007  c3             ret        ; 0000:2007
+
+
+; ---- sub_02008 ----
+sub_02008:
+  02008  06             push     es  ; 0000:2008
+  02009  a1360f         mov      ax, word ptr [0xf36]  ; 0000:2009
+  0200C  0bc0           or       ax, ax  ; 0000:200C
+  0200E  7408           je       loc_02018  ; 0000:200E
+  02010  8ec0           mov      es, ax  ; 0000:2010
+  02012  26c6064f0001   mov      byte ptr es:[0x4f], 1  ; 0000:2012
+loc_02018:
+  02018  07             pop      es  ; 0000:2018
+  02019  c3             ret        ; 0000:2019
+  0201A  e89301         call     sub_021B0  ; 0000:201A
+  0201D  e8d822         call     sub_042F8  ; 0000:201D
+  02020  33ed           xor      bp, bp  ; 0000:2020
+  02022  ff36ae07       push     word ptr [0x7ae]  ; 0000:2022
+  02026  ff36ac07       push     word ptr [0x7ac]  ; 0000:2026
+  0202A  ff36aa07       push     word ptr [0x7aa]  ; 0000:202A
+  0202E  e8dfdf         call     sub_00010  ; 0000:202E
+  02031  50             push     ax  ; 0000:2031
+  02032  e8e300         call     sub_02118  ; 0000:2032
+  02035  e81c00         call     sub_02054  ; 0000:2035
+  02038  cb             retf       ; 0000:2038
+  02039  e87422         call     sub_042B0  ; 0000:2039
+  0203C  cb             retf       ; 0000:203C
+  0203D  e87124         call     sub_044B1  ; 0000:203D
+  02040  cb             retf       ; 0000:2040
+  02041  e80100         call     sub_02045  ; 0000:2041
+  02044  cb             retf       ; 0000:2044
+
+
+; ---- sub_02045 ----
+sub_02045:
+  02045  50             push     ax  ; 0000:2045
+  02046  e86722         call     sub_042B0  ; 0000:2046
+  02049  e86524         call     sub_044B1  ; 0000:2049
+  0204C  b8ff00         mov      ax, 0xff  ; 0000:204C
+  0204F  50             push     ax  ; 0000:204F
+  02050  ff161a07       call     word ptr [0x71a]  ; 0000:2050
+
+
+; ---- sub_02054 ----
+sub_02054:
+  02054  b430           mov      ah, 0x30  ; 0000:2054
+  02056  cd21           int      0x21  ; 0000:2056
+  02058  a38f07         mov      word ptr [0x78f], ax  ; 0000:2058
+  0205B  06             push     es  ; 0000:205B
+  0205C  b80035         mov      ax, 0x3500  ; 0000:205C
+  0205F  cd21           int      0x21  ; 0000:205F
+  02061  891e7b07       mov      word ptr [0x77b], bx  ; 0000:2061
+  02065  8c067d07       mov      word ptr [0x77d], es  ; 0000:2065
+  02069  1f             pop      ds  ; 0000:2069
+  0206A  b80025         mov      ax, 0x2500  ; 0000:206A
+  0206D  ba9600         mov      dx, 0x96  ; 0000:206D
+  02070  cd21           int      0x21  ; 0000:2070
+  02072  16             push     ss  ; 0000:2072
+  02073  1f             pop      ds  ; 0000:2073
+  02074  8b0ec60b       mov      cx, word ptr [0xbc6]  ; 0000:2074
+  02078  e32e           jcxz     loc_020A8  ; 0000:2078
+  0207A  8e068d07       mov      es, word ptr [0x78d]  ; 0000:207A
+  0207E  268b362c00     mov      si, word ptr es:[0x2c]  ; 0000:207E
+  02083  c506c80b       lds      ax, ptr [0xbc8]  ; 0000:2083
+  02087  8cda           mov      dx, ds  ; 0000:2087
+  02089  33db           xor      bx, bx  ; 0000:2089
+  0208B  36ff1ec40b     lcall    ss:[0xbc4]  ; 0000:208B
+  02090  7305           jae      loc_02097  ; 0000:2090
+  02092  16             push     ss  ; 0000:2092
+  02093  1f             pop      ds  ; 0000:2093
+  02094  e93922         jmp      loc_042D0  ; 0000:2094
+loc_02097:
+  02097  36c506cc0b     lds      ax, ptr ss:[0xbcc]  ; 0000:2097
+  0209C  8cda           mov      dx, ds  ; 0000:209C
+  0209E  bb0300         mov      bx, 3  ; 0000:209E
+  020A1  36ff1ec40b     lcall    ss:[0xbc4]  ; 0000:20A1
+  020A6  16             push     ss  ; 0000:20A6
+  020A7  1f             pop      ds  ; 0000:20A7
+loc_020A8:
+  020A8  8e068d07       mov      es, word ptr [0x78d]  ; 0000:20A8
+  020AC  268b0e2c00     mov      cx, word ptr es:[0x2c]  ; 0000:20AC
+  020B1  e336           jcxz     loc_020E9  ; 0000:20B1
+  020B3  8ec1           mov      es, cx  ; 0000:20B3
+  020B5  33ff           xor      di, di  ; 0000:20B5
+loc_020B7:
+  020B7  26803d00       cmp      byte ptr es:[di], 0  ; 0000:20B7
+  020BB  742c           je       loc_020E9  ; 0000:20BB
+  020BD  b90c00         mov      cx, 0xc  ; 0000:20BD
+  020C0  be6e07         mov      si, 0x76e  ; 0000:20C0
+  020C3  f3a6           repe cmpsb byte ptr [si], byte ptr es:[di]  ; 0000:20C3
+  020C5  740b           je       loc_020D2  ; 0000:20C5
+  020C7  b9ff7f         mov      cx, 0x7fff  ; 0000:20C7
+  020CA  33c0           xor      ax, ax  ; 0000:20CA
+  020CC  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:20CC
+  020CE  7519           jne      loc_020E9  ; 0000:20CE
+  020D0  ebe5           jmp      loc_020B7  ; 0000:20D0
+loc_020D2:
+  020D2  06             push     es  ; 0000:20D2
+  020D3  1e             push     ds  ; 0000:20D3
+  020D4  07             pop      es  ; 0000:20D4
+  020D5  1f             pop      ds  ; 0000:20D5
+  020D6  8bf7           mov      si, di  ; 0000:20D6
+  020D8  bf9607         mov      di, 0x796  ; 0000:20D8
+  020DB  ac             lodsb    al, byte ptr [si]  ; 0000:20DB
+  020DC  98             cwde       ; 0000:20DC
+  020DD  91             xchg     cx, ax  ; 0000:20DD
+  020DE  ac             lodsb    al, byte ptr [si]  ; 0000:20DE
+  020DF  fec0           inc      al  ; 0000:20DF
+  020E1  7401           je       loc_020E4  ; 0000:20E1
+  020E3  48             dec      ax  ; 0000:20E3
+loc_020E4:
+  020E4  aa             stosb    byte ptr es:[di], al  ; 0000:20E4
+  020E5  e2f7           loop     0x20de  ; 0000:20E5
+  020E7  16             push     ss  ; 0000:20E7
+  020E8  1f             pop      ds  ; 0000:20E8
+loc_020E9:
+  020E9  bb0400         mov      bx, 4  ; 0000:20E9
+loc_020EC:
+  020EC  80a79607bf     and      byte ptr [bx + 0x796], 0xbf  ; 0000:20EC
+  020F1  b80044         mov      ax, 0x4400  ; 0000:20F1
+  020F4  cd21           int      0x21  ; 0000:20F4
+  020F6  720a           jb       loc_02102  ; 0000:20F6
+  020F8  f6c280         test     dl, 0x80  ; 0000:20F8
+  020FB  7405           je       loc_02102  ; 0000:20FB
+  020FD  808f960740     or       byte ptr [bx + 0x796], 0x40  ; 0000:20FD
+loc_02102:
+  02102  4b             dec      bx  ; 0000:2102
+  02103  79e7           jns      loc_020EC  ; 0000:2103
+  02105  bed00b         mov      si, 0xbd0  ; 0000:2105
+  02108  bfd00b         mov      di, 0xbd0  ; 0000:2108
+  0210B  e88e00         call     sub_0219C  ; 0000:210B
+  0210E  bed00b         mov      si, 0xbd0  ; 0000:210E
+  02111  bfd20b         mov      di, 0xbd2  ; 0000:2111
+  02114  e87600         call     sub_0218D  ; 0000:2114
+  02117  c3             ret        ; 0000:2117
+
+
+; ---- sub_02118 ----
+sub_02118:
+  02118  55             push     bp  ; 0000:2118
+  02119  8bec           mov      bp, sp  ; 0000:2119
+  0211B  beaa10         mov      si, 0x10aa  ; 0000:211B
+  0211E  bfaa10         mov      di, 0x10aa  ; 0000:211E
+  02121  e86900         call     sub_0218D  ; 0000:2121
+  02124  bed20b         mov      si, 0xbd2  ; 0000:2124
+  02127  bfd20b         mov      di, 0xbd2  ; 0000:2127
+  0212A  e86000         call     sub_0218D  ; 0000:212A
+  0212D  eb03           jmp      loc_02132  ; 0000:212D
+
+
+; ---- sub_0212F ----
+sub_0212F:
+  0212F  55             push     bp  ; 0000:212F
+  02130  8bec           mov      bp, sp  ; 0000:2130
+loc_02132:
+  02132  bed20b         mov      si, 0xbd2  ; 0000:2132
+  02135  bfd20b         mov      di, 0xbd2  ; 0000:2135
+  02138  e85200         call     sub_0218D  ; 0000:2138
+  0213B  bed20b         mov      si, 0xbd2  ; 0000:213B
+  0213E  bfd20b         mov      di, 0xbd2  ; 0000:213E
+  02141  e85800         call     sub_0219C  ; 0000:2141
+  02144  e88f21         call     sub_042D6  ; 0000:2144
+  02147  0bc0           or       ax, ax  ; 0000:2147
+  02149  740b           je       loc_02156  ; 0000:2149
+  0214B  837e0400       cmp      word ptr [bp + 4], 0  ; 0000:214B
+  0214F  7505           jne      loc_02156  ; 0000:214F
+  02151  c74604ff00     mov      word ptr [bp + 4], 0xff  ; 0000:2151
+loc_02156:
+  02156  b90f00         mov      cx, 0xf  ; 0000:2156
+  02159  bb0500         mov      bx, 5  ; 0000:2159
+  0215C  f687960701     test     byte ptr [bx + 0x796], 1  ; 0000:215C
+  02161  7404           je       loc_02167  ; 0000:2161
+  02163  b43e           mov      ah, 0x3e  ; 0000:2163
+  02165  cd21           int      0x21  ; 0000:2165
+loc_02167:
+  02167  43             inc      bx  ; 0000:2167
+  02168  e2f2           loop     0x215c  ; 0000:2168
+  0216A  e80700         call     sub_02174  ; 0000:216A
+  0216D  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:216D
+  02170  b44c           mov      ah, 0x4c  ; 0000:2170
+  02172  cd21           int      0x21  ; 0000:2172
+
+
+; ---- sub_02174 ----
+sub_02174:
+  02174  8b0ec60b       mov      cx, word ptr [0xbc6]  ; 0000:2174
+  02178  e307           jcxz     loc_02181  ; 0000:2178
+  0217A  bb0200         mov      bx, 2  ; 0000:217A
+  0217D  ff1ec40b       lcall    [0xbc4]  ; 0000:217D
+loc_02181:
+  02181  1e             push     ds  ; 0000:2181
+  02182  c5167b07       lds      dx, ptr [0x77b]  ; 0000:2182
+  02186  b80025         mov      ax, 0x2500  ; 0000:2186
+  02189  cd21           int      0x21  ; 0000:2189
+  0218B  1f             pop      ds  ; 0000:218B
+  0218C  c3             ret        ; 0000:218C
+
+
+; ---- sub_0218D ----
+sub_0218D:
+  0218D  3bf7           cmp      si, di  ; 0000:218D
+  0218F  730a           jae      loc_0219B  ; 0000:218F
+  02191  4f             dec      di  ; 0000:2191
+  02192  4f             dec      di  ; 0000:2192
+  02193  8b0d           mov      cx, word ptr [di]  ; 0000:2193
+  02195  e3f6           jcxz     sub_0218D  ; 0000:2195
+  02197  ffd1           call     cx  ; 0000:2197
+  02199  ebf2           jmp      sub_0218D  ; 0000:2199
+loc_0219B:
+  0219B  c3             ret        ; 0000:219B
+
+
+; ---- sub_0219C ----
+sub_0219C:
+  0219C  3bf7           cmp      si, di  ; 0000:219C
+  0219E  730e           jae      loc_021AE  ; 0000:219E
+  021A0  83ef04         sub      di, 4  ; 0000:21A0
+  021A3  8b05           mov      ax, word ptr [di]  ; 0000:21A3
+  021A5  0b4502         or       ax, word ptr [di + 2]  ; 0000:21A5
+  021A8  74f2           je       sub_0219C  ; 0000:21A8
+  021AA  ff1d           lcall    [di]  ; 0000:21AA
+  021AC  ebee           jmp      sub_0219C  ; 0000:21AC
+loc_021AE:
+  021AE  c3             ret        ; 0000:21AE
+  021AF  00558b         add      byte ptr [di - 0x75], dl  ; 0000:21AF
+  021B2  ec             in       al, dx  ; 0000:21B2
+  021B3  55             push     bp  ; 0000:21B3
+  021B4  8e1e8d07       mov      ds, word ptr [0x78d]  ; 0000:21B4
+  021B8  33c9           xor      cx, cx  ; 0000:21B8
+  021BA  8bc1           mov      ax, cx  ; 0000:21BA
+  021BC  8be9           mov      bp, cx  ; 0000:21BC
+  021BE  8bf9           mov      di, cx  ; 0000:21BE
+  021C0  49             dec      cx  ; 0000:21C0
+  021C1  8b362c00       mov      si, word ptr [0x2c]  ; 0000:21C1
+  021C5  33f6           xor      si, si  ; 0000:21C5
+  021C7  0bf6           or       si, si  ; 0000:21C7
+  021C9  7408           je       loc_021D3  ; 0000:21C9
+  021CB  8ec6           mov      es, si  ; 0000:21CB
+loc_021CD:
+  021CD  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:21CD
+  021CF  45             inc      bp  ; 0000:21CF
+  021D0  ae             scasb    al, byte ptr es:[di]  ; 0000:21D0
+  021D1  75fa           jne      loc_021CD  ; 0000:21D1
+loc_021D3:
+  021D3  45             inc      bp  ; 0000:21D3
+  021D4  97             xchg     di, ax  ; 0000:21D4
+  021D5  40             inc      ax  ; 0000:21D5
+  021D6  24fe           and      al, 0xfe  ; 0000:21D6
+  021D8  8bfd           mov      di, bp  ; 0000:21D8
+  021DA  d1e5           shl      bp, 1  ; 0000:21DA
+  021DC  03c5           add      ax, bp  ; 0000:21DC
+  021DE  16             push     ss  ; 0000:21DE
+  021DF  1f             pop      ds  ; 0000:21DF
+  021E0  57             push     di  ; 0000:21E0
+  021E1  bf0900         mov      di, 9  ; 0000:21E1
+  021E4  e8f322         call     sub_044DA  ; 0000:21E4
+  021E7  5f             pop      di  ; 0000:21E7
+  021E8  8bcf           mov      cx, di  ; 0000:21E8
+  021EA  8bfd           mov      di, bp  ; 0000:21EA
+  021EC  03f8           add      di, ax  ; 0000:21EC
+  021EE  892eae07       mov      word ptr [0x7ae], bp  ; 0000:21EE
+  021F2  1e             push     ds  ; 0000:21F2
+  021F3  07             pop      es  ; 0000:21F3
+  021F4  8ede           mov      ds, si  ; 0000:21F4
+  021F6  33f6           xor      si, si  ; 0000:21F6
+  021F8  49             dec      cx  ; 0000:21F8
+  021F9  e313           jcxz     loc_0220E  ; 0000:21F9
+  021FB  813c3b43       cmp      word ptr [si], 0x433b  ; 0000:21FB
+  021FF  7405           je       loc_02206  ; 0000:21FF
+  02201  897e00         mov      word ptr [bp], di  ; 0000:2201
+  02204  45             inc      bp  ; 0000:2204
+  02205  45             inc      bp  ; 0000:2205
+loc_02206:
+  02206  ac             lodsb    al, byte ptr [si]  ; 0000:2206
+  02207  aa             stosb    byte ptr es:[di], al  ; 0000:2207
+  02208  0ac0           or       al, al  ; 0000:2208
+  0220A  75fa           jne      loc_02206  ; 0000:220A
+  0220C  e2ed           loop     0x21fb  ; 0000:220C
+loc_0220E:
+  0220E  894e00         mov      word ptr [bp], cx  ; 0000:220E
+  02211  16             push     ss  ; 0000:2211
+  02212  1f             pop      ds  ; 0000:2212
+  02213  5d             pop      bp  ; 0000:2213
+  02214  8be5           mov      sp, bp  ; 0000:2214
+  02216  5d             pop      bp  ; 0000:2216
+  02217  c3             ret        ; 0000:2217
+
+
+; ---- sub_02218 ----
+sub_02218:
+  02218  06             push     es  ; 0000:2218
+  02219  53             push     bx  ; 0000:2219
+  0221A  1e             push     ds  ; 0000:221A
+  0221B  07             pop      es  ; 0000:221B
+  0221C  b80802         mov      ax, 0x208  ; 0000:221C
+  0221F  babc07         mov      dx, 0x7bc  ; 0000:221F
+  02222  bbb807         mov      bx, 0x7b8  ; 0000:2222
+  02225  cde0           int      0xe0  ; 0000:2225
+  02227  0bc0           or       ax, ax  ; 0000:2227
+  02229  7e16           jle      loc_02241  ; 0000:2229
+loc_0222B:
+  0222B  c606cc0701     mov      byte ptr [0x7cc], 1  ; 0000:222B
+loc_02230:
+  02230  b80602         mov      ax, 0x206  ; 0000:2230
+  02233  cde0           int      0xe0  ; 0000:2233
+  02235  0bc0           or       ax, ax  ; 0000:2235
+  02237  b8ffff         mov      ax, 0xffff  ; 0000:2237
+  0223A  7402           je       loc_0223E  ; 0000:223A
+  0223C  33c0           xor      ax, ax  ; 0000:223C
+loc_0223E:
+  0223E  5b             pop      bx  ; 0000:223E
+  0223F  07             pop      es  ; 0000:223F
+  02240  c3             ret        ; 0000:2240
+loc_02241:
+  02241  bac607         mov      dx, 0x7c6  ; 0000:2241
+  02244  b80802         mov      ax, 0x208  ; 0000:2244
+  02247  cde0           int      0xe0  ; 0000:2247
+  02249  0bc0           or       ax, ax  ; 0000:2249
+  0224B  7ede           jle      loc_0222B  ; 0000:224B
+  0224D  c606cc0700     mov      byte ptr [0x7cc], 0  ; 0000:224D
+  02252  ebdc           jmp      loc_02230  ; 0000:2252
+
+
+; ---- sub_02254 ----
+sub_02254:
+  02254  52             push     dx  ; 0000:2254
+  02255  06             push     es  ; 0000:2255
+  02256  803ecc0700     cmp      byte ptr [0x7cc], 0  ; 0000:2256
+  0225B  7405           je       loc_02262  ; 0000:225B
+  0225D  babc07         mov      dx, 0x7bc  ; 0000:225D
+  02260  eb03           jmp      loc_02265  ; 0000:2260
+loc_02262:
+  02262  bac607         mov      dx, 0x7c6  ; 0000:2262
+loc_02265:
+  02265  b80702         mov      ax, 0x207  ; 0000:2265
+  02268  1e             push     ds  ; 0000:2268
+  02269  07             pop      es  ; 0000:2269
+  0226A  cde0           int      0xe0  ; 0000:226A
+  0226C  b8e022         mov      ax, 0x22e0  ; 0000:226C
+  0226F  a3b807         mov      word ptr [0x7b8], ax  ; 0000:226F
+  02272  8cc8           mov      ax, cs  ; 0000:2272
+  02274  a3ba07         mov      word ptr [0x7ba], ax  ; 0000:2274
+  02277  07             pop      es  ; 0000:2277
+  02278  5a             pop      dx  ; 0000:2278
+  02279  c3             ret        ; 0000:2279
+  0227A  06             push     es  ; 0000:227A
+  0227B  53             push     bx  ; 0000:227B
+  0227C  1e             push     ds  ; 0000:227C
+  0227D  07             pop      es  ; 0000:227D
+  0227E  bac607         mov      dx, 0x7c6  ; 0000:227E
+  02281  bbc207         mov      bx, 0x7c2  ; 0000:2281
+  02284  b80602         mov      ax, 0x206  ; 0000:2284
+  02287  cde0           int      0xe0  ; 0000:2287
+  02289  0bc0           or       ax, ax  ; 0000:2289
+  0228B  b8ffff         mov      ax, 0xffff  ; 0000:228B
+  0228E  7429           je       loc_022B9  ; 0000:228E
+  02290  a1c207         mov      ax, word ptr [0x7c2]  ; 0000:2290
+  02293  a3b807         mov      word ptr [0x7b8], ax  ; 0000:2293
+  02296  a1c407         mov      ax, word ptr [0x7c4]  ; 0000:2296
+  02299  a3ba07         mov      word ptr [0x7ba], ax  ; 0000:2299
+  0229C  b80802         mov      ax, 0x208  ; 0000:229C
+  0229F  babc07         mov      dx, 0x7bc  ; 0000:229F
+  022A2  bbb807         mov      bx, 0x7b8  ; 0000:22A2
+  022A5  cde0           int      0xe0  ; 0000:22A5
+  022A7  0bc0           or       ax, ax  ; 0000:22A7
+  022A9  7e07           jle      loc_022B2  ; 0000:22A9
+  022AB  c606cc0701     mov      byte ptr [0x7cc], 1  ; 0000:22AB
+  022B0  eb05           jmp      loc_022B7  ; 0000:22B0
+loc_022B2:
+  022B2  c606cc0700     mov      byte ptr [0x7cc], 0  ; 0000:22B2
+loc_022B7:
+  022B7  33c0           xor      ax, ax  ; 0000:22B7
+loc_022B9:
+  022B9  5b             pop      bx  ; 0000:22B9
+  022BA  07             pop      es  ; 0000:22BA
+  022BB  c3             ret        ; 0000:22BB
+  022BC  52             push     dx  ; 0000:22BC
+  022BD  bac607         mov      dx, 0x7c6  ; 0000:22BD
+  022C0  b80702         mov      ax, 0x207  ; 0000:22C0
+  022C3  06             push     es  ; 0000:22C3
+  022C4  1e             push     ds  ; 0000:22C4
+  022C5  07             pop      es  ; 0000:22C5
+  022C6  cde0           int      0xe0  ; 0000:22C6
+  022C8  07             pop      es  ; 0000:22C8
+  022C9  b8dc22         mov      ax, 0x22dc  ; 0000:22C9
+  022CC  a3c207         mov      word ptr [0x7c2], ax  ; 0000:22CC
+  022CF  a3b807         mov      word ptr [0x7b8], ax  ; 0000:22CF
+  022D2  8cc8           mov      ax, cs  ; 0000:22D2
+  022D4  a3c407         mov      word ptr [0x7c4], ax  ; 0000:22D4
+  022D7  a3ba07         mov      word ptr [0x7ba], ax  ; 0000:22D7
+  022DA  5a             pop      dx  ; 0000:22DA
+  022DB  c3             ret        ; 0000:22DB
+  022DC  b8ffff         mov      ax, 0xffff  ; 0000:22DC
+  022DF  cb             retf       ; 0000:22DF
+  022E0  b8ffff         mov      ax, 0xffff  ; 0000:22E0
+  022E3  cb             retf       ; 0000:22E3
+loc_022E4:
+  022E4  803ecc0701     cmp      byte ptr [0x7cc], 1  ; 0000:22E4
+  022E9  7411           je       loc_022FC  ; 0000:22E9
+  022EB  3d3900         cmp      ax, 0x39  ; 0000:22EB
+  022EE  7c0c           jl       loc_022FC  ; 0000:22EE
+  022F0  7407           je       loc_022F9  ; 0000:22F0
+  022F2  3d4400         cmp      ax, 0x44  ; 0000:22F2
+  022F5  7e2c           jle      loc_02323  ; 0000:22F5
+  022F7  eb03           jmp      loc_022FC  ; 0000:22F7
+loc_022F9:
+  022F9  b8ae00         mov      ax, 0xae  ; 0000:22F9
+loc_022FC:
+  022FC  8f06d107       pop      word ptr [0x7d1]  ; 0000:22FC
+  02300  ff36cf07       push     word ptr [0x7cf]  ; 0000:2300
+  02304  ff36d107       push     word ptr [0x7d1]  ; 0000:2304
+  02308  53             push     bx  ; 0000:2308
+  02309  8bdc           mov      bx, sp  ; 0000:2309
+  0230B  1e             push     ds  ; 0000:230B
+  0230C  06             push     es  ; 0000:230C
+  0230D  16             push     ss  ; 0000:230D
+  0230E  07             pop      es  ; 0000:230E
+  0230F  ff1eb807       lcall    [0x7b8]  ; 0000:230F
+  02313  07             pop      es  ; 0000:2313
+  02314  1f             pop      ds  ; 0000:2314
+  02315  5b             pop      bx  ; 0000:2315
+  02316  8f06d107       pop      word ptr [0x7d1]  ; 0000:2316
+  0231A  8f06cf07       pop      word ptr [0x7cf]  ; 0000:231A
+  0231E  ff36d107       push     word ptr [0x7d1]  ; 0000:231E
+loc_02322:
+  02322  c3             ret        ; 0000:2322
+loc_02323:
+  02323  b8ffff         mov      ax, 0xffff  ; 0000:2323
+  02326  ebfa           jmp      loc_02322  ; 0000:2326
+  02328  803ecc0701     cmp      byte ptr [0x7cc], 1  ; 0000:2328
+  0232D  740a           je       loc_02339  ; 0000:232D
+  0232F  3dbe00         cmp      ax, 0xbe  ; 0000:232F
+  02332  742c           je       loc_02360  ; 0000:2332
+  02334  3dbf00         cmp      ax, 0xbf  ; 0000:2334
+  02337  7427           je       loc_02360  ; 0000:2337
+loc_02339:
+  02339  8f06d107       pop      word ptr [0x7d1]  ; 0000:2339
+  0233D  ff36cf07       push     word ptr [0x7cf]  ; 0000:233D
+  02341  ff36d107       push     word ptr [0x7d1]  ; 0000:2341
+  02345  53             push     bx  ; 0000:2345
+  02346  8bdc           mov      bx, sp  ; 0000:2346
+  02348  1e             push     ds  ; 0000:2348
+  02349  06             push     es  ; 0000:2349
+  0234A  16             push     ss  ; 0000:234A
+  0234B  07             pop      es  ; 0000:234B
+  0234C  ff1ec207       lcall    [0x7c2]  ; 0000:234C
+  02350  07             pop      es  ; 0000:2350
+  02351  1f             pop      ds  ; 0000:2351
+  02352  5b             pop      bx  ; 0000:2352
+  02353  8f06d107       pop      word ptr [0x7d1]  ; 0000:2353
+  02357  8f06cf07       pop      word ptr [0x7cf]  ; 0000:2357
+  0235B  ff36d107       push     word ptr [0x7d1]  ; 0000:235B
+loc_0235F:
+  0235F  c3             ret        ; 0000:235F
+loc_02360:
+  02360  b8ffff         mov      ax, 0xffff  ; 0000:2360
+  02363  ebfa           jmp      loc_0235F  ; 0000:2363
+
+
+; ---- sub_02365 ----
+sub_02365:
+  02365  b80b00         mov      ax, 0xb  ; 0000:2365
+  02368  e979ff         jmp      loc_022E4  ; 0000:2368
+
+
+; ---- sub_0236B ----
+sub_0236B:
+  0236B  b80c00         mov      ax, 0xc  ; 0000:236B
+  0236E  e973ff         jmp      loc_022E4  ; 0000:236E
+
+
+; ---- sub_02371 ----
+sub_02371:
+  02371  b80e00         mov      ax, 0xe  ; 0000:2371
+  02374  e96dff         jmp      loc_022E4  ; 0000:2374
+
+
+; ---- sub_02377 ----
+sub_02377:
+  02377  b80f00         mov      ax, 0xf  ; 0000:2377
+  0237A  e967ff         jmp      loc_022E4  ; 0000:237A
+
+
+; ---- sub_0237D ----
+sub_0237D:
+  0237D  55             push     bp  ; 0000:237D
+  0237E  8bec           mov      bp, sp  ; 0000:237E
+  02380  83c504         add      bp, 4  ; 0000:2380
+  02383  06             push     es  ; 0000:2383
+  02384  57             push     di  ; 0000:2384
+  02385  56             push     si  ; 0000:2385
+  02386  51             push     cx  ; 0000:2386
+  02387  8b7e02         mov      di, word ptr [bp + 2]  ; 0000:2387
+  0238A  8a4600         mov      al, byte ptr [bp]  ; 0000:238A
+  0238D  3cff           cmp      al, 0xff  ; 0000:238D
+  0238F  7410           je       loc_023A1  ; 0000:238F
+  02391  98             cwde       ; 0000:2391
+  02392  bf380f         mov      di, 0xf38  ; 0000:2392
+  02395  55             push     bp  ; 0000:2395
+  02396  57             push     di  ; 0000:2396
+  02397  50             push     ax  ; 0000:2397
+  02398  8bec           mov      bp, sp  ; 0000:2398
+  0239A  e89e01         call     sub_0253B  ; 0000:239A
+  0239D  83c404         add      sp, 4  ; 0000:239D
+  023A0  5d             pop      bp  ; 0000:23A0
+loc_023A1:
+  023A1  1e             push     ds  ; 0000:23A1
+  023A2  07             pop      es  ; 0000:23A2
+  023A3  8bf7           mov      si, di  ; 0000:23A3
+  023A5  bfd607         mov      di, 0x7d6  ; 0000:23A5
+  023A8  b90800         mov      cx, 8  ; 0000:23A8
+  023AB  ac             lodsb    al, byte ptr [si]  ; 0000:23AB
+  023AC  3c61           cmp      al, 0x61  ; 0000:23AC
+  023AE  7202           jb       loc_023B2  ; 0000:23AE
+  023B0  2c20           sub      al, 0x20  ; 0000:23B0
+loc_023B2:
+  023B2  ae             scasb    al, byte ptr es:[di]  ; 0000:23B2
+  023B3  7519           jne      loc_023CE  ; 0000:23B3
+  023B5  e2f4           loop     0x23ab  ; 0000:23B5
+  023B7  52             push     dx  ; 0000:23B7
+  023B8  53             push     bx  ; 0000:23B8
+  023B9  bad807         mov      dx, 0x7d8  ; 0000:23B9
+  023BC  bb380f         mov      bx, 0xf38  ; 0000:23BC
+  023BF  b80602         mov      ax, 0x206  ; 0000:23BF
+  023C2  cde0           int      0xe0  ; 0000:23C2
+  023C4  5b             pop      bx  ; 0000:23C4
+  023C5  bf0100         mov      di, 1  ; 0000:23C5
+  023C8  3bc7           cmp      ax, di  ; 0000:23C8
+  023CA  7404           je       loc_023D0  ; 0000:23CA
+  023CC  eb10           jmp      loc_023DE  ; 0000:23CC
+loc_023CE:
+  023CE  33ff           xor      di, di  ; 0000:23CE
+loc_023D0:
+  023D0  b80007         mov      ax, 0x700  ; 0000:23D0
+  023D3  cde0           int      0xe0  ; 0000:23D3
+  023D5  0bff           or       di, di  ; 0000:23D5
+  023D7  7406           je       loc_023DF  ; 0000:23D7
+  023D9  b80702         mov      ax, 0x207  ; 0000:23D9
+  023DC  cde0           int      0xe0  ; 0000:23DC
+loc_023DE:
+  023DE  5a             pop      dx  ; 0000:23DE
+loc_023DF:
+  023DF  59             pop      cx  ; 0000:23DF
+  023E0  5e             pop      si  ; 0000:23E0
+  023E1  5f             pop      di  ; 0000:23E1
+  023E2  07             pop      es  ; 0000:23E2
+  023E3  5d             pop      bp  ; 0000:23E3
+  023E4  c3             ret        ; 0000:23E4
+
+
+; ---- sub_023E5 ----
+sub_023E5:
+  023E5  b80006         mov      ax, 0x600  ; 0000:23E5
+  023E8  e93601         jmp      sub_02521  ; 0000:23E8
+
+
+; ---- sub_023EB ----
+sub_023EB:
+  023EB  b80d06         mov      ax, 0x60d  ; 0000:23EB
+  023EE  e93001         jmp      sub_02521  ; 0000:23EE
+
+
+; ---- sub_023F1 ----
+sub_023F1:
+  023F1  06             push     es  ; 0000:23F1
+  023F2  53             push     bx  ; 0000:23F2
+  023F3  52             push     dx  ; 0000:23F3
+  023F4  1e             push     ds  ; 0000:23F4
+  023F5  07             pop      es  ; 0000:23F5
+  023F6  bbde07         mov      bx, 0x7de  ; 0000:23F6
+  023F9  bae207         mov      dx, 0x7e2  ; 0000:23F9
+  023FC  b80602         mov      ax, 0x206  ; 0000:23FC
+  023FF  cde0           int      0xe0  ; 0000:23FF
+  02401  9a41250000     lcall    0, 0x2541  ; 0000:2401
+  02406  5a             pop      dx  ; 0000:2406
+  02407  5b             pop      bx  ; 0000:2407
+  02408  07             pop      es  ; 0000:2408
+  02409  c3             ret        ; 0000:2409
+
+
+; ---- sub_0240A ----
+sub_0240A:
+  0240A  06             push     es  ; 0000:240A
+  0240B  52             push     dx  ; 0000:240B
+  0240C  1e             push     ds  ; 0000:240C
+  0240D  07             pop      es  ; 0000:240D
+  0240E  bae207         mov      dx, 0x7e2  ; 0000:240E
+  02411  b80702         mov      ax, 0x207  ; 0000:2411
+  02414  cde0           int      0xe0  ; 0000:2414
+  02416  5a             pop      dx  ; 0000:2416
+  02417  07             pop      es  ; 0000:2417
+  02418  c3             ret        ; 0000:2418
+
+
+; ---- sub_02419 ----
+sub_02419:
+  02419  e8d5ff         call     sub_023F1  ; 0000:2419
+  0241C  e81001         call     sub_0252F  ; 0000:241C
+  0241F  c3             ret        ; 0000:241F
+
+
+; ---- sub_02420 ----
+sub_02420:
+  02420  e81201         call     sub_02535  ; 0000:2420
+  02423  e8e4ff         call     sub_0240A  ; 0000:2423
+  02426  c3             ret        ; 0000:2426
+
+
+; ---- sub_02427 ----
+sub_02427:
+  02427  55             push     bp  ; 0000:2427
+  02428  8bec           mov      bp, sp  ; 0000:2428
+  0242A  83c504         add      bp, 4  ; 0000:242A
+  0242D  9a68250000     lcall    0, 0x2568  ; 0000:242D
+  02432  3dffff         cmp      ax, 0xffff  ; 0000:2432
+  02435  7416           je       loc_0244D  ; 0000:2435
+  02437  3dfeff         cmp      ax, 0xfffe  ; 0000:2437
+  0243A  7411           je       loc_0244D  ; 0000:243A
+  0243C  9a97250000     lcall    0, 0x2597  ; 0000:243C
+  02441  a3e807         mov      word ptr [0x7e8], ax  ; 0000:2441
+  02444  ff1ede07       lcall    [0x7de]  ; 0000:2444
+  02448  9ac1250000     lcall    0, 0x25c1  ; 0000:2448
+loc_0244D:
+  0244D  5d             pop      bp  ; 0000:244D
+  0244E  c3             ret        ; 0000:244E
+
+
+; ---- sub_0244F ----
+sub_0244F:
+  0244F  b80620         mov      ax, 0x2006  ; 0000:244F
+  02452  e9d2ff         jmp      sub_02427  ; 0000:2452
+
+
+; ---- sub_02455 ----
+sub_02455:
+  02455  b80720         mov      ax, 0x2007  ; 0000:2455
+  02458  e9ccff         jmp      sub_02427  ; 0000:2458
+
+
+; ---- sub_0245B ----
+sub_0245B:
+  0245B  b80a20         mov      ax, 0x200a  ; 0000:245B
+  0245E  e9c6ff         jmp      sub_02427  ; 0000:245E
+
+
+; ---- sub_02461 ----
+sub_02461:
+  02461  b80b20         mov      ax, 0x200b  ; 0000:2461
+  02464  e9c0ff         jmp      sub_02427  ; 0000:2464
+
+
+; ---- sub_02467 ----
+sub_02467:
+  02467  b80e20         mov      ax, 0x200e  ; 0000:2467
+  0246A  e9baff         jmp      sub_02427  ; 0000:246A
+
+
+; ---- sub_0246D ----
+sub_0246D:
+  0246D  b81020         mov      ax, 0x2010  ; 0000:246D
+  02470  e9b4ff         jmp      sub_02427  ; 0000:2470
+
+
+; ---- sub_02473 ----
+sub_02473:
+  02473  b81320         mov      ax, 0x2013  ; 0000:2473
+  02476  e9aeff         jmp      sub_02427  ; 0000:2476
+
+
+; ---- sub_02479 ----
+sub_02479:
+  02479  b81620         mov      ax, 0x2016  ; 0000:2479
+  0247C  e9a8ff         jmp      sub_02427  ; 0000:247C
+
+
+; ---- sub_0247F ----
+sub_0247F:
+  0247F  b81b20         mov      ax, 0x201b  ; 0000:247F
+  02482  e9a2ff         jmp      sub_02427  ; 0000:2482
+
+
+; ---- sub_02485 ----
+sub_02485:
+  02485  b81c20         mov      ax, 0x201c  ; 0000:2485
+  02488  e99cff         jmp      sub_02427  ; 0000:2488
+
+
+; ---- sub_0248B ----
+sub_0248B:
+  0248B  b81e20         mov      ax, 0x201e  ; 0000:248B
+  0248E  e996ff         jmp      sub_02427  ; 0000:248E
+
+
+; ---- sub_02491 ----
+sub_02491:
+  02491  b82b20         mov      ax, 0x202b  ; 0000:2491
+  02494  e990ff         jmp      sub_02427  ; 0000:2494
+
+
+; ---- sub_02497 ----
+sub_02497:
+  02497  b82c20         mov      ax, 0x202c  ; 0000:2497
+  0249A  e98aff         jmp      sub_02427  ; 0000:249A
+
+
+; ---- sub_0249D ----
+sub_0249D:
+  0249D  b82d20         mov      ax, 0x202d  ; 0000:249D
+  024A0  e984ff         jmp      sub_02427  ; 0000:24A0
+
+
+; ---- sub_024A3 ----
+sub_024A3:
+  024A3  b82e20         mov      ax, 0x202e  ; 0000:24A3
+  024A6  e97eff         jmp      sub_02427  ; 0000:24A6
+
+
+; ---- sub_024A9 ----
+sub_024A9:
+  024A9  b82f20         mov      ax, 0x202f  ; 0000:24A9
+  024AC  e978ff         jmp      sub_02427  ; 0000:24AC
+
+
+; ---- sub_024AF ----
+sub_024AF:
+  024AF  b83e20         mov      ax, 0x203e  ; 0000:24AF
+  024B2  e972ff         jmp      sub_02427  ; 0000:24B2
+
+
+; ---- sub_024B5 ----
+sub_024B5:
+  024B5  b84220         mov      ax, 0x2042  ; 0000:24B5
+  024B8  e96cff         jmp      sub_02427  ; 0000:24B8
+
+
+; ---- sub_024BB ----
+sub_024BB:
+  024BB  b84420         mov      ax, 0x2044  ; 0000:24BB
+  024BE  e966ff         jmp      sub_02427  ; 0000:24BE
+
+
+; ---- sub_024C1 ----
+sub_024C1:
+  024C1  b84620         mov      ax, 0x2046  ; 0000:24C1
+  024C4  e960ff         jmp      sub_02427  ; 0000:24C4
+
+
+; ---- sub_024C7 ----
+sub_024C7:
+  024C7  b84720         mov      ax, 0x2047  ; 0000:24C7
+  024CA  e95aff         jmp      sub_02427  ; 0000:24CA
+
+
+; ---- sub_024CD ----
+sub_024CD:
+  024CD  b84a20         mov      ax, 0x204a  ; 0000:24CD
+  024D0  e954ff         jmp      sub_02427  ; 0000:24D0
+
+
+; ---- sub_024D3 ----
+sub_024D3:
+  024D3  b85120         mov      ax, 0x2051  ; 0000:24D3
+  024D6  e94eff         jmp      sub_02427  ; 0000:24D6
+
+
+; ---- sub_024D9 ----
+sub_024D9:
+  024D9  b85320         mov      ax, 0x2053  ; 0000:24D9
+  024DC  e948ff         jmp      sub_02427  ; 0000:24DC
+
+
+; ---- sub_024DF ----
+sub_024DF:
+  024DF  b85920         mov      ax, 0x2059  ; 0000:24DF
+  024E2  e942ff         jmp      sub_02427  ; 0000:24E2
+
+
+; ---- sub_024E5 ----
+sub_024E5:
+  024E5  b85a20         mov      ax, 0x205a  ; 0000:24E5
+  024E8  e93cff         jmp      sub_02427  ; 0000:24E8
+
+
+; ---- sub_024EB ----
+sub_024EB:
+  024EB  b85e20         mov      ax, 0x205e  ; 0000:24EB
+  024EE  e936ff         jmp      sub_02427  ; 0000:24EE
+
+
+; ---- sub_024F1 ----
+sub_024F1:
+  024F1  b86d20         mov      ax, 0x206d  ; 0000:24F1
+  024F4  e930ff         jmp      sub_02427  ; 0000:24F4
+
+
+; ---- sub_024F7 ----
+sub_024F7:
+  024F7  b8a920         mov      ax, 0x20a9  ; 0000:24F7
+  024FA  e92aff         jmp      sub_02427  ; 0000:24FA
+
+
+; ---- sub_024FD ----
+sub_024FD:
+  024FD  b8aa20         mov      ax, 0x20aa  ; 0000:24FD
+  02500  e924ff         jmp      sub_02427  ; 0000:2500
+
+
+; ---- sub_02503 ----
+sub_02503:
+  02503  b8d020         mov      ax, 0x20d0  ; 0000:2503
+  02506  e91eff         jmp      sub_02427  ; 0000:2506
+
+
+; ---- sub_02509 ----
+sub_02509:
+  02509  b8e320         mov      ax, 0x20e3  ; 0000:2509
+  0250C  e918ff         jmp      sub_02427  ; 0000:250C
+
+
+; ---- sub_0250F ----
+sub_0250F:
+  0250F  b8e420         mov      ax, 0x20e4  ; 0000:250F
+  02512  e912ff         jmp      sub_02427  ; 0000:2512
+
+
+; ---- sub_02515 ----
+sub_02515:
+  02515  b8e920         mov      ax, 0x20e9  ; 0000:2515
+  02518  e90cff         jmp      sub_02427  ; 0000:2518
+
+
+; ---- sub_0251B ----
+sub_0251B:
+  0251B  b80021         mov      ax, 0x2100  ; 0000:251B
+  0251E  e906ff         jmp      sub_02427  ; 0000:251E
+
+
+; ---- sub_02521 ----
+sub_02521:
+  02521  55             push     bp  ; 0000:2521
+  02522  8bec           mov      bp, sp  ; 0000:2522
+  02524  83c504         add      bp, 4  ; 0000:2524
+  02527  06             push     es  ; 0000:2527
+  02528  1e             push     ds  ; 0000:2528
+  02529  07             pop      es  ; 0000:2529
+  0252A  cde0           int      0xe0  ; 0000:252A
+  0252C  07             pop      es  ; 0000:252C
+  0252D  5d             pop      bp  ; 0000:252D
+  0252E  c3             ret        ; 0000:252E
+
+
+; ---- sub_0252F ----
+sub_0252F:
+  0252F  b8d620         mov      ax, 0x20d6  ; 0000:252F
+  02532  e9f2fe         jmp      sub_02427  ; 0000:2532
+
+
+; ---- sub_02535 ----
+sub_02535:
+  02535  b8d720         mov      ax, 0x20d7  ; 0000:2535
+  02538  e9ecfe         jmp      sub_02427  ; 0000:2538
+
+
+; ---- sub_0253B ----
+sub_0253B:
+  0253B  b80221         mov      ax, 0x2102  ; 0000:253B
+  0253E  e9e6fe         jmp      sub_02427  ; 0000:253E
+  02541  50             push     ax  ; 0000:2541
+  02542  b8d520         mov      ax, 0x20d5  ; 0000:2542
+  02545  25ff0f         and      ax, 0xfff  ; 0000:2545
+  02548  ff1ede07       lcall    [0x7de]  ; 0000:2548
+  0254C  c706ea07ff0f   mov      word ptr [0x7ea], 0xfff  ; 0000:254C
+  02552  3c20           cmp      al, 0x20  ; 0000:2552
+  02554  7e10           jle      loc_02566  ; 0000:2554
+  02556  c706ea07ffff   mov      word ptr [0x7ea], 0xffff  ; 0000:2556
+  0255C  3c37           cmp      al, 0x37  ; 0000:255C
+  0255E  7e06           jle      loc_02566  ; 0000:255E
+  02560  c706ea07ffef   mov      word ptr [0x7ea], 0xefff  ; 0000:2560
+loc_02566:
+  02566  58             pop      ax  ; 0000:2566
+  02567  cb             retf       ; 0000:2567
+  02568  813eea07ff0f   cmp      word ptr [0x7ea], 0xfff  ; 0000:2568
+  0256E  7411           je       loc_02581  ; 0000:256E
+  02570  813eea07ffef   cmp      word ptr [0x7ea], 0xefff  ; 0000:2570
+  02576  741e           je       loc_02596  ; 0000:2576
+  02578  3d4421         cmp      ax, 0x2144  ; 0000:2578
+  0257B  7e19           jle      loc_02596  ; 0000:257B
+  0257D  b8ffff         mov      ax, 0xffff  ; 0000:257D
+  02580  cb             retf       ; 0000:2580
+loc_02581:
+  02581  3d0a21         cmp      ax, 0x210a  ; 0000:2581
+  02584  7f05           jg       loc_0258B  ; 0000:2584
+  02586  2306ea07       and      ax, word ptr [0x7ea]  ; 0000:2586
+  0258A  cb             retf       ; 0000:258A
+loc_0258B:
+  0258B  3d2d21         cmp      ax, 0x212d  ; 0000:258B
+  0258E  b8feff         mov      ax, 0xfffe  ; 0000:258E
+  02591  7403           je       loc_02596  ; 0000:2591
+  02593  b8ffff         mov      ax, 0xffff  ; 0000:2593
+loc_02596:
+  02596  cb             retf       ; 0000:2596
+  02597  9c             pushf      ; 0000:2597
+  02598  3d9020         cmp      ax, 0x2090  ; 0000:2598
+  0259B  7522           jne      loc_025BF  ; 0000:259B
+  0259D  813eea07ff0f   cmp      word ptr [0x7ea], 0xfff  ; 0000:259D
+  025A3  741a           je       loc_025BF  ; 0000:25A3
+  025A5  50             push     ax  ; 0000:25A5
+  025A6  b8d520         mov      ax, 0x20d5  ; 0000:25A6
+  025A9  ff1ede07       lcall    [0x7de]  ; 0000:25A9
+  025AD  3c29           cmp      al, 0x29  ; 0000:25AD
+  025AF  58             pop      ax  ; 0000:25AF
+  025B0  7f0d           jg       loc_025BF  ; 0000:25B0
+  025B2  53             push     bx  ; 0000:25B2
+  025B3  8b5d0e         mov      bx, word ptr [di + 0xe]  ; 0000:25B3
+  025B6  8b1f           mov      bx, word ptr [bx]  ; 0000:25B6
+  025B8  d1e3           shl      bx, 1  ; 0000:25B8
+  025BA  43             inc      bx  ; 0000:25BA
+  025BB  295d02         sub      word ptr [di + 2], bx  ; 0000:25BB
+  025BE  5b             pop      bx  ; 0000:25BE
+loc_025BF:
+  025BF  9d             popf       ; 0000:25BF
+  025C0  cb             retf       ; 0000:25C0
+  025C1  9c             pushf      ; 0000:25C1
+  025C2  813ee8079020   cmp      word ptr [0x7e8], 0x2090  ; 0000:25C2
+  025C8  740a           je       loc_025D4  ; 0000:25C8
+  025CA  813ee8071721   cmp      word ptr [0x7e8], 0x2117  ; 0000:25CA
+  025D0  7402           je       loc_025D4  ; 0000:25D0
+  025D2  9d             popf       ; 0000:25D2
+  025D3  cb             retf       ; 0000:25D3
+loc_025D4:
+  025D4  813eea07ff0f   cmp      word ptr [0x7ea], 0xfff  ; 0000:25D4
+  025DA  746a           je       loc_02646  ; 0000:25DA
+  025DC  50             push     ax  ; 0000:25DC
+  025DD  b8d520         mov      ax, 0x20d5  ; 0000:25DD
+  025E0  ff1ede07       lcall    [0x7de]  ; 0000:25E0
+  025E4  3c29           cmp      al, 0x29  ; 0000:25E4
+  025E6  7f18           jg       loc_02600  ; 0000:25E6
+  025E8  813ee8071721   cmp      word ptr [0x7e8], 0x2117  ; 0000:25E8
+  025EE  7410           je       loc_02600  ; 0000:25EE
+  025F0  58             pop      ax  ; 0000:25F0
+  025F1  53             push     bx  ; 0000:25F1
+  025F2  8b5d0e         mov      bx, word ptr [di + 0xe]  ; 0000:25F2
+  025F5  8b1f           mov      bx, word ptr [bx]  ; 0000:25F5
+  025F7  d1e3           shl      bx, 1  ; 0000:25F7
+  025F9  43             inc      bx  ; 0000:25F9
+  025FA  015d02         add      word ptr [di + 2], bx  ; 0000:25FA
+  025FD  5b             pop      bx  ; 0000:25FD
+  025FE  eb46           jmp      loc_02646  ; 0000:25FE
+loc_02600:
+  02600  3c37           cmp      al, 0x37  ; 0000:2600
+  02602  58             pop      ax  ; 0000:2602
+  02603  7f41           jg       loc_02646  ; 0000:2603
+  02605  813ee8071721   cmp      word ptr [0x7e8], 0x2117  ; 0000:2605
+  0260B  7539           jne      loc_02646  ; 0000:260B
+  0260D  56             push     si  ; 0000:260D
+  0260E  57             push     di  ; 0000:260E
+  0260F  51             push     cx  ; 0000:260F
+  02610  52             push     dx  ; 0000:2610
+  02611  8b7600         mov      si, word ptr [bp]  ; 0000:2611
+  02614  83c604         add      si, 4  ; 0000:2614
+  02617  e82e00         call     sub_02648  ; 0000:2617
+  0261A  32e4           xor      ah, ah  ; 0000:261A
+  0261C  b104           mov      cl, 4  ; 0000:261C
+  0261E  f6e1           mul      cl  ; 0000:261E
+  02620  bfec07         mov      di, 0x7ec  ; 0000:2620
+  02623  03f8           add      di, ax  ; 0000:2623
+  02625  b90400         mov      cx, 4  ; 0000:2625
+  02628  b80000         mov      ax, 0  ; 0000:2628
+  0262B  4e             dec      si  ; 0000:262B
+  0262C  4f             dec      di  ; 0000:262C
+  0262D  47             inc      di  ; 0000:262D
+  0262E  46             inc      si  ; 0000:262E
+  0262F  8a15           mov      dl, byte ptr [di]  ; 0000:262F
+  02631  0a14           or       dl, byte ptr [si]  ; 0000:2631
+  02633  740d           je       loc_02642  ; 0000:2633
+  02635  8a15           mov      dl, byte ptr [di]  ; 0000:2635
+  02637  3814           cmp      byte ptr [si], dl  ; 0000:2637
+  02639  7504           jne      loc_0263F  ; 0000:2639
+  0263B  e2f0           loop     0x262d  ; 0000:263B
+  0263D  eb03           jmp      loc_02642  ; 0000:263D
+loc_0263F:
+  0263F  b8ffff         mov      ax, 0xffff  ; 0000:263F
+loc_02642:
+  02642  5a             pop      dx  ; 0000:2642
+  02643  59             pop      cx  ; 0000:2643
+  02644  5f             pop      di  ; 0000:2644
+  02645  5e             pop      si  ; 0000:2645
+loc_02646:
+  02646  9d             popf       ; 0000:2646
+  02647  cb             retf       ; 0000:2647
+
+
+; ---- sub_02648 ----
+sub_02648:
+  02648  55             push     bp  ; 0000:2648
+  02649  83ec0b         sub      sp, 0xb  ; 0000:2649
+  0264C  8bec           mov      bp, sp  ; 0000:264C
+  0264E  1e             push     ds  ; 0000:264E
+  0264F  1e             push     ds  ; 0000:264F
+  02650  07             pop      es  ; 0000:2650
+  02651  16             push     ss  ; 0000:2651
+  02652  1f             pop      ds  ; 0000:2652
+  02653  8d4600         lea      ax, [bp]  ; 0000:2653
+  02656  55             push     bp  ; 0000:2656
+  02657  50             push     ax  ; 0000:2657
+  02658  8bec           mov      bp, sp  ; 0000:2658
+  0265A  b83120         mov      ax, 0x2031  ; 0000:265A
+  0265D  25ff0f         and      ax, 0xfff  ; 0000:265D
+  02660  26ff1ede07     lcall    es:[0x7de]  ; 0000:2660
+  02665  83c402         add      sp, 2  ; 0000:2665
+  02668  5d             pop      bp  ; 0000:2668
+  02669  1f             pop      ds  ; 0000:2669
+  0266A  8a4600         mov      al, byte ptr [bp]  ; 0000:266A
+  0266D  83c40b         add      sp, 0xb  ; 0000:266D
+  02670  5d             pop      bp  ; 0000:2670
+  02671  c3             ret        ; 0000:2671
+  02672  bb7a0a         mov      bx, 0xa7a  ; 0000:2672
+  02675  c707e63e       mov      word ptr [bx], 0x3ee6  ; 0000:2675
+  02679  c74702e93a     mov      word ptr [bx + 2], 0x3ae9  ; 0000:2679
+  0267E  c747045f3b     mov      word ptr [bx + 4], 0x3b5f  ; 0000:267E
+  02683  c74706933a     mov      word ptr [bx + 6], 0x3a93  ; 0000:2683
+  02688  c747083d3b     mov      word ptr [bx + 8], 0x3b3d  ; 0000:2688
+  0268D  c3             ret        ; 0000:268D
+  0268E  8cd0           mov      ax, ss  ; 0000:268E
+  02690  8ec0           mov      es, ax  ; 0000:2690
+  02692  56             push     si  ; 0000:2692
+  02693  57             push     di  ; 0000:2693
+  02694  8bf3           mov      si, bx  ; 0000:2694
+  02696  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:2696
+  0269A  83c30c         add      bx, 0xc  ; 0000:269A
+  0269D  8bfb           mov      di, bx  ; 0000:269D
+  0269F  8cc0           mov      ax, es  ; 0000:269F
+  026A1  8cd9           mov      cx, ds  ; 0000:26A1
+  026A3  8ec1           mov      es, cx  ; 0000:26A3
+  026A5  8ed8           mov      ds, ax  ; 0000:26A5
+  026A7  fc             cld        ; 0000:26A7
+  026A8  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26A8
+  026A9  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26A9
+  026AA  8ed9           mov      ds, cx  ; 0000:26AA
+  026AC  8bf3           mov      si, bx  ; 0000:26AC
+  026AE  eb16           jmp      loc_026C6  ; 0000:26AE
+  026B0  56             push     si  ; 0000:26B0
+  026B1  57             push     di  ; 0000:26B1
+  026B2  8bf3           mov      si, bx  ; 0000:26B2
+  026B4  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:26B4
+  026B8  83c30c         add      bx, 0xc  ; 0000:26B8
+  026BB  8bfb           mov      di, bx  ; 0000:26BB
+  026BD  8cd9           mov      cx, ds  ; 0000:26BD
+  026BF  8ec1           mov      es, cx  ; 0000:26BF
+  026C1  fc             cld        ; 0000:26C1
+  026C2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26C2
+  026C3  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26C3
+  026C4  8bf3           mov      si, bx  ; 0000:26C4
+loc_026C6:
+  026C6  81fbce09       cmp      bx, 0x9ce  ; 0000:26C6
+  026CA  744e           je       loc_0271A  ; 0000:26CA
+  026CC  891ee209       mov      word ptr [0x9e2], bx  ; 0000:26CC
+  026D0  8977fc         mov      word ptr [bx - 4], si  ; 0000:26D0
+  026D3  c647fe03       mov      byte ptr [bx - 2], 3  ; 0000:26D3
+  026D7  5f             pop      di  ; 0000:26D7
+  026D8  5e             pop      si  ; 0000:26D8
+  026D9  c3             ret        ; 0000:26D9
+  026DA  8cd0           mov      ax, ss  ; 0000:26DA
+  026DC  8ec0           mov      es, ax  ; 0000:26DC
+  026DE  56             push     si  ; 0000:26DE
+  026DF  57             push     di  ; 0000:26DF
+  026E0  8bf3           mov      si, bx  ; 0000:26E0
+  026E2  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:26E2
+  026E6  83c30c         add      bx, 0xc  ; 0000:26E6
+  026E9  8bfb           mov      di, bx  ; 0000:26E9
+  026EB  8cc0           mov      ax, es  ; 0000:26EB
+  026ED  8cd9           mov      cx, ds  ; 0000:26ED
+  026EF  8ec1           mov      es, cx  ; 0000:26EF
+  026F1  8ed8           mov      ds, ax  ; 0000:26F1
+  026F3  fc             cld        ; 0000:26F3
+  026F4  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26F4
+  026F5  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26F5
+  026F6  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26F6
+  026F7  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:26F7
+  026F8  8ed9           mov      ds, cx  ; 0000:26F8
+  026FA  8bf3           mov      si, bx  ; 0000:26FA
+  026FC  eb18           jmp      loc_02716  ; 0000:26FC
+
+
+; ---- sub_026FE ----
+sub_026FE:
+  026FE  56             push     si  ; 0000:26FE
+  026FF  57             push     di  ; 0000:26FF
+  02700  8bf3           mov      si, bx  ; 0000:2700
+  02702  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:2702
+  02706  83c30c         add      bx, 0xc  ; 0000:2706
+  02709  8bfb           mov      di, bx  ; 0000:2709
+  0270B  8cd9           mov      cx, ds  ; 0000:270B
+  0270D  8ec1           mov      es, cx  ; 0000:270D
+  0270F  fc             cld        ; 0000:270F
+  02710  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2710
+  02711  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2711
+  02712  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2712
+  02713  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2713
+  02714  8bf3           mov      si, bx  ; 0000:2714
+loc_02716:
+  02716  81fbce09       cmp      bx, 0x9ce  ; 0000:2716
+loc_0271A:
+  0271A  740e           je       loc_0272A  ; 0000:271A
+  0271C  891ee209       mov      word ptr [0x9e2], bx  ; 0000:271C
+  02720  c647fe07       mov      byte ptr [bx - 2], 7  ; 0000:2720
+  02724  8977fc         mov      word ptr [bx - 4], si  ; 0000:2724
+  02727  5f             pop      di  ; 0000:2727
+  02728  5e             pop      si  ; 0000:2728
+  02729  c3             ret        ; 0000:2729
+loc_0272A:
+  0272A  e92a05         jmp      loc_02C57  ; 0000:272A
+  0272D  56             push     si  ; 0000:272D
+  0272E  57             push     di  ; 0000:272E
+  0272F  8cd0           mov      ax, ss  ; 0000:272F
+  02731  eb04           jmp      loc_02737  ; 0000:2731
+  02733  56             push     si  ; 0000:2733
+  02734  57             push     di  ; 0000:2734
+  02735  8cd8           mov      ax, ds  ; 0000:2735
+loc_02737:
+  02737  8cd9           mov      cx, ds  ; 0000:2737
+  02739  8ec1           mov      es, cx  ; 0000:2739
+  0273B  8ed8           mov      ds, ax  ; 0000:273B
+  0273D  fc             cld        ; 0000:273D
+  0273E  8bf3           mov      si, bx  ; 0000:273E
+  02740  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:2740
+  02744  83c30c         add      bx, 0xc  ; 0000:2744
+  02747  8bfb           mov      di, bx  ; 0000:2747
+  02749  ad             lodsw    ax, word ptr [si]  ; 0000:2749
+  0274A  8845fe         mov      byte ptr [di - 2], al  ; 0000:274A
+  0274D  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:274D
+  0274E  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:274E
+  0274F  3c03           cmp      al, 3  ; 0000:274F
+  02751  7402           je       loc_02755  ; 0000:2751
+  02753  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2753
+  02754  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2754
+loc_02755:
+  02755  81fbce09       cmp      bx, 0x9ce  ; 0000:2755
+  02759  74cf           je       loc_0272A  ; 0000:2759
+  0275B  891ee209       mov      word ptr [0x9e2], bx  ; 0000:275B
+  0275F  895ffc         mov      word ptr [bx - 4], bx  ; 0000:275F
+  02762  8ed9           mov      ds, cx  ; 0000:2762
+  02764  5f             pop      di  ; 0000:2764
+  02765  5e             pop      si  ; 0000:2765
+  02766  c3             ret        ; 0000:2766
+  02767  8cd0           mov      ax, ss  ; 0000:2767
+  02769  8ec0           mov      es, ax  ; 0000:2769
+  0276B  268b07         mov      ax, word ptr es:[bx]  ; 0000:276B
+  0276E  268b5702       mov      dx, word ptr es:[bx + 2]  ; 0000:276E
+  02772  eb14           jmp      loc_02788  ; 0000:2772
+  02774  8cd0           mov      ax, ss  ; 0000:2774
+  02776  8ec0           mov      es, ax  ; 0000:2776
+  02778  268b07         mov      ax, word ptr es:[bx]  ; 0000:2778
+  0277B  99             cdq        ; 0000:277B
+  0277C  eb0a           jmp      loc_02788  ; 0000:277C
+  0277E  8b07           mov      ax, word ptr [bx]  ; 0000:277E
+  02780  8b5702         mov      dx, word ptr [bx + 2]  ; 0000:2780
+  02783  eb03           jmp      loc_02788  ; 0000:2783
+
+
+; ---- sub_02785 ----
+; --- dmserv_fpMath: Floating-point math routines (margin calc)
+dmserv_fpMath:  ; was sub_02785
+  02785  8b07           mov      ax, word ptr [bx]  ; 0000:2785
+  02787  99             cdq        ; 0000:2787
+loc_02788:
+  02788  56             push     si  ; 0000:2788
+  02789  57             push     di  ; 0000:2789
+  0278A  8bda           mov      bx, dx  ; 0000:278A
+  0278C  8bd0           mov      dx, ax  ; 0000:278C
+  0278E  8ac7           mov      al, bh  ; 0000:278E
+  02790  2480           and      al, 0x80  ; 0000:2790
+  02792  7907           jns      loc_0279B  ; 0000:2792
+  02794  f7db           neg      bx  ; 0000:2794
+  02796  f7da           neg      dx  ; 0000:2796
+  02798  83db00         sbb      bx, 0  ; 0000:2798
+loc_0279B:
+  0279B  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:279B
+  0279F  83c70c         add      di, 0xc  ; 0000:279F
+  027A2  81ffce09       cmp      di, 0x9ce  ; 0000:27A2
+loc_027A6:
+  027A6  741c           je       loc_027C4  ; 0000:27A6
+  027A8  893ee209       mov      word ptr [0x9e2], di  ; 0000:27A8
+  027AC  897dfc         mov      word ptr [di - 4], di  ; 0000:27AC
+  027AF  8cd9           mov      cx, ds  ; 0000:27AF
+  027B1  8ec1           mov      es, cx  ; 0000:27B1
+  027B3  80ff00         cmp      bh, 0  ; 0000:27B3
+  027B6  750f           jne      loc_027C7  ; 0000:27B6
+  027B8  c645fe03       mov      byte ptr [di - 2], 3  ; 0000:27B8
+  027BC  b49e           mov      ah, 0x9e  ; 0000:27BC
+  027BE  e8f20a         call     sub_032B3  ; 0000:27BE
+  027C1  5f             pop      di  ; 0000:27C1
+  027C2  5e             pop      si  ; 0000:27C2
+  027C3  c3             ret        ; 0000:27C3
+loc_027C4:
+  027C4  e963ff         jmp      loc_0272A  ; 0000:27C4
+loc_027C7:
+  027C7  c645fe07       mov      byte ptr [di - 2], 7  ; 0000:27C7
+  027CB  55             push     bp  ; 0000:27CB
+  027CC  bd6087         mov      bp, 0x8760  ; 0000:27CC
+  027CF  8bcb           mov      cx, bx  ; 0000:27CF
+  027D1  33db           xor      bx, bx  ; 0000:27D1
+  027D3  8bfb           mov      di, bx  ; 0000:27D3
+  027D5  e8520e         call     sub_0362A  ; 0000:27D5
+  027D8  5d             pop      bp  ; 0000:27D8
+  027D9  5f             pop      di  ; 0000:27D9
+  027DA  5e             pop      si  ; 0000:27DA
+  027DB  c3             ret        ; 0000:27DB
+  027DC  56             push     si  ; 0000:27DC
+  027DD  57             push     di  ; 0000:27DD
+  027DE  8cd8           mov      ax, ds  ; 0000:27DE
+  027E0  8ec0           mov      es, ax  ; 0000:27E0
+  027E2  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:27E2
+  027E6  8b75fc         mov      si, word ptr [di - 4]  ; 0000:27E6
+  027E9  8a45fe         mov      al, byte ptr [di - 2]  ; 0000:27E9
+  027EC  83c70c         add      di, 0xc  ; 0000:27EC
+  027EF  81ffce09       cmp      di, 0x9ce  ; 0000:27EF
+  027F3  74b1           je       loc_027A6  ; 0000:27F3
+  027F5  893ee209       mov      word ptr [0x9e2], di  ; 0000:27F5
+  027F9  897dfc         mov      word ptr [di - 4], di  ; 0000:27F9
+  027FC  8845fe         mov      byte ptr [di - 2], al  ; 0000:27FC
+  027FF  fc             cld        ; 0000:27FF
+  02800  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2800
+  02801  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2801
+  02802  3c03           cmp      al, 3  ; 0000:2802
+  02804  7402           je       loc_02808  ; 0000:2804
+  02806  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2806
+  02807  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2807
+loc_02808:
+  02808  5f             pop      di  ; 0000:2808
+  02809  5e             pop      si  ; 0000:2809
+  0280A  c3             ret        ; 0000:280A
+  0280B  56             push     si  ; 0000:280B
+  0280C  57             push     di  ; 0000:280C
+  0280D  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:280D
+  02811  83c70c         add      di, 0xc  ; 0000:2811
+  02814  81ffce09       cmp      di, 0x9ce  ; 0000:2814
+  02818  748c           je       loc_027A6  ; 0000:2818
+  0281A  893ee209       mov      word ptr [0x9e2], di  ; 0000:281A
+  0281E  897dfc         mov      word ptr [di - 4], di  ; 0000:281E
+  02821  c645fe03       mov      byte ptr [di - 2], 3  ; 0000:2821
+  02825  8cd8           mov      ax, ds  ; 0000:2825
+  02827  8ec0           mov      es, ax  ; 0000:2827
+  02829  33c0           xor      ax, ax  ; 0000:2829
+  0282B  fc             cld        ; 0000:282B
+  0282C  ab             stosw    word ptr es:[di], ax  ; 0000:282C
+  0282D  ab             stosw    word ptr es:[di], ax  ; 0000:282D
+  0282E  5f             pop      di  ; 0000:282E
+  0282F  5e             pop      si  ; 0000:282F
+  02830  c3             ret        ; 0000:2830
+  02831  8cd0           mov      ax, ss  ; 0000:2831
+  02833  eb02           jmp      loc_02837  ; 0000:2833
+  02835  8cd8           mov      ax, ds  ; 0000:2835
+loc_02837:
+  02837  8ec0           mov      es, ax  ; 0000:2837
+  02839  56             push     si  ; 0000:2839
+  0283A  57             push     di  ; 0000:283A
+  0283B  8bfb           mov      di, bx  ; 0000:283B
+  0283D  fc             cld        ; 0000:283D
+  0283E  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:283E
+  02842  8306e2090c     add      word ptr [0x9e2], 0xc  ; 0000:2842
+  02847  eb11           jmp      loc_0285A  ; 0000:2847
+  02849  8cd0           mov      ax, ss  ; 0000:2849
+  0284B  eb02           jmp      loc_0284F  ; 0000:284B
+
+
+; ---- sub_0284D ----
+sub_0284D:
+  0284D  8cd8           mov      ax, ds  ; 0000:284D
+loc_0284F:
+  0284F  8ec0           mov      es, ax  ; 0000:284F
+  02851  56             push     si  ; 0000:2851
+  02852  57             push     di  ; 0000:2852
+  02853  8bfb           mov      di, bx  ; 0000:2853
+  02855  fc             cld        ; 0000:2855
+  02856  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:2856
+loc_0285A:
+  0285A  807ffe03       cmp      byte ptr [bx - 2], 3  ; 0000:285A
+  0285E  750d           jne      loc_0286D  ; 0000:285E
+  02860  8b77fc         mov      si, word ptr [bx - 4]  ; 0000:2860
+loc_02863:
+  02863  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2863
+  02864  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2864
+  02865  832ee2090c     sub      word ptr [0x9e2], 0xc  ; 0000:2865
+  0286A  5f             pop      di  ; 0000:286A
+  0286B  5e             pop      si  ; 0000:286B
+  0286C  c3             ret        ; 0000:286C
+loc_0286D:
+  0286D  55             push     bp  ; 0000:286D
+  0286E  89265e08       mov      word ptr [0x85e], sp  ; 0000:286E
+  02872  8b77fc         mov      si, word ptr [bx - 4]  ; 0000:2872
+  02875  57             push     di  ; 0000:2875
+  02876  e80f05         call     sub_02D88  ; 0000:2876
+  02879  5f             pop      di  ; 0000:2879
+  0287A  8bde           mov      bx, si  ; 0000:287A
+  0287C  5d             pop      bp  ; 0000:287C
+  0287D  ebe4           jmp      loc_02863  ; 0000:287D
+  0287F  8cd0           mov      ax, ss  ; 0000:287F
+  02881  eb02           jmp      loc_02885  ; 0000:2881
+  02883  8cd8           mov      ax, ds  ; 0000:2883
+loc_02885:
+  02885  8ec0           mov      es, ax  ; 0000:2885
+  02887  56             push     si  ; 0000:2887
+  02888  57             push     di  ; 0000:2888
+  02889  8bfb           mov      di, bx  ; 0000:2889
+  0288B  fc             cld        ; 0000:288B
+  0288C  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:288C
+  02890  8306e2090c     add      word ptr [0x9e2], 0xc  ; 0000:2890
+  02895  eb11           jmp      loc_028A8  ; 0000:2895
+  02897  8cd0           mov      ax, ss  ; 0000:2897
+  02899  eb02           jmp      loc_0289D  ; 0000:2899
+
+
+; ---- sub_0289B ----
+; --- dmserv_fpFormat: FP number formatting for display
+dmserv_fpFormat:  ; was sub_0289B
+  0289B  8cd8           mov      ax, ds  ; 0000:289B
+loc_0289D:
+  0289D  8ec0           mov      es, ax  ; 0000:289D
+  0289F  56             push     si  ; 0000:289F
+  028A0  57             push     di  ; 0000:28A0
+  028A1  8bfb           mov      di, bx  ; 0000:28A1
+  028A3  fc             cld        ; 0000:28A3
+  028A4  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:28A4
+loc_028A8:
+  028A8  807ffe07       cmp      byte ptr [bx - 2], 7  ; 0000:28A8
+  028AC  750f           jne      loc_028BD  ; 0000:28AC
+  028AE  8b77fc         mov      si, word ptr [bx - 4]  ; 0000:28AE
+loc_028B1:
+  028B1  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:28B1
+  028B2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:28B2
+  028B3  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:28B3
+  028B4  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:28B4
+  028B5  832ee2090c     sub      word ptr [0x9e2], 0xc  ; 0000:28B5
+  028BA  5f             pop      di  ; 0000:28BA
+  028BB  5e             pop      si  ; 0000:28BB
+  028BC  c3             ret        ; 0000:28BC
+loc_028BD:
+  028BD  87df           xchg     di, bx  ; 0000:28BD
+  028BF  e83704         call     sub_02CF9  ; 0000:28BF
+  028C2  8bf7           mov      si, di  ; 0000:28C2
+  028C4  87df           xchg     di, bx  ; 0000:28C4
+  028C6  ebe9           jmp      loc_028B1  ; 0000:28C6
+  028C8  8cd0           mov      ax, ss  ; 0000:28C8
+  028CA  eb02           jmp      loc_028CE  ; 0000:28CA
+  028CC  8cd8           mov      ax, ds  ; 0000:28CC
+loc_028CE:
+  028CE  8ec0           mov      es, ax  ; 0000:28CE
+  028D0  56             push     si  ; 0000:28D0
+  028D1  57             push     di  ; 0000:28D1
+  028D2  8bfb           mov      di, bx  ; 0000:28D2
+  028D4  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:28D4
+  028D8  8306e2090c     add      word ptr [0x9e2], 0xc  ; 0000:28D8
+  028DD  eb10           jmp      loc_028EF  ; 0000:28DD
+  028DF  8cd0           mov      ax, ss  ; 0000:28DF
+  028E1  eb02           jmp      loc_028E5  ; 0000:28E1
+  028E3  8cd8           mov      ax, ds  ; 0000:28E3
+loc_028E5:
+  028E5  8ec0           mov      es, ax  ; 0000:28E5
+  028E7  56             push     si  ; 0000:28E7
+  028E8  57             push     di  ; 0000:28E8
+  028E9  8bfb           mov      di, bx  ; 0000:28E9
+  028EB  8b1ee209       mov      bx, word ptr [0x9e2]  ; 0000:28EB
+loc_028EF:
+  028EF  8bf3           mov      si, bx  ; 0000:28EF
+  028F1  8a47fe         mov      al, byte ptr [bx - 2]  ; 0000:28F1
+  028F4  832ee2090c     sub      word ptr [0x9e2], 0xc  ; 0000:28F4
+  028F9  fc             cld        ; 0000:28F9
+  028FA  ab             stosw    word ptr es:[di], ax  ; 0000:28FA
+  028FB  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:28FB
+  028FC  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:28FC
+  028FD  3c03           cmp      al, 3  ; 0000:28FD
+  028FF  7402           je       loc_02903  ; 0000:28FF
+  02901  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2901
+  02902  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2902
+loc_02903:
+  02903  5f             pop      di  ; 0000:2903
+  02904  5e             pop      si  ; 0000:2904
+  02905  c3             ret        ; 0000:2905
+  02906  b8742e         mov      ax, 0x2e74  ; 0000:2906
+  02909  ba7e2e         mov      dx, 0x2e7e  ; 0000:2909
+  0290C  eb38           jmp      loc_02946  ; 0000:290C
+  0290E  b8a22e         mov      ax, 0x2ea2  ; 0000:290E
+  02911  baa72e         mov      dx, 0x2ea7  ; 0000:2911
+  02914  eb30           jmp      loc_02946  ; 0000:2914
+  02916  b8d12e         mov      ax, 0x2ed1  ; 0000:2916
+  02919  bad62e         mov      dx, 0x2ed6  ; 0000:2919
+  0291C  eb28           jmp      loc_02946  ; 0000:291C
+  0291E  e80906         call     sub_02F2A  ; 0000:291E
+  02921  eb04           jmp      loc_02927  ; 0000:2921
+  02923  90             nop        ; 0000:2923
+  02924  e8ce05         call     sub_02EF5  ; 0000:2924
+loc_02927:
+  02927  50             push     ax  ; 0000:2927
+  02928  8a265408       mov      ah, byte ptr [0x854]  ; 0000:2928
+  0292C  9e             sahf       ; 0000:292C
+  0292D  58             pop      ax  ; 0000:292D
+  0292E  7307           jae      loc_02937  ; 0000:292E
+  02930  f7d8           neg      ax  ; 0000:2930
+  02932  83d200         adc      dx, 0  ; 0000:2932
+  02935  f7da           neg      dx  ; 0000:2935
+loc_02937:
+  02937  c3             ret        ; 0000:2937
+  02938  e83400         call     sub_0296F  ; 0000:2938
+  0293B  9f             lahf       ; 0000:293B
+  0293C  88265408       mov      byte ptr [0x854], ah  ; 0000:293C
+  02940  b81e29         mov      ax, 0x291e  ; 0000:2940
+  02943  ba2429         mov      dx, 0x2924  ; 0000:2943
+loc_02946:
+  02946  56             push     si  ; 0000:2946
+  02947  57             push     di  ; 0000:2947
+  02948  55             push     bp  ; 0000:2948
+  02949  89265e08       mov      word ptr [0x85e], sp  ; 0000:2949
+  0294D  53             push     bx  ; 0000:294D
+  0294E  51             push     cx  ; 0000:294E
+  0294F  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:294F
+  02953  83ee0c         sub      si, 0xc  ; 0000:2953
+  02956  8936e209       mov      word ptr [0x9e2], si  ; 0000:2956
+  0295A  807c0a03       cmp      byte ptr [si + 0xa], 3  ; 0000:295A
+  0295E  8b7408         mov      si, word ptr [si + 8]  ; 0000:295E
+  02961  7504           jne      loc_02967  ; 0000:2961
+  02963  ffd0           call     ax  ; 0000:2963
+  02965  eb02           jmp      loc_02969  ; 0000:2965
+loc_02967:
+  02967  ffd2           call     dx  ; 0000:2967
+loc_02969:
+  02969  59             pop      cx  ; 0000:2969
+  0296A  5b             pop      bx  ; 0000:296A
+  0296B  5d             pop      bp  ; 0000:296B
+  0296C  5f             pop      di  ; 0000:296C
+  0296D  5e             pop      si  ; 0000:296D
+  0296E  c3             ret        ; 0000:296E
+
+
+; ---- sub_0296F ----
+sub_0296F:
+  0296F  57             push     di  ; 0000:296F
+  02970  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2970
+  02974  8a5dfe         mov      bl, byte ptr [di - 2]  ; 0000:2974
+  02977  32ff           xor      bh, bh  ; 0000:2977
+  02979  f6017f         test     byte ptr [bx + di], 0x7f  ; 0000:2979
+  0297C  7513           jne      loc_02991  ; 0000:297C
+  0297E  80fb03         cmp      bl, 3  ; 0000:297E
+  02981  7408           je       loc_0298B  ; 0000:2981
+  02983  f641fff0       test     byte ptr [bx + di - 1], 0xf0  ; 0000:2983
+  02987  7508           jne      loc_02991  ; 0000:2987
+loc_02989:
+  02989  5f             pop      di  ; 0000:2989
+  0298A  c3             ret        ; 0000:298A
+loc_0298B:
+  0298B  f641ff80       test     byte ptr [bx + di - 1], 0x80  ; 0000:298B
+  0298F  74f8           je       loc_02989  ; 0000:298F
+loc_02991:
+  02991  f60180         test     byte ptr [bx + di], 0x80  ; 0000:2991
+  02994  5f             pop      di  ; 0000:2994
+  02995  7503           jne      loc_0299A  ; 0000:2995
+  02997  0be4           or       sp, sp  ; 0000:2997
+  02999  c3             ret        ; 0000:2999
+loc_0299A:
+  0299A  f9             stc        ; 0000:299A
+  0299B  c3             ret        ; 0000:299B
+  0299C  57             push     di  ; 0000:299C
+  0299D  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:299D
+  029A1  8a5dfe         mov      bl, byte ptr [di - 2]  ; 0000:29A1
+  029A4  32ff           xor      bh, bh  ; 0000:29A4
+  029A6  80217f         and      byte ptr [bx + di], 0x7f  ; 0000:29A6
+  029A9  5f             pop      di  ; 0000:29A9
+  029AA  c3             ret        ; 0000:29AA
+
+
+; ---- sub_029AB ----
+sub_029AB:
+  029AB  56             push     si  ; 0000:29AB
+  029AC  57             push     di  ; 0000:29AC
+  029AD  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:29AD
+  029B1  8a5dfe         mov      bl, byte ptr [di - 2]  ; 0000:29B1
+  029B4  8b75fc         mov      si, word ptr [di - 4]  ; 0000:29B4
+  029B7  3bf7           cmp      si, di  ; 0000:29B7
+  029B9  7508           jne      loc_029C3  ; 0000:29B9
+  029BB  32ff           xor      bh, bh  ; 0000:29BB
+  029BD  803180         xor      byte ptr [bx + di], 0x80  ; 0000:29BD
+  029C0  5f             pop      di  ; 0000:29C0
+  029C1  5e             pop      si  ; 0000:29C1
+  029C2  c3             ret        ; 0000:29C2
+loc_029C3:
+  029C3  897dfc         mov      word ptr [di - 4], di  ; 0000:29C3
+  029C6  8cd9           mov      cx, ds  ; 0000:29C6
+  029C8  8ec1           mov      es, cx  ; 0000:29C8
+  029CA  fc             cld        ; 0000:29CA
+  029CB  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:29CB
+  029CC  80fb03         cmp      bl, 3  ; 0000:29CC
+  029CF  7508           jne      loc_029D9  ; 0000:29CF
+  029D1  ad             lodsw    ax, word ptr [si]  ; 0000:29D1
+  029D2  80f480         xor      ah, 0x80  ; 0000:29D2
+  029D5  ab             stosw    word ptr es:[di], ax  ; 0000:29D5
+  029D6  5f             pop      di  ; 0000:29D6
+  029D7  5e             pop      si  ; 0000:29D7
+  029D8  c3             ret        ; 0000:29D8
+loc_029D9:
+  029D9  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:29D9
+  029DA  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:29DA
+  029DB  ad             lodsw    ax, word ptr [si]  ; 0000:29DB
+  029DC  80f480         xor      ah, 0x80  ; 0000:29DC
+  029DF  ab             stosw    word ptr es:[di], ax  ; 0000:29DF
+  029E0  5f             pop      di  ; 0000:29E0
+  029E1  5e             pop      si  ; 0000:29E1
+  029E2  c3             ret        ; 0000:29E2
+  029E3  56             push     si  ; 0000:29E3
+  029E4  57             push     di  ; 0000:29E4
+  029E5  8cd0           mov      ax, ss  ; 0000:29E5
+  029E7  8ec0           mov      es, ax  ; 0000:29E7
+  029E9  eb02           jmp      loc_029ED  ; 0000:29E9
+  029EB  56             push     si  ; 0000:29EB
+  029EC  57             push     di  ; 0000:29EC
+loc_029ED:
+  029ED  e8db02         call     sub_02CCB  ; 0000:29ED
+  029F0  eb04           jmp      loc_029F6  ; 0000:29F0
+  029F2  56             push     si  ; 0000:29F2
+  029F3  57             push     di  ; 0000:29F3
+  029F4  8bf3           mov      si, bx  ; 0000:29F4
+loc_029F6:
+  029F6  b80800         mov      ax, 8  ; 0000:29F6
+  029F9  eb76           jmp      loc_02A71  ; 0000:29F9
+  029FB  56             push     si  ; 0000:29FB
+  029FC  57             push     di  ; 0000:29FC
+  029FD  8cd0           mov      ax, ss  ; 0000:29FD
+  029FF  8ec0           mov      es, ax  ; 0000:29FF
+  02A01  eb02           jmp      loc_02A05  ; 0000:2A01
+  02A03  56             push     si  ; 0000:2A03
+  02A04  57             push     di  ; 0000:2A04
+loc_02A05:
+  02A05  e8c302         call     sub_02CCB  ; 0000:2A05
+  02A08  eb04           jmp      loc_02A0E  ; 0000:2A08
+  02A0A  56             push     si  ; 0000:2A0A
+  02A0B  57             push     di  ; 0000:2A0B
+  02A0C  8bf3           mov      si, bx  ; 0000:2A0C
+loc_02A0E:
+  02A0E  b80400         mov      ax, 4  ; 0000:2A0E
+  02A11  eb5e           jmp      loc_02A71  ; 0000:2A11
+  02A13  56             push     si  ; 0000:2A13
+  02A14  57             push     di  ; 0000:2A14
+  02A15  8cd0           mov      ax, ss  ; 0000:2A15
+  02A17  8ec0           mov      es, ax  ; 0000:2A17
+  02A19  eb02           jmp      loc_02A1D  ; 0000:2A19
+  02A1B  56             push     si  ; 0000:2A1B
+  02A1C  57             push     di  ; 0000:2A1C
+loc_02A1D:
+  02A1D  e8ab02         call     sub_02CCB  ; 0000:2A1D
+  02A20  eb04           jmp      loc_02A26  ; 0000:2A20
+  02A22  56             push     si  ; 0000:2A22
+  02A23  57             push     di  ; 0000:2A23
+  02A24  8bf3           mov      si, bx  ; 0000:2A24
+loc_02A26:
+  02A26  b80c00         mov      ax, 0xc  ; 0000:2A26
+  02A29  eb46           jmp      loc_02A71  ; 0000:2A29
+  02A2B  56             push     si  ; 0000:2A2B
+  02A2C  57             push     di  ; 0000:2A2C
+  02A2D  8cd0           mov      ax, ss  ; 0000:2A2D
+  02A2F  8ec0           mov      es, ax  ; 0000:2A2F
+  02A31  eb02           jmp      loc_02A35  ; 0000:2A31
+  02A33  56             push     si  ; 0000:2A33
+  02A34  57             push     di  ; 0000:2A34
+loc_02A35:
+  02A35  e89302         call     sub_02CCB  ; 0000:2A35
+  02A38  eb04           jmp      loc_02A3E  ; 0000:2A38
+  02A3A  56             push     si  ; 0000:2A3A
+  02A3B  57             push     di  ; 0000:2A3B
+  02A3C  8bf3           mov      si, bx  ; 0000:2A3C
+loc_02A3E:
+  02A3E  b81400         mov      ax, 0x14  ; 0000:2A3E
+  02A41  eb2e           jmp      loc_02A71  ; 0000:2A41
+  02A43  56             push     si  ; 0000:2A43
+  02A44  57             push     di  ; 0000:2A44
+  02A45  8cd0           mov      ax, ss  ; 0000:2A45
+  02A47  8ec0           mov      es, ax  ; 0000:2A47
+  02A49  eb02           jmp      loc_02A4D  ; 0000:2A49
+  02A4B  56             push     si  ; 0000:2A4B
+  02A4C  57             push     di  ; 0000:2A4C
+loc_02A4D:
+  02A4D  e87b02         call     sub_02CCB  ; 0000:2A4D
+  02A50  eb04           jmp      loc_02A56  ; 0000:2A50
+  02A52  56             push     si  ; 0000:2A52
+  02A53  57             push     di  ; 0000:2A53
+  02A54  8bf3           mov      si, bx  ; 0000:2A54
+loc_02A56:
+  02A56  b81000         mov      ax, 0x10  ; 0000:2A56
+  02A59  eb16           jmp      loc_02A71  ; 0000:2A59
+  02A5B  56             push     si  ; 0000:2A5B
+  02A5C  57             push     di  ; 0000:2A5C
+  02A5D  8cd0           mov      ax, ss  ; 0000:2A5D
+  02A5F  8ec0           mov      es, ax  ; 0000:2A5F
+  02A61  eb02           jmp      loc_02A65  ; 0000:2A61
+  02A63  56             push     si  ; 0000:2A63
+  02A64  57             push     di  ; 0000:2A64
+loc_02A65:
+  02A65  e86302         call     sub_02CCB  ; 0000:2A65
+  02A68  eb04           jmp      loc_02A6E  ; 0000:2A68
+  02A6A  56             push     si  ; 0000:2A6A
+  02A6B  57             push     di  ; 0000:2A6B
+  02A6C  8bf3           mov      si, bx  ; 0000:2A6C
+loc_02A6E:
+  02A6E  b80000         mov      ax, 0  ; 0000:2A6E
+loc_02A71:
+  02A71  8bd8           mov      bx, ax  ; 0000:2A71
+  02A73  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2A73
+  02A77  8cd9           mov      cx, ds  ; 0000:2A77
+  02A79  8ec1           mov      es, cx  ; 0000:2A79
+  02A7B  807dfe07       cmp      byte ptr [di - 2], 7  ; 0000:2A7B
+  02A7F  7410           je       loc_02A91  ; 0000:2A7F
+loc_02A81:
+  02A81  877dfc         xchg     word ptr [di - 4], di  ; 0000:2A81
+  02A84  55             push     bp  ; 0000:2A84
+  02A85  89265e08       mov      word ptr [0x85e], sp  ; 0000:2A85
+  02A89  ff973808       call     word ptr [bx + 0x838]  ; 0000:2A89
+  02A8D  5d             pop      bp  ; 0000:2A8D
+  02A8E  5f             pop      di  ; 0000:2A8E
+  02A8F  5e             pop      si  ; 0000:2A8F
+  02A90  c3             ret        ; 0000:2A90
+loc_02A91:
+  02A91  83c302         add      bx, 2  ; 0000:2A91
+  02A94  bf6408         mov      di, 0x864  ; 0000:2A94
+  02A97  e86e02         call     sub_02D08  ; 0000:2A97
+  02A9A  8bf7           mov      si, di  ; 0000:2A9A
+  02A9C  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2A9C
+  02AA0  ebdf           jmp      loc_02A81  ; 0000:2AA0
+  02AA2  56             push     si  ; 0000:2AA2
+  02AA3  57             push     di  ; 0000:2AA3
+  02AA4  8cd0           mov      ax, ss  ; 0000:2AA4
+  02AA6  8ec0           mov      es, ax  ; 0000:2AA6
+  02AA8  eb02           jmp      loc_02AAC  ; 0000:2AA8
+  02AAA  56             push     si  ; 0000:2AAA
+  02AAB  57             push     di  ; 0000:2AAB
+loc_02AAC:
+  02AAC  e83202         call     sub_02CE1  ; 0000:2AAC
+  02AAF  eb04           jmp      loc_02AB5  ; 0000:2AAF
+
+
+; ---- sub_02AB1 ----
+sub_02AB1:
+  02AB1  56             push     si  ; 0000:2AB1
+  02AB2  57             push     di  ; 0000:2AB2
+  02AB3  8bf3           mov      si, bx  ; 0000:2AB3
+loc_02AB5:
+  02AB5  b80a00         mov      ax, 0xa  ; 0000:2AB5
+  02AB8  eb76           jmp      loc_02B30  ; 0000:2AB8
+  02ABA  56             push     si  ; 0000:2ABA
+  02ABB  57             push     di  ; 0000:2ABB
+  02ABC  8cd0           mov      ax, ss  ; 0000:2ABC
+  02ABE  8ec0           mov      es, ax  ; 0000:2ABE
+  02AC0  eb02           jmp      loc_02AC4  ; 0000:2AC0
+  02AC2  56             push     si  ; 0000:2AC2
+  02AC3  57             push     di  ; 0000:2AC3
+loc_02AC4:
+  02AC4  e81a02         call     sub_02CE1  ; 0000:2AC4
+  02AC7  eb04           jmp      loc_02ACD  ; 0000:2AC7
+
+
+; ---- sub_02AC9 ----
+sub_02AC9:
+  02AC9  56             push     si  ; 0000:2AC9
+  02ACA  57             push     di  ; 0000:2ACA
+  02ACB  8bf3           mov      si, bx  ; 0000:2ACB
+loc_02ACD:
+  02ACD  b80600         mov      ax, 6  ; 0000:2ACD
+  02AD0  eb5e           jmp      loc_02B30  ; 0000:2AD0
+  02AD2  56             push     si  ; 0000:2AD2
+  02AD3  57             push     di  ; 0000:2AD3
+  02AD4  8cd0           mov      ax, ss  ; 0000:2AD4
+  02AD6  8ec0           mov      es, ax  ; 0000:2AD6
+  02AD8  eb02           jmp      loc_02ADC  ; 0000:2AD8
+  02ADA  56             push     si  ; 0000:2ADA
+  02ADB  57             push     di  ; 0000:2ADB
+loc_02ADC:
+  02ADC  e80202         call     sub_02CE1  ; 0000:2ADC
+  02ADF  eb04           jmp      loc_02AE5  ; 0000:2ADF
+
+
+; ---- sub_02AE1 ----
+sub_02AE1:
+  02AE1  56             push     si  ; 0000:2AE1
+  02AE2  57             push     di  ; 0000:2AE2
+  02AE3  8bf3           mov      si, bx  ; 0000:2AE3
+loc_02AE5:
+  02AE5  b80e00         mov      ax, 0xe  ; 0000:2AE5
+  02AE8  eb46           jmp      loc_02B30  ; 0000:2AE8
+  02AEA  56             push     si  ; 0000:2AEA
+  02AEB  57             push     di  ; 0000:2AEB
+  02AEC  8cd0           mov      ax, ss  ; 0000:2AEC
+  02AEE  8ec0           mov      es, ax  ; 0000:2AEE
+  02AF0  eb02           jmp      loc_02AF4  ; 0000:2AF0
+  02AF2  56             push     si  ; 0000:2AF2
+  02AF3  57             push     di  ; 0000:2AF3
+loc_02AF4:
+  02AF4  e8ea01         call     sub_02CE1  ; 0000:2AF4
+  02AF7  eb04           jmp      loc_02AFD  ; 0000:2AF7
+
+
+; ---- sub_02AF9 ----
+sub_02AF9:
+  02AF9  56             push     si  ; 0000:2AF9
+  02AFA  57             push     di  ; 0000:2AFA
+  02AFB  8bf3           mov      si, bx  ; 0000:2AFB
+loc_02AFD:
+  02AFD  b81600         mov      ax, 0x16  ; 0000:2AFD
+  02B00  eb2e           jmp      loc_02B30  ; 0000:2B00
+  02B02  56             push     si  ; 0000:2B02
+  02B03  57             push     di  ; 0000:2B03
+  02B04  8cd0           mov      ax, ss  ; 0000:2B04
+  02B06  8ec0           mov      es, ax  ; 0000:2B06
+  02B08  eb02           jmp      loc_02B0C  ; 0000:2B08
+  02B0A  56             push     si  ; 0000:2B0A
+  02B0B  57             push     di  ; 0000:2B0B
+loc_02B0C:
+  02B0C  e8d201         call     sub_02CE1  ; 0000:2B0C
+  02B0F  eb04           jmp      loc_02B15  ; 0000:2B0F
+
+
+; ---- sub_02B11 ----
+sub_02B11:
+  02B11  56             push     si  ; 0000:2B11
+  02B12  57             push     di  ; 0000:2B12
+  02B13  8bf3           mov      si, bx  ; 0000:2B13
+loc_02B15:
+  02B15  b81200         mov      ax, 0x12  ; 0000:2B15
+  02B18  eb16           jmp      loc_02B30  ; 0000:2B18
+  02B1A  56             push     si  ; 0000:2B1A
+  02B1B  57             push     di  ; 0000:2B1B
+  02B1C  8cd0           mov      ax, ss  ; 0000:2B1C
+  02B1E  8ec0           mov      es, ax  ; 0000:2B1E
+  02B20  eb02           jmp      loc_02B24  ; 0000:2B20
+  02B22  56             push     si  ; 0000:2B22
+  02B23  57             push     di  ; 0000:2B23
+loc_02B24:
+  02B24  e8ba01         call     sub_02CE1  ; 0000:2B24
+  02B27  eb04           jmp      loc_02B2D  ; 0000:2B27
+
+
+; ---- sub_02B29 ----
+sub_02B29:
+  02B29  56             push     si  ; 0000:2B29
+  02B2A  57             push     di  ; 0000:2B2A
+  02B2B  8bf3           mov      si, bx  ; 0000:2B2B
+loc_02B2D:
+  02B2D  b80200         mov      ax, 2  ; 0000:2B2D
+loc_02B30:
+  02B30  8bd8           mov      bx, ax  ; 0000:2B30
+  02B32  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2B32
+  02B36  8cd9           mov      cx, ds  ; 0000:2B36
+  02B38  8ec1           mov      es, cx  ; 0000:2B38
+  02B3A  807dfe07       cmp      byte ptr [di - 2], 7  ; 0000:2B3A
+  02B3E  7405           je       loc_02B45  ; 0000:2B3E
+  02B40  56             push     si  ; 0000:2B40
+  02B41  e8b501         call     sub_02CF9  ; 0000:2B41
+  02B44  5e             pop      si  ; 0000:2B44
+loc_02B45:
+  02B45  e939ff         jmp      loc_02A81  ; 0000:2B45
+  02B48  bb0400         mov      bx, 4  ; 0000:2B48
+  02B4B  eb21           jmp      loc_02B6E  ; 0000:2B4B
+  02B4D  bb0800         mov      bx, 8  ; 0000:2B4D
+  02B50  eb1c           jmp      loc_02B6E  ; 0000:2B50
+  02B52  bb0c00         mov      bx, 0xc  ; 0000:2B52
+  02B55  eb17           jmp      loc_02B6E  ; 0000:2B55
+  02B57  bb1000         mov      bx, 0x10  ; 0000:2B57
+  02B5A  eb12           jmp      loc_02B6E  ; 0000:2B5A
+  02B5C  bb1400         mov      bx, 0x14  ; 0000:2B5C
+  02B5F  eb0d           jmp      loc_02B6E  ; 0000:2B5F
+
+
+; ---- sub_02B61 ----
+sub_02B61:
+  02B61  bb0000         mov      bx, 0  ; 0000:2B61
+  02B64  eb08           jmp      loc_02B6E  ; 0000:2B64
+
+
+; ---- sub_02B66 ----
+sub_02B66:
+  02B66  bb1c00         mov      bx, 0x1c  ; 0000:2B66
+  02B69  eb03           jmp      loc_02B6E  ; 0000:2B69
+
+
+; ---- sub_02B6B ----
+sub_02B6B:
+  02B6B  bb1800         mov      bx, 0x18  ; 0000:2B6B
+loc_02B6E:
+  02B6E  56             push     si  ; 0000:2B6E
+  02B6F  57             push     di  ; 0000:2B6F
+  02B70  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2B70
+  02B74  807dfe07       cmp      byte ptr [di - 2], 7  ; 0000:2B74
+  02B78  7439           je       loc_02BB3  ; 0000:2B78
+  02B7A  807df207       cmp      byte ptr [di - 0xe], 7  ; 0000:2B7A
+  02B7E  742b           je       loc_02BAB  ; 0000:2B7E
+loc_02B80:
+  02B80  83ef0c         sub      di, 0xc  ; 0000:2B80
+  02B83  893ee209       mov      word ptr [0x9e2], di  ; 0000:2B83
+loc_02B87:
+  02B87  8cd8           mov      ax, ds  ; 0000:2B87
+  02B89  8ec0           mov      es, ax  ; 0000:2B89
+  02B8B  8b75fc         mov      si, word ptr [di - 4]  ; 0000:2B8B
+  02B8E  897dfc         mov      word ptr [di - 4], di  ; 0000:2B8E
+  02B91  8b7d08         mov      di, word ptr [di + 8]  ; 0000:2B91
+  02B94  83fb1c         cmp      bx, 0x1c  ; 0000:2B94
+  02B97  732f           jae      loc_02BC8  ; 0000:2B97
+  02B99  83fb18         cmp      bx, 0x18  ; 0000:2B99
+  02B9C  7338           jae      loc_02BD6  ; 0000:2B9C
+  02B9E  55             push     bp  ; 0000:2B9E
+  02B9F  89265e08       mov      word ptr [0x85e], sp  ; 0000:2B9F
+  02BA3  ff973808       call     word ptr [bx + 0x838]  ; 0000:2BA3
+  02BA7  5d             pop      bp  ; 0000:2BA7
+  02BA8  5f             pop      di  ; 0000:2BA8
+  02BA9  5e             pop      si  ; 0000:2BA9
+  02BAA  c3             ret        ; 0000:2BAA
+loc_02BAB:
+  02BAB  83c302         add      bx, 2  ; 0000:2BAB
+  02BAE  e84801         call     sub_02CF9  ; 0000:2BAE
+  02BB1  ebcd           jmp      loc_02B80  ; 0000:2BB1
+loc_02BB3:
+  02BB3  83c302         add      bx, 2  ; 0000:2BB3
+  02BB6  807df207       cmp      byte ptr [di - 0xe], 7  ; 0000:2BB6
+  02BBA  74c4           je       loc_02B80  ; 0000:2BBA
+  02BBC  83ef0c         sub      di, 0xc  ; 0000:2BBC
+  02BBF  893ee209       mov      word ptr [0x9e2], di  ; 0000:2BBF
+  02BC3  e83301         call     sub_02CF9  ; 0000:2BC3
+  02BC6  ebbf           jmp      loc_02B87  ; 0000:2BC6
+loc_02BC8:
+  02BC8  87f7           xchg     di, si  ; 0000:2BC8
+  02BCA  832ee2090c     sub      word ptr [0x9e2], 0xc  ; 0000:2BCA
+  02BCF  ff973408       call     word ptr [bx + 0x834]  ; 0000:2BCF
+  02BD3  5f             pop      di  ; 0000:2BD3
+  02BD4  5e             pop      si  ; 0000:2BD4
+  02BD5  c3             ret        ; 0000:2BD5
+loc_02BD6:
+  02BD6  832ee2090c     sub      word ptr [0x9e2], 0xc  ; 0000:2BD6
+  02BDB  ff973808       call     word ptr [bx + 0x838]  ; 0000:2BDB
+  02BDF  9f             lahf       ; 0000:2BDF
+  02BE0  250041         and      ax, 0x4100  ; 0000:2BE0
+  02BE3  d1e8           shr      ax, 1  ; 0000:2BE3
+  02BE5  d0e4           shl      ah, 1  ; 0000:2BE5
+  02BE7  0ae0           or       ah, al  ; 0000:2BE7
+  02BE9  5f             pop      di  ; 0000:2BE9
+  02BEA  5e             pop      si  ; 0000:2BEA
+  02BEB  9e             sahf       ; 0000:2BEB
+  02BEC  c3             ret        ; 0000:2BEC
+  02BED  d0e3           shl      bl, 1  ; 0000:2BED
+  02BEF  d0e3           shl      bl, 1  ; 0000:2BEF
+  02BF1  8afb           mov      bh, bl  ; 0000:2BF1
+  02BF3  d0e7           shl      bh, 1  ; 0000:2BF3
+  02BF5  02df           add      bl, bh  ; 0000:2BF5
+  02BF7  32ff           xor      bh, bh  ; 0000:2BF7
+  02BF9  eb03           jmp      loc_02BFE  ; 0000:2BF9
+  02BFB  bb0c00         mov      bx, 0xc  ; 0000:2BFB
+loc_02BFE:
+  02BFE  56             push     si  ; 0000:2BFE
+  02BFF  57             push     di  ; 0000:2BFF
+  02C00  8cd8           mov      ax, ds  ; 0000:2C00
+  02C02  8ec0           mov      es, ax  ; 0000:2C02
+  02C04  fc             cld        ; 0000:2C04
+  02C05  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:2C05
+  02C09  4e             dec      si  ; 0000:2C09
+  02C0A  4e             dec      si  ; 0000:2C0A
+  02C0B  8bfe           mov      di, si  ; 0000:2C0B
+  02C0D  2bfb           sub      di, bx  ; 0000:2C0D
+  02C0F  b90500         mov      cx, 5  ; 0000:2C0F
+  02C12  ad             lodsw    ax, word ptr [si]  ; 0000:2C12
+  02C13  8705           xchg     word ptr [di], ax  ; 0000:2C13
+  02C15  8944fe         mov      word ptr [si - 2], ax  ; 0000:2C15
+  02C18  8b1d           mov      bx, word ptr [di]  ; 0000:2C18
+  02C1A  47             inc      di  ; 0000:2C1A
+  02C1B  47             inc      di  ; 0000:2C1B
+  02C1C  e2f4           loop     0x2c12  ; 0000:2C1C
+  02C1E  5f             pop      di  ; 0000:2C1E
+  02C1F  5e             pop      si  ; 0000:2C1F
+  02C20  c3             ret        ; 0000:2C20
+
+
+; ---- sub_02C21 ----
+sub_02C21:
+  02C21  55             push     bp  ; 0000:2C21
+  02C22  8bec           mov      bp, sp  ; 0000:2C22
+  02C24  56             push     si  ; 0000:2C24
+  02C25  57             push     di  ; 0000:2C25
+  02C26  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2C26
+  02C2A  807dfe07       cmp      byte ptr [di - 2], 7  ; 0000:2C2A
+  02C2E  7403           je       loc_02C33  ; 0000:2C2E
+  02C30  e8c600         call     sub_02CF9  ; 0000:2C30
+loc_02C33:
+  02C33  5f             pop      di  ; 0000:2C33
+  02C34  5e             pop      si  ; 0000:2C34
+  02C35  8be5           mov      sp, bp  ; 0000:2C35
+  02C37  5d             pop      bp  ; 0000:2C37
+  02C38  c3             ret        ; 0000:2C38
+loc_02C39:
+  02C39  c7065a083034   mov      word ptr [0x85a], 0x3430  ; 0000:2C39
+  02C3F  b084           mov      al, 0x84  ; 0000:2C3F
+  02C41  eb1c           jmp      loc_02C5F  ; 0000:2C41
+loc_02C43:
+  02C43  c7065a083033   mov      word ptr [0x85a], 0x3330  ; 0000:2C43
+  02C49  b083           mov      al, 0x83  ; 0000:2C49
+  02C4B  eb12           jmp      loc_02C5F  ; 0000:2C4B
+loc_02C4D:
+  02C4D  c7065a083031   mov      word ptr [0x85a], 0x3130  ; 0000:2C4D
+  02C53  b081           mov      al, 0x81  ; 0000:2C53
+  02C55  eb08           jmp      loc_02C5F  ; 0000:2C55
+loc_02C57:
+  02C57  c7065a083130   mov      word ptr [0x85a], 0x3031  ; 0000:2C57
+  02C5D  b08a           mov      al, 0x8a  ; 0000:2C5D
+loc_02C5F:
+  02C5F  833e620800     cmp      word ptr [0x862], 0  ; 0000:2C5F
+  02C64  7404           je       loc_02C6A  ; 0000:2C64
+  02C66  ff1e6008       lcall    [0x860]  ; 0000:2C66
+loc_02C6A:
+  02C6A  3c8c           cmp      al, 0x8c  ; 0000:2C6A
+  02C6C  7506           jne      loc_02C74  ; 0000:2C6C
+  02C6E  c7065a083132   mov      word ptr [0x85a], 0x3231  ; 0000:2C6E
+loc_02C74:
+  02C74  2ae4           sub      ah, ah  ; 0000:2C74
+  02C76  a35c08         mov      word ptr [0x85c], ax  ; 0000:2C76
+  02C79  e83416         call     sub_042B0  ; 0000:2C79
+  02C7C  bb5608         mov      bx, 0x856  ; 0000:2C7C
+  02C7F  e81c1c         call     sub_0489E  ; 0000:2C7F
+  02C82  b8fd00         mov      ax, 0xfd  ; 0000:2C82
+  02C85  50             push     ax  ; 0000:2C85
+  02C86  e82818         call     sub_044B1  ; 0000:2C86
+  02C89  a15c08         mov      ax, word ptr [0x85c]  ; 0000:2C89
+  02C8C  05e4ff         add      ax, 0xffe4  ; 0000:2C8C
+  02C8F  50             push     ax  ; 0000:2C8F
+  02C90  e81e18         call     sub_044B1  ; 0000:2C90
+  02C93  ff365c08       push     word ptr [0x85c]  ; 0000:2C93
+  02C97  e87ef4         call     sub_02118  ; 0000:2C97
+  02C9A  c3             ret        ; 0000:2C9A
+  02C9B  8bc8           mov      cx, ax  ; 0000:2C9B
+  02C9D  8cd8           mov      ax, ds  ; 0000:2C9D
+  02C9F  90             nop        ; 0000:2C9F
+  02CA0  45             inc      bp  ; 0000:2CA0
+
+
+; ---- sub_02CA1 ----
+sub_02CA1:
+  02CA1  55             push     bp  ; 0000:2CA1
+  02CA2  8bec           mov      bp, sp  ; 0000:2CA2
+  02CA4  1e             push     ds  ; 0000:2CA4
+  02CA5  8ed8           mov      ds, ax  ; 0000:2CA5
+  02CA7  83fb03         cmp      bx, 3  ; 0000:2CA7
+  02CAA  7715           ja       loc_02CC1  ; 0000:2CAA
+  02CAC  7409           je       loc_02CB7  ; 0000:2CAC
+  02CAE  36c706e2097208 mov      word ptr ss:[0x9e2], 0x872  ; 0000:2CAE
+  02CB5  eb0a           jmp      loc_02CC1  ; 0000:2CB5
+loc_02CB7:
+  02CB7  36890e6008     mov      word ptr ss:[0x860], cx  ; 0000:2CB7
+  02CBC  3689166208     mov      word ptr ss:[0x862], dx  ; 0000:2CBC
+loc_02CC1:
+  02CC1  f8             clc        ; 0000:2CC1
+  02CC2  83ed02         sub      bp, 2  ; 0000:2CC2
+  02CC5  8be5           mov      sp, bp  ; 0000:2CC5
+  02CC7  1f             pop      ds  ; 0000:2CC7
+  02CC8  5d             pop      bp  ; 0000:2CC8
+  02CC9  4d             dec      bp  ; 0000:2CC9
+  02CCA  cb             retf       ; 0000:2CCA
+
+
+; ---- sub_02CCB ----
+sub_02CCB:
+  02CCB  8bf3           mov      si, bx  ; 0000:2CCB
+  02CCD  bf6408         mov      di, 0x864  ; 0000:2CCD
+  02CD0  8cc0           mov      ax, es  ; 0000:2CD0
+  02CD2  8cd9           mov      cx, ds  ; 0000:2CD2
+  02CD4  8ec1           mov      es, cx  ; 0000:2CD4
+  02CD6  8ed8           mov      ds, ax  ; 0000:2CD6
+  02CD8  fc             cld        ; 0000:2CD8
+  02CD9  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2CD9
+  02CDA  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2CDA
+  02CDB  8ed9           mov      ds, cx  ; 0000:2CDB
+  02CDD  be6408         mov      si, 0x864  ; 0000:2CDD
+  02CE0  c3             ret        ; 0000:2CE0
+
+
+; ---- sub_02CE1 ----
+sub_02CE1:
+  02CE1  8bf3           mov      si, bx  ; 0000:2CE1
+  02CE3  bf6408         mov      di, 0x864  ; 0000:2CE3
+  02CE6  8cc0           mov      ax, es  ; 0000:2CE6
+  02CE8  8cd9           mov      cx, ds  ; 0000:2CE8
+  02CEA  8ec1           mov      es, cx  ; 0000:2CEA
+  02CEC  8ed8           mov      ds, ax  ; 0000:2CEC
+  02CEE  fc             cld        ; 0000:2CEE
+  02CEF  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2CEF
+  02CF0  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2CF0
+  02CF1  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2CF1
+  02CF2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:2CF2
+  02CF3  8ed9           mov      ds, cx  ; 0000:2CF3
+  02CF5  be6408         mov      si, 0x864  ; 0000:2CF5
+  02CF8  c3             ret        ; 0000:2CF8
+
+
+; ---- sub_02CF9 ----
+sub_02CF9:
+  02CF9  8b75fc         mov      si, word ptr [di - 4]  ; 0000:2CF9
+  02CFC  897dfc         mov      word ptr [di - 4], di  ; 0000:2CFC
+  02CFF  c645fe07       mov      byte ptr [di - 2], 7  ; 0000:2CFF
+  02D03  eb03           jmp      sub_02D08  ; 0000:2D03
+  02D05  8b75fc         mov      si, word ptr [di - 4]  ; 0000:2D05
+
+
+; ---- sub_02D08 ----
+sub_02D08:
+  02D08  fc             cld        ; 0000:2D08
+  02D09  33c0           xor      ax, ax  ; 0000:2D09
+  02D0B  8b0c           mov      cx, word ptr [si]  ; 0000:2D0B
+  02D0D  8b5402         mov      dx, word ptr [si + 2]  ; 0000:2D0D
+  02D10  f7c2807f       test     dx, 0x7f80  ; 0000:2D10
+  02D14  7425           je       loc_02D3B  ; 0000:2D14
+  02D16  8905           mov      word ptr [di], ax  ; 0000:2D16
+  02D18  d1fa           sar      dx, 1  ; 0000:2D18
+  02D1A  d1d9           rcr      cx, 1  ; 0000:2D1A
+  02D1C  d1d8           rcr      ax, 1  ; 0000:2D1C
+  02D1E  d1fa           sar      dx, 1  ; 0000:2D1E
+  02D20  d1d9           rcr      cx, 1  ; 0000:2D20
+  02D22  d1d8           rcr      ax, 1  ; 0000:2D22
+  02D24  d1fa           sar      dx, 1  ; 0000:2D24
+  02D26  d1d9           rcr      cx, 1  ; 0000:2D26
+  02D28  d1d8           rcr      ax, 1  ; 0000:2D28
+  02D2A  894502         mov      word ptr [di + 2], ax  ; 0000:2D2A
+  02D2D  894d04         mov      word ptr [di + 4], cx  ; 0000:2D2D
+  02D30  80e68f         and      dh, 0x8f  ; 0000:2D30
+  02D33  81c20038       add      dx, 0x3800  ; 0000:2D33
+  02D37  895506         mov      word ptr [di + 6], dx  ; 0000:2D37
+  02D3A  c3             ret        ; 0000:2D3A
+loc_02D3B:
+  02D3B  8905           mov      word ptr [di], ax  ; 0000:2D3B
+  02D3D  894502         mov      word ptr [di + 2], ax  ; 0000:2D3D
+  02D40  894504         mov      word ptr [di + 4], ax  ; 0000:2D40
+  02D43  894506         mov      word ptr [di + 6], ax  ; 0000:2D43
+  02D46  c3             ret        ; 0000:2D46
+  02D47  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2D47
+  02D4B  fc             cld        ; 0000:2D4B
+  02D4C  8b0c           mov      cx, word ptr [si]  ; 0000:2D4C
+  02D4E  8b5402         mov      dx, word ptr [si + 2]  ; 0000:2D4E
+  02D51  33c0           xor      ax, ax  ; 0000:2D51
+  02D53  f7c2807f       test     dx, 0x7f80  ; 0000:2D53
+  02D57  7429           je       loc_02D82  ; 0000:2D57
+  02D59  d1fa           sar      dx, 1  ; 0000:2D59
+  02D5B  d1d9           rcr      cx, 1  ; 0000:2D5B
+  02D5D  d1d8           rcr      ax, 1  ; 0000:2D5D
+  02D5F  d1fa           sar      dx, 1  ; 0000:2D5F
+  02D61  d1d9           rcr      cx, 1  ; 0000:2D61
+  02D63  d1d8           rcr      ax, 1  ; 0000:2D63
+  02D65  d1fa           sar      dx, 1  ; 0000:2D65
+  02D67  d1d9           rcr      cx, 1  ; 0000:2D67
+  02D69  d1d8           rcr      ax, 1  ; 0000:2D69
+  02D6B  80e68f         and      dh, 0x8f  ; 0000:2D6B
+  02D6E  81c20038       add      dx, 0x3800  ; 0000:2D6E
+loc_02D72:
+  02D72  c7050000       mov      word ptr [di], 0  ; 0000:2D72
+  02D76  894502         mov      word ptr [di + 2], ax  ; 0000:2D76
+  02D79  894d04         mov      word ptr [di + 4], cx  ; 0000:2D79
+  02D7C  895506         mov      word ptr [di + 6], dx  ; 0000:2D7C
+  02D7F  8bf7           mov      si, di  ; 0000:2D7F
+  02D81  c3             ret        ; 0000:2D81
+loc_02D82:
+  02D82  8bc8           mov      cx, ax  ; 0000:2D82
+  02D84  8ad0           mov      dl, al  ; 0000:2D84
+  02D86  ebea           jmp      loc_02D72  ; 0000:2D86
+
+
+; ---- sub_02D88 ----
+sub_02D88:
+  02D88  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:2D88
+  02D8C  fc             cld        ; 0000:2D8C
+  02D8D  ad             lodsw    ax, word ptr [si]  ; 0000:2D8D
+  02D8E  8bc8           mov      cx, ax  ; 0000:2D8E
+  02D90  ad             lodsw    ax, word ptr [si]  ; 0000:2D90
+  02D91  0ac8           or       cl, al  ; 0000:2D91
+  02D93  8ad4           mov      dl, ah  ; 0000:2D93
+  02D95  ad             lodsw    ax, word ptr [si]  ; 0000:2D95
+  02D96  8af0           mov      dh, al  ; 0000:2D96
+  02D98  8adc           mov      bl, ah  ; 0000:2D98
+  02D9A  ad             lodsw    ax, word ptr [si]  ; 0000:2D9A
+  02D9B  8af8           mov      bh, al  ; 0000:2D9B
+  02D9D  d1e2           shl      dx, 1  ; 0000:2D9D
+  02D9F  d1d3           rcl      bx, 1  ; 0000:2D9F
+  02DA1  d1e2           shl      dx, 1  ; 0000:2DA1
+  02DA3  d1d3           rcl      bx, 1  ; 0000:2DA3
+  02DA5  d1e2           shl      dx, 1  ; 0000:2DA5
+  02DA7  d1d3           rcl      bx, 1  ; 0000:2DA7
+  02DA9  0acd           or       cl, ch  ; 0000:2DA9
+  02DAB  7403           je       loc_02DB0  ; 0000:2DAB
+  02DAD  80ca01         or       dl, 1  ; 0000:2DAD
+loc_02DB0:
+  02DB0  b180           mov      cl, 0x80  ; 0000:2DB0
+  02DB2  0af9           or       bh, cl  ; 0000:2DB2
+  02DB4  8aec           mov      ch, ah  ; 0000:2DB4
+  02DB6  22e9           and      ch, cl  ; 0000:2DB6
+  02DB8  25f07f         and      ax, 0x7ff0  ; 0000:2DB8
+  02DBB  3de047         cmp      ax, 0x47e0  ; 0000:2DBB
+  02DBE  773d           ja       loc_02DFD  ; 0000:2DBE
+  02DC0  2d0038         sub      ax, 0x3800  ; 0000:2DC0
+  02DC3  723b           jb       loc_02E00  ; 0000:2DC3
+  02DC5  d1e0           shl      ax, 1  ; 0000:2DC5
+  02DC7  d1e0           shl      ax, 1  ; 0000:2DC7
+  02DC9  d1e0           shl      ax, 1  ; 0000:2DC9
+  02DCB  3ad1           cmp      dl, cl  ; 0000:2DCB
+  02DCD  7707           ja       loc_02DD6  ; 0000:2DCD
+  02DCF  7215           jb       loc_02DE6  ; 0000:2DCF
+  02DD1  f6c601         test     dh, 1  ; 0000:2DD1
+  02DD4  7410           je       loc_02DE6  ; 0000:2DD4
+loc_02DD6:
+  02DD6  80c601         add      dh, 1  ; 0000:2DD6
+  02DD9  83d300         adc      bx, 0  ; 0000:2DD9
+  02DDC  7308           jae      loc_02DE6  ; 0000:2DDC
+  02DDE  058000         add      ax, 0x80  ; 0000:2DDE
+  02DE1  3d807f         cmp      ax, 0x7f80  ; 0000:2DE1
+  02DE4  7417           je       loc_02DFD  ; 0000:2DE4
+loc_02DE6:
+  02DE6  0bc0           or       ax, ax  ; 0000:2DE6
+  02DE8  7416           je       loc_02E00  ; 0000:2DE8
+  02DEA  80e77f         and      bh, 0x7f  ; 0000:2DEA
+  02DED  0ac7           or       al, bh  ; 0000:2DED
+  02DEF  0ae5           or       ah, ch  ; 0000:2DEF
+  02DF1  894502         mov      word ptr [di + 2], ax  ; 0000:2DF1
+  02DF4  8ae3           mov      ah, bl  ; 0000:2DF4
+  02DF6  8ac6           mov      al, dh  ; 0000:2DF6
+  02DF8  8905           mov      word ptr [di], ax  ; 0000:2DF8
+  02DFA  8bf7           mov      si, di  ; 0000:2DFA
+  02DFC  c3             ret        ; 0000:2DFC
+loc_02DFD:
+  02DFD  e939fe         jmp      loc_02C39  ; 0000:2DFD
+loc_02E00:
+  02E00  33c0           xor      ax, ax  ; 0000:2E00
+  02E02  8905           mov      word ptr [di], ax  ; 0000:2E02
+  02E04  894502         mov      word ptr [di + 2], ax  ; 0000:2E04
+  02E07  8bf7           mov      si, di  ; 0000:2E07
+  02E09  c3             ret        ; 0000:2E09
+  02E0A  33d2           xor      dx, dx  ; 0000:2E0A
+  02E0C  8bda           mov      bx, dx  ; 0000:2E0C
+  02E0E  8bd0           mov      dx, ax  ; 0000:2E0E
+  02E10  8bc3           mov      ax, bx  ; 0000:2E10
+  02E12  eb1d           jmp      loc_02E31  ; 0000:2E12
+  02E14  8bd0           mov      dx, ax  ; 0000:2E14
+  02E16  33db           xor      bx, bx  ; 0000:2E16
+  02E18  0bd2           or       dx, dx  ; 0000:2E18
+  02E1A  7915           jns      loc_02E31  ; 0000:2E1A
+  02E1C  f7da           neg      dx  ; 0000:2E1C
+  02E1E  eb11           jmp      loc_02E31  ; 0000:2E1E
+  02E20  8bda           mov      bx, dx  ; 0000:2E20
+  02E22  8bd0           mov      dx, ax  ; 0000:2E22
+  02E24  8bc3           mov      ax, bx  ; 0000:2E24
+  02E26  0bc0           or       ax, ax  ; 0000:2E26
+  02E28  7907           jns      loc_02E31  ; 0000:2E28
+  02E2A  f7db           neg      bx  ; 0000:2E2A
+  02E2C  f7da           neg      dx  ; 0000:2E2C
+  02E2E  83db00         sbb      bx, 0  ; 0000:2E2E
+loc_02E31:
+  02E31  8ac4           mov      al, ah  ; 0000:2E31
+  02E33  2480           and      al, 0x80  ; 0000:2E33
+  02E35  b49e           mov      ah, 0x9e  ; 0000:2E35
+  02E37  e97904         jmp      sub_032B3  ; 0000:2E37
+  02E3A  33d2           xor      dx, dx  ; 0000:2E3A
+  02E3C  8bda           mov      bx, dx  ; 0000:2E3C
+  02E3E  8bc8           mov      cx, ax  ; 0000:2E3E
+  02E40  8bc3           mov      ax, bx  ; 0000:2E40
+  02E42  eb1d           jmp      loc_02E61  ; 0000:2E42
+  02E44  8bc8           mov      cx, ax  ; 0000:2E44
+  02E46  33db           xor      bx, bx  ; 0000:2E46
+  02E48  0bc9           or       cx, cx  ; 0000:2E48
+  02E4A  7915           jns      loc_02E61  ; 0000:2E4A
+  02E4C  f7d9           neg      cx  ; 0000:2E4C
+  02E4E  eb11           jmp      loc_02E61  ; 0000:2E4E
+  02E50  8bda           mov      bx, dx  ; 0000:2E50
+  02E52  8bc8           mov      cx, ax  ; 0000:2E52
+  02E54  8bc3           mov      ax, bx  ; 0000:2E54
+  02E56  0bc0           or       ax, ax  ; 0000:2E56
+  02E58  7907           jns      loc_02E61  ; 0000:2E58
+  02E5A  f7db           neg      bx  ; 0000:2E5A
+  02E5C  f7d9           neg      cx  ; 0000:2E5C
+  02E5E  83db00         sbb      bx, 0  ; 0000:2E5E
+loc_02E61:
+  02E61  8ac4           mov      al, ah  ; 0000:2E61
+  02E63  2480           and      al, 0x80  ; 0000:2E63
+  02E65  33ff           xor      di, di  ; 0000:2E65
+  02E67  33d2           xor      dx, dx  ; 0000:2E67
+  02E69  bd6085         mov      bp, 0x8560  ; 0000:2E69
+  02E6C  e9bb07         jmp      sub_0362A  ; 0000:2E6C
+  02E6F  e83a00         call     sub_02EAC  ; 0000:2E6F
+  02E72  eb0d           jmp      loc_02E81  ; 0000:2E72
+  02E74  e82b00         call     sub_02EA2  ; 0000:2E74
+  02E77  eb08           jmp      loc_02E81  ; 0000:2E77
+  02E79  e83500         call     sub_02EB1  ; 0000:2E79
+  02E7C  eb03           jmp      loc_02E81  ; 0000:2E7C
+  02E7E  e82600         call     sub_02EA7  ; 0000:2E7E
+loc_02E81:
+  02E81  d1c0           rol      ax, 1  ; 0000:2E81
+  02E83  83d200         adc      dx, 0  ; 0000:2E83
+  02E86  7567           jne      loc_02EEF  ; 0000:2E86
+  02E88  d1c8           ror      ax, 1  ; 0000:2E88
+  02E8A  c3             ret        ; 0000:2E8A
+  02E8B  e89c00         call     sub_02F2A  ; 0000:2E8B
+  02E8E  eb0d           jmp      loc_02E9D  ; 0000:2E8E
+  02E90  e83e00         call     sub_02ED1  ; 0000:2E90
+  02E93  eb08           jmp      loc_02E9D  ; 0000:2E93
+  02E95  e85d00         call     sub_02EF5  ; 0000:2E95
+  02E98  eb03           jmp      loc_02E9D  ; 0000:2E98
+  02E9A  e83900         call     sub_02ED6  ; 0000:2E9A
+loc_02E9D:
+  02E9D  0bd2           or       dx, dx  ; 0000:2E9D
+  02E9F  754e           jne      loc_02EEF  ; 0000:2E9F
+  02EA1  c3             ret        ; 0000:2EA1
+
+
+; ---- sub_02EA2 ----
+sub_02EA2:
+  02EA2  e82c00         call     sub_02ED1  ; 0000:2EA2
+  02EA5  eb0d           jmp      loc_02EB4  ; 0000:2EA5
+
+
+; ---- sub_02EA7 ----
+sub_02EA7:
+  02EA7  e82c00         call     sub_02ED6  ; 0000:2EA7
+  02EAA  eb08           jmp      loc_02EB4  ; 0000:2EAA
+
+
+; ---- sub_02EAC ----
+sub_02EAC:
+  02EAC  e87b00         call     sub_02F2A  ; 0000:2EAC
+  02EAF  eb03           jmp      loc_02EB4  ; 0000:2EAF
+
+
+; ---- sub_02EB1 ----
+sub_02EB1:
+  02EB1  e84100         call     sub_02EF5  ; 0000:2EB1
+loc_02EB4:
+  02EB4  33c9           xor      cx, cx  ; 0000:2EB4
+  02EB6  0bff           or       di, di  ; 0000:2EB6
+  02EB8  790d           jns      loc_02EC7  ; 0000:2EB8
+  02EBA  f7d1           not      cx  ; 0000:2EBA
+  02EBC  f7d2           not      dx  ; 0000:2EBC
+  02EBE  f7d8           neg      ax  ; 0000:2EBE
+  02EC0  f5             cmc        ; 0000:2EC0
+  02EC1  83d200         adc      dx, 0  ; 0000:2EC1
+  02EC4  83d100         adc      cx, 0  ; 0000:2EC4
+loc_02EC7:
+  02EC7  d1c2           rol      dx, 1  ; 0000:2EC7
+  02EC9  83d100         adc      cx, 0  ; 0000:2EC9
+  02ECC  7521           jne      loc_02EEF  ; 0000:2ECC
+  02ECE  d1ca           ror      dx, 1  ; 0000:2ECE
+  02ED0  c3             ret        ; 0000:2ED0
+
+
+; ---- sub_02ED1 ----
+sub_02ED1:
+  02ED1  e85600         call     sub_02F2A  ; 0000:2ED1
+  02ED4  eb03           jmp      loc_02ED9  ; 0000:2ED4
+
+
+; ---- sub_02ED6 ----
+sub_02ED6:
+  02ED6  e81c00         call     sub_02EF5  ; 0000:2ED6
+loc_02ED9:
+  02ED9  33db           xor      bx, bx  ; 0000:2ED9
+  02EDB  b501           mov      ch, 1  ; 0000:2EDB
+  02EDD  22e8           and      ch, al  ; 0000:2EDD
+  02EDF  0acd           or       cl, ch  ; 0000:2EDF
+  02EE1  80f981         cmp      cl, 0x81  ; 0000:2EE1
+  02EE4  f5             cmc        ; 0000:2EE4
+  02EE5  13db           adc      bx, bx  ; 0000:2EE5
+  02EE7  13c3           adc      ax, bx  ; 0000:2EE7
+  02EE9  83d200         adc      dx, 0  ; 0000:2EE9
+  02EEC  7201           jb       loc_02EEF  ; 0000:2EEC
+  02EEE  c3             ret        ; 0000:2EEE
+loc_02EEF:
+  02EEF  e947fd         jmp      loc_02C39  ; 0000:2EEF
+loc_02EF2:
+  02EF2  e9a500         jmp      loc_02F9A  ; 0000:2EF2
+
+
+; ---- sub_02EF5 ----
+sub_02EF5:
+  02EF5  ad             lodsw    ax, word ptr [si]  ; 0000:2EF5
+  02EF6  92             xchg     dx, ax  ; 0000:2EF6
+  02EF7  0ad6           or       dl, dh  ; 0000:2EF7
+  02EF9  ad             lodsw    ax, word ptr [si]  ; 0000:2EF9
+  02EFA  93             xchg     bx, ax  ; 0000:2EFA
+  02EFB  ad             lodsw    ax, word ptr [si]  ; 0000:2EFB
+  02EFC  91             xchg     cx, ax  ; 0000:2EFC
+  02EFD  ad             lodsw    ax, word ptr [si]  ; 0000:2EFD
+  02EFE  91             xchg     cx, ax  ; 0000:2EFE
+  02EFF  83ee08         sub      si, 8  ; 0000:2EFF
+  02F02  8bf9           mov      di, cx  ; 0000:2F02
+  02F04  b60f           mov      dh, 0xf  ; 0000:2F04
+  02F06  22f1           and      dh, cl  ; 0000:2F06
+  02F08  80ce10         or       dh, 0x10  ; 0000:2F08
+  02F0B  80e57f         and      ch, 0x7f  ; 0000:2F0B
+  02F0E  d1e9           shr      cx, 1  ; 0000:2F0E
+  02F10  d1e9           shr      cx, 1  ; 0000:2F10
+  02F12  d1e9           shr      cx, 1  ; 0000:2F12
+  02F14  d1e9           shr      cx, 1  ; 0000:2F14
+  02F16  0bc9           or       cx, cx  ; 0000:2F16
+  02F18  74d8           je       loc_02EF2  ; 0000:2F18
+  02F1A  81e9fe03       sub      cx, 0x3fe  ; 0000:2F1A
+  02F1E  7279           jb       loc_02F99  ; 0000:2F1E
+  02F20  83f920         cmp      cx, 0x20  ; 0000:2F20
+  02F23  7fca           jg       loc_02EEF  ; 0000:2F23
+  02F25  83e925         sub      cx, 0x25  ; 0000:2F25
+  02F28  eb30           jmp      loc_02F5A  ; 0000:2F28
+
+
+; ---- sub_02F2A ----
+sub_02F2A:
+  02F2A  33d2           xor      dx, dx  ; 0000:2F2A
+  02F2C  8ada           mov      bl, dl  ; 0000:2F2C
+  02F2E  ac             lodsb    al, byte ptr [si]  ; 0000:2F2E
+  02F2F  8af8           mov      bh, al  ; 0000:2F2F
+  02F31  ad             lodsw    ax, word ptr [si]  ; 0000:2F31
+  02F32  8ac8           mov      cl, al  ; 0000:2F32
+  02F34  ac             lodsb    al, byte ptr [si]  ; 0000:2F34
+  02F35  86c1           xchg     cl, al  ; 0000:2F35
+  02F37  83ee04         sub      si, 4  ; 0000:2F37
+  02F3A  8ae9           mov      ch, cl  ; 0000:2F3A
+  02F3C  8bf9           mov      di, cx  ; 0000:2F3C
+  02F3E  81e17f00       and      cx, 0x7f  ; 0000:2F3E
+  02F42  d0e4           shl      ah, 1  ; 0000:2F42
+  02F44  d0d1           rcl      cl, 1  ; 0000:2F44
+  02F46  f9             stc        ; 0000:2F46
+  02F47  d0dc           rcr      ah, 1  ; 0000:2F47
+  02F49  0bc9           or       cx, cx  ; 0000:2F49
+  02F4B  744d           je       loc_02F9A  ; 0000:2F4B
+  02F4D  80e97e         sub      cl, 0x7e  ; 0000:2F4D
+  02F50  7247           jb       loc_02F99  ; 0000:2F50
+  02F52  83f920         cmp      cx, 0x20  ; 0000:2F52
+  02F55  7f98           jg       loc_02EEF  ; 0000:2F55
+  02F57  83e920         sub      cx, 0x20  ; 0000:2F57
+loc_02F5A:
+  02F5A  f7d9           neg      cx  ; 0000:2F5A
+loc_02F5C:
+  02F5C  80f908         cmp      cl, 8  ; 0000:2F5C
+  02F5F  7c1a           jl       loc_02F7B  ; 0000:2F5F
+  02F61  80fa01         cmp      dl, 1  ; 0000:2F61
+  02F64  f5             cmc        ; 0000:2F64
+  02F65  d0d2           rcl      dl, 1  ; 0000:2F65
+  02F67  80e201         and      dl, 1  ; 0000:2F67
+  02F6A  0ad3           or       dl, bl  ; 0000:2F6A
+  02F6C  8adf           mov      bl, bh  ; 0000:2F6C
+  02F6E  8af8           mov      bh, al  ; 0000:2F6E
+  02F70  8ac4           mov      al, ah  ; 0000:2F70
+  02F72  8ae6           mov      ah, dh  ; 0000:2F72
+  02F74  32f6           xor      dh, dh  ; 0000:2F74
+  02F76  80e908         sub      cl, 8  ; 0000:2F76
+  02F79  ebe1           jmp      loc_02F5C  ; 0000:2F79
+loc_02F7B:
+  02F7B  e315           jcxz     loc_02F92  ; 0000:2F7B
+  02F7D  80fa01         cmp      dl, 1  ; 0000:2F7D
+  02F80  b201           mov      dl, 1  ; 0000:2F80
+  02F82  80da00         sbb      dl, 0  ; 0000:2F82
+  02F85  d0ee           shr      dh, 1  ; 0000:2F85
+  02F87  d1d8           rcr      ax, 1  ; 0000:2F87
+  02F89  d1db           rcr      bx, 1  ; 0000:2F89
+  02F8B  d0da           rcr      dl, 1  ; 0000:2F8B
+  02F8D  80d200         adc      dl, 0  ; 0000:2F8D
+  02F90  e2f3           loop     0x2f85  ; 0000:2F90
+loc_02F92:
+  02F92  8aca           mov      cl, dl  ; 0000:2F92
+  02F94  8bd0           mov      dx, ax  ; 0000:2F94
+  02F96  8bc3           mov      ax, bx  ; 0000:2F96
+  02F98  c3             ret        ; 0000:2F98
+loc_02F99:
+  02F99  f9             stc        ; 0000:2F99
+loc_02F9A:
+  02F9A  b100           mov      cl, 0  ; 0000:2F9A
+  02F9C  80d100         adc      cl, 0  ; 0000:2F9C
+  02F9F  33c0           xor      ax, ax  ; 0000:2F9F
+  02FA1  8bd0           mov      dx, ax  ; 0000:2FA1
+  02FA3  c3             ret        ; 0000:2FA3
+loc_02FA4:
+  02FA4  e992fc         jmp      loc_02C39  ; 0000:2FA4
+  02FA7  e86800         call     sub_03012  ; 0000:2FA7
+  02FAA  b007           mov      al, 7  ; 0000:2FAA
+  02FAC  e83501         call     sub_030E4  ; 0000:2FAC
+  02FAF  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:2FAF
+  02FB3  037c06         add      di, word ptr [si + 6]  ; 0000:2FB3
+  02FB6  83ef10         sub      di, 0x10  ; 0000:2FB6
+  02FB9  8bd7           mov      dx, di  ; 0000:2FB9
+  02FBB  80e67f         and      dh, 0x7f  ; 0000:2FBB
+  02FBE  81faf07f       cmp      dx, 0x7ff0  ; 0000:2FBE
+  02FC2  73e0           jae      loc_02FA4  ; 0000:2FC2
+  02FC4  897c06         mov      word ptr [si + 6], di  ; 0000:2FC4
+  02FC7  8bfe           mov      di, si  ; 0000:2FC7
+  02FC9  c3             ret        ; 0000:2FC9
+loc_02FCA:
+  02FCA  e96cfc         jmp      loc_02C39  ; 0000:2FCA
+  02FCD  e88900         call     sub_03059  ; 0000:2FCD
+  02FD0  b003           mov      al, 3  ; 0000:2FD0
+  02FD2  e80f01         call     sub_030E4  ; 0000:2FD2
+  02FD5  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:2FD5
+  02FD9  037c02         add      di, word ptr [si + 2]  ; 0000:2FD9
+  02FDC  81ef8000       sub      di, 0x80  ; 0000:2FDC
+  02FE0  8bd7           mov      dx, di  ; 0000:2FE0
+  02FE2  80e67f         and      dh, 0x7f  ; 0000:2FE2
+  02FE5  81fa807f       cmp      dx, 0x7f80  ; 0000:2FE5
+  02FE9  73df           jae      loc_02FCA  ; 0000:2FE9
+  02FEB  897c02         mov      word ptr [si + 2], di  ; 0000:2FEB
+  02FEE  8bfe           mov      di, si  ; 0000:2FEE
+  02FF0  c3             ret        ; 0000:2FF0
+  02FF1  e81e00         call     sub_03012  ; 0000:2FF1
+  02FF4  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:2FF4
+  02FF8  83ef10         sub      di, 0x10  ; 0000:2FF8
+  02FFB  017c06         add      word ptr [si + 6], di  ; 0000:2FFB
+  02FFE  8bfe           mov      di, si  ; 0000:2FFE
+  03000  c3             ret        ; 0000:3000
+  03001  e85500         call     sub_03059  ; 0000:3001
+  03004  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:3004
+  03008  81ef8000       sub      di, 0x80  ; 0000:3008
+  0300C  017c02         add      word ptr [si + 2], di  ; 0000:300C
+  0300F  8bfe           mov      di, si  ; 0000:300F
+  03011  c3             ret        ; 0000:3011
+
+
+; ---- sub_03012 ----
+sub_03012:
+  03012  fc             cld        ; 0000:3012
+  03013  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:3013
+  03017  8cc0           mov      ax, es  ; 0000:3017
+  03019  8cd9           mov      cx, ds  ; 0000:3019
+  0301B  8ec1           mov      es, cx  ; 0000:301B
+  0301D  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:301D
+  0301E  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:301E
+  0301F  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:301F
+  03020  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3020
+  03021  8ec0           mov      es, ax  ; 0000:3021
+  03023  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:3023
+  03027  ba1000         mov      dx, 0x10  ; 0000:3027
+  0302A  8b4c06         mov      cx, word ptr [si + 6]  ; 0000:302A
+  0302D  8bf9           mov      di, cx  ; 0000:302D
+  0302F  81e10f00       and      cx, 0xf  ; 0000:302F
+  03033  0aca           or       cl, dl  ; 0000:3033
+  03035  894c06         mov      word ptr [si + 6], cx  ; 0000:3035
+  03038  81e7f0ff       and      di, 0xfff0  ; 0000:3038
+  0303C  8bcf           mov      cx, di  ; 0000:303C
+  0303E  80e57f         and      ch, 0x7f  ; 0000:303E
+  03041  b83500         mov      ax, 0x35  ; 0000:3041
+  03044  d1e9           shr      cx, 1  ; 0000:3044
+  03046  d1e9           shr      cx, 1  ; 0000:3046
+  03048  d1e9           shr      cx, 1  ; 0000:3048
+  0304A  d1e9           shr      cx, 1  ; 0000:304A
+  0304C  81e93304       sub      cx, 0x433  ; 0000:304C
+  03050  7d04           jge      loc_03056  ; 0000:3050
+  03052  f7d9           neg      cx  ; 0000:3052
+  03054  eb41           jmp      loc_03097  ; 0000:3054
+loc_03056:
+  03056  e98400         jmp      loc_030DD  ; 0000:3056
+
+
+; ---- sub_03059 ----
+sub_03059:
+  03059  fc             cld        ; 0000:3059
+  0305A  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:305A
+  0305E  8cc0           mov      ax, es  ; 0000:305E
+  03060  8cd9           mov      cx, ds  ; 0000:3060
+  03062  8ec1           mov      es, cx  ; 0000:3062
+  03064  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3064
+  03065  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3065
+  03066  8ec0           mov      es, ax  ; 0000:3066
+  03068  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:3068
+  0306C  ba8000         mov      dx, 0x80  ; 0000:306C
+  0306F  8b4c02         mov      cx, word ptr [si + 2]  ; 0000:306F
+  03072  8bf9           mov      di, cx  ; 0000:3072
+  03074  81e17f00       and      cx, 0x7f  ; 0000:3074
+  03078  0aca           or       cl, dl  ; 0000:3078
+  0307A  894c02         mov      word ptr [si + 2], cx  ; 0000:307A
+  0307D  81e780ff       and      di, 0xff80  ; 0000:307D
+  03081  8bcf           mov      cx, di  ; 0000:3081
+  03083  80e57f         and      ch, 0x7f  ; 0000:3083
+  03086  b81800         mov      ax, 0x18  ; 0000:3086
+  03089  d1e1           shl      cx, 1  ; 0000:3089
+  0308B  8acd           mov      cl, ch  ; 0000:308B
+  0308D  32ed           xor      ch, ch  ; 0000:308D
+  0308F  81e99600       sub      cx, 0x96  ; 0000:308F
+  03093  7d48           jge      loc_030DD  ; 0000:3093
+  03095  f7d9           neg      cx  ; 0000:3095
+loc_03097:
+  03097  3bc8           cmp      cx, ax  ; 0000:3097
+  03099  8bef           mov      bp, di  ; 0000:3099
+  0309B  7c14           jl       loc_030B1  ; 0000:309B
+  0309D  81e70080       and      di, 0x8000  ; 0000:309D
+  030A1  0bfa           or       di, dx  ; 0000:30A1
+  030A3  3bc8           cmp      cx, ax  ; 0000:30A3
+  030A5  740a           je       loc_030B1  ; 0000:30A5
+  030A7  8bc8           mov      cx, ax  ; 0000:30A7
+  030A9  8bef           mov      bp, di  ; 0000:30A9
+  030AB  81e50080       and      bp, 0x8000  ; 0000:30AB
+  030AF  2bea           sub      bp, dx  ; 0000:30AF
+loc_030B1:
+  030B1  33d2           xor      dx, dx  ; 0000:30B1
+loc_030B3:
+  030B3  80f908         cmp      cl, 8  ; 0000:30B3
+  030B6  7c14           jl       loc_030CC  ; 0000:30B6
+  030B8  80fa01         cmp      dl, 1  ; 0000:30B8
+  030BB  f5             cmc        ; 0000:30BB
+  030BC  b200           mov      dl, 0  ; 0000:30BC
+  030BE  80d200         adc      dl, 0  ; 0000:30BE
+  030C1  0a14           or       dl, byte ptr [si]  ; 0000:30C1
+  030C3  c60400         mov      byte ptr [si], 0  ; 0000:30C3
+  030C6  80e908         sub      cl, 8  ; 0000:30C6
+  030C9  46             inc      si  ; 0000:30C9
+  030CA  ebe7           jmp      loc_030B3  ; 0000:30CA
+loc_030CC:
+  030CC  8a34           mov      dh, byte ptr [si]  ; 0000:30CC
+  030CE  e30c           jcxz     loc_030DC  ; 0000:30CE
+  030D0  bbe409         mov      bx, 0x9e4  ; 0000:30D0
+  030D3  8ac1           mov      al, cl  ; 0000:30D3
+  030D5  d7             xlatb      ; 0000:30D5
+  030D6  8aee           mov      ch, dh  ; 0000:30D6
+  030D8  22e8           and      ch, al  ; 0000:30D8
+  030DA  882c           mov      byte ptr [si], ch  ; 0000:30DA
+loc_030DC:
+  030DC  c3             ret        ; 0000:30DC
+loc_030DD:
+  030DD  33c9           xor      cx, cx  ; 0000:30DD
+  030DF  8bd1           mov      dx, cx  ; 0000:30DF
+  030E1  8a34           mov      dh, byte ptr [si]  ; 0000:30E1
+  030E3  c3             ret        ; 0000:30E3
+
+
+; ---- sub_030E4 ----
+; --- dmserv_fpArith: FP arithmetic (add, sub, mul, div)
+dmserv_fpArith:  ; was sub_030E4
+  030E4  bb0100         mov      bx, 1  ; 0000:30E4
+  030E7  8aef           mov      ch, bh  ; 0000:30E7
+  030E9  8ae1           mov      ah, cl  ; 0000:30E9
+  030EB  e306           jcxz     loc_030F3  ; 0000:30EB
+  030ED  d1ea           shr      dx, 1  ; 0000:30ED
+  030EF  d0d7           rcl      bh, 1  ; 0000:30EF
+  030F1  e2fa           loop     0x30ed  ; 0000:30F1
+loc_030F3:
+  030F3  0ad7           or       dl, bh  ; 0000:30F3
+  030F5  22de           and      bl, dh  ; 0000:30F5
+  030F7  0ad3           or       dl, bl  ; 0000:30F7
+  030F9  80fa81         cmp      dl, 0x81  ; 0000:30F9
+  030FC  b201           mov      dl, 1  ; 0000:30FC
+  030FE  80da00         sbb      dl, 0  ; 0000:30FE
+  03101  7402           je       loc_03105  ; 0000:3101
+  03103  8bfd           mov      di, bp  ; 0000:3103
+loc_03105:
+  03105  8acc           mov      cl, ah  ; 0000:3105
+  03107  d3e2           shl      dx, cl  ; 0000:3107
+  03109  8b0ee209       mov      cx, word ptr [0x9e2]  ; 0000:3109
+  0310D  98             cwde       ; 0000:310D
+  0310E  03c8           add      cx, ax  ; 0000:310E
+  03110  2bce           sub      cx, si  ; 0000:3110
+  03112  02f2           add      dh, dl  ; 0000:3112
+  03114  8834           mov      byte ptr [si], dh  ; 0000:3114
+  03116  e306           jcxz     loc_0311E  ; 0000:3116
+  03118  46             inc      si  ; 0000:3118
+  03119  801400         adc      byte ptr [si], 0  ; 0000:3119
+  0311C  e2fa           loop     0x3118  ; 0000:311C
+loc_0311E:
+  0311E  c3             ret        ; 0000:311E
+loc_0311F:
+  0311F  f7c3807f       test     bx, 0x7f80  ; 0000:311F
+  03123  744c           je       loc_03171  ; 0000:3123
+  03125  d1d3           rcl      bx, 1  ; 0000:3125
+  03127  f5             cmc        ; 0000:3127
+  03128  c3             ret        ; 0000:3128
+loc_03129:
+  03129  e921fb         jmp      loc_02C4D  ; 0000:3129
+loc_0312C:
+  0312C  80cc7f         or       ah, 0x7f  ; 0000:312C
+  0312F  d0e4           shl      ah, 1  ; 0000:312F
+  03131  c3             ret        ; 0000:3131
+  03132  8b4402         mov      ax, word ptr [si + 2]  ; 0000:3132
+  03135  268b5d02       mov      bx, word ptr es:[di + 2]  ; 0000:3135
+  03139  a9807f         test     ax, 0x7f80  ; 0000:3139
+  0313C  74e1           je       loc_0311F  ; 0000:313C
+  0313E  f7d0           not      ax  ; 0000:313E
+  03140  a9807f         test     ax, 0x7f80  ; 0000:3140
+  03143  f7d0           not      ax  ; 0000:3143
+  03145  74e2           je       loc_03129  ; 0000:3145
+  03147  f7d3           not      bx  ; 0000:3147
+  03149  f7c3807f       test     bx, 0x7f80  ; 0000:3149
+  0314D  f7d3           not      bx  ; 0000:314D
+  0314F  74d8           je       loc_03129  ; 0000:314F
+  03151  8aec           mov      ch, ah  ; 0000:3151
+  03153  32ef           xor      ch, bh  ; 0000:3153
+  03155  78d5           js       loc_0312C  ; 0000:3155
+  03157  d1e3           shl      bx, 1  ; 0000:3157
+  03159  d1e0           shl      ax, 1  ; 0000:3159
+  0315B  730b           jae      loc_03168  ; 0000:315B
+  0315D  93             xchg     bx, ax  ; 0000:315D
+  0315E  87f7           xchg     di, si  ; 0000:315E
+  03160  8cc2           mov      dx, es  ; 0000:3160
+  03162  8cd9           mov      cx, ds  ; 0000:3162
+  03164  8ec1           mov      es, cx  ; 0000:3164
+  03166  8eda           mov      ds, dx  ; 0000:3166
+loc_03168:
+  03168  3bc3           cmp      ax, bx  ; 0000:3168
+  0316A  7505           jne      loc_03171  ; 0000:316A
+  0316C  8b04           mov      ax, word ptr [si]  ; 0000:316C
+  0316E  263b05         cmp      ax, word ptr es:[di]  ; 0000:316E
+loc_03171:
+  03171  c3             ret        ; 0000:3171
+loc_03172:
+  03172  f7c3f07f       test     bx, 0x7ff0  ; 0000:3172
+  03176  745e           je       loc_031D6  ; 0000:3176
+  03178  d1d3           rcl      bx, 1  ; 0000:3178
+  0317A  f5             cmc        ; 0000:317A
+  0317B  c3             ret        ; 0000:317B
+loc_0317C:
+  0317C  e9cefa         jmp      loc_02C4D  ; 0000:317C
+loc_0317F:
+  0317F  80cc7f         or       ah, 0x7f  ; 0000:317F
+  03182  d0e4           shl      ah, 1  ; 0000:3182
+  03184  c3             ret        ; 0000:3184
+  03185  8b4406         mov      ax, word ptr [si + 6]  ; 0000:3185
+  03188  268b5d06       mov      bx, word ptr es:[di + 6]  ; 0000:3188
+  0318C  a9f07f         test     ax, 0x7ff0  ; 0000:318C
+  0318F  74e1           je       loc_03172  ; 0000:318F
+  03191  f7d0           not      ax  ; 0000:3191
+  03193  a9f07f         test     ax, 0x7ff0  ; 0000:3193
+  03196  f7d0           not      ax  ; 0000:3196
+  03198  74e2           je       loc_0317C  ; 0000:3198
+  0319A  f7d3           not      bx  ; 0000:319A
+  0319C  f7c3f07f       test     bx, 0x7ff0  ; 0000:319C
+  031A0  f7d3           not      bx  ; 0000:31A0
+  031A2  74d8           je       loc_0317C  ; 0000:31A2
+  031A4  8aec           mov      ch, ah  ; 0000:31A4
+  031A6  32ef           xor      ch, bh  ; 0000:31A6
+  031A8  78d5           js       loc_0317F  ; 0000:31A8
+  031AA  d1e3           shl      bx, 1  ; 0000:31AA
+  031AC  d1e0           shl      ax, 1  ; 0000:31AC
+  031AE  730b           jae      loc_031BB  ; 0000:31AE
+  031B0  93             xchg     bx, ax  ; 0000:31B0
+  031B1  87f7           xchg     di, si  ; 0000:31B1
+  031B3  8cc2           mov      dx, es  ; 0000:31B3
+  031B5  8cd9           mov      cx, ds  ; 0000:31B5
+  031B7  8ec1           mov      es, cx  ; 0000:31B7
+  031B9  8eda           mov      ds, dx  ; 0000:31B9
+loc_031BB:
+  031BB  3bc3           cmp      ax, bx  ; 0000:31BB
+  031BD  7517           jne      loc_031D6  ; 0000:31BD
+  031BF  8b4404         mov      ax, word ptr [si + 4]  ; 0000:31BF
+  031C2  263b4504       cmp      ax, word ptr es:[di + 4]  ; 0000:31C2
+  031C6  750e           jne      loc_031D6  ; 0000:31C6
+  031C8  8b4402         mov      ax, word ptr [si + 2]  ; 0000:31C8
+  031CB  263b4502       cmp      ax, word ptr es:[di + 2]  ; 0000:31CB
+  031CF  7505           jne      loc_031D6  ; 0000:31CF
+  031D1  8b04           mov      ax, word ptr [si]  ; 0000:31D1
+  031D3  263b05         cmp      ax, word ptr es:[di]  ; 0000:31D3
+loc_031D6:
+  031D6  c3             ret        ; 0000:31D6
+  031D7  87f7           xchg     di, si  ; 0000:31D7
+  031D9  8b4502         mov      ax, word ptr [di + 2]  ; 0000:31D9
+  031DC  80f480         xor      ah, 0x80  ; 0000:31DC
+  031DF  eb03           jmp      loc_031E4  ; 0000:31DF
+  031E1  8b4502         mov      ax, word ptr [di + 2]  ; 0000:31E1
+loc_031E4:
+  031E4  8b5d01         mov      bx, word ptr [di + 1]  ; 0000:31E4
+  031E7  8a35           mov      dh, byte ptr [di]  ; 0000:31E7
+  031E9  b200           mov      dl, 0  ; 0000:31E9
+  031EB  80cf80         or       bh, 0x80  ; 0000:31EB
+  031EE  8b4c02         mov      cx, word ptr [si + 2]  ; 0000:31EE
+  031F1  8b7cff         mov      di, word ptr [si - 1]  ; 0000:31F1
+  031F4  8b7401         mov      si, word ptr [si + 1]  ; 0000:31F4
+  031F7  81e700ff       and      di, 0xff00  ; 0000:31F7
+  031FB  81ce0080       or       si, 0x8000  ; 0000:31FB
+  031FF  d1c1           rol      cx, 1  ; 0000:31FF
+  03201  d1c0           rol      ax, 1  ; 0000:3201
+  03203  0aed           or       ch, ch  ; 0000:3203
+  03205  7465           je       loc_0326C  ; 0000:3205
+  03207  0ae4           or       ah, ah  ; 0000:3207
+  03209  745b           je       loc_03266  ; 0000:3209
+  0320B  3aec           cmp      ch, ah  ; 0000:320B
+  0320D  7305           jae      loc_03214  ; 0000:320D
+  0320F  87f3           xchg     bx, si  ; 0000:320F
+  03211  87fa           xchg     dx, di  ; 0000:3211
+  03213  91             xchg     cx, ax  ; 0000:3213
+loc_03214:
+  03214  2ae5           sub      ah, ch  ; 0000:3214
+  03216  f6dc           neg      ah  ; 0000:3216
+  03218  80fc18         cmp      ah, 0x18  ; 0000:3218
+  0321B  7749           ja       loc_03266  ; 0000:321B
+  0321D  d0c9           ror      cl, 1  ; 0000:321D
+  0321F  d0e8           shr      al, 1  ; 0000:321F
+  03221  d0d9           rcr      cl, 1  ; 0000:3221
+  03223  91             xchg     cx, ax  ; 0000:3223
+  03224  8acd           mov      cl, ch  ; 0000:3224
+  03226  b500           mov      ch, 0  ; 0000:3226
+  03228  e355           jcxz     loc_0327F  ; 0000:3228
+  0322A  80f90e         cmp      cl, 0xe  ; 0000:322A
+  0322D  7c12           jl       loc_03241  ; 0000:322D
+  0322F  0bd2           or       dx, dx  ; 0000:322F
+  03231  7403           je       loc_03236  ; 0000:3231
+  03233  80cb01         or       bl, 1  ; 0000:3233
+loc_03236:
+  03236  8bd3           mov      dx, bx  ; 0000:3236
+  03238  33db           xor      bx, bx  ; 0000:3238
+  0323A  80e910         sub      cl, 0x10  ; 0000:323A
+  0323D  721d           jb       loc_0325C  ; 0000:323D
+  0323F  743e           je       loc_0327F  ; 0000:323F
+loc_03241:
+  03241  80f905         cmp      cl, 5  ; 0000:3241
+  03244  7e2b           jle      loc_03271  ; 0000:3244
+  03246  0ad2           or       dl, dl  ; 0000:3246
+  03248  7403           je       loc_0324D  ; 0000:3248
+  0324A  80ce01         or       dh, 1  ; 0000:324A
+loc_0324D:
+  0324D  8ad6           mov      dl, dh  ; 0000:324D
+  0324F  8af3           mov      dh, bl  ; 0000:324F
+  03251  8adf           mov      bl, bh  ; 0000:3251
+  03253  8afd           mov      bh, ch  ; 0000:3253
+  03255  80e908         sub      cl, 8  ; 0000:3255
+  03258  7717           ja       loc_03271  ; 0000:3258
+  0325A  7423           je       loc_0327F  ; 0000:325A
+loc_0325C:
+  0325C  d1e2           shl      dx, 1  ; 0000:325C
+  0325E  d1d3           rcl      bx, 1  ; 0000:325E
+  03260  fec1           inc      cl  ; 0000:3260
+  03262  75f8           jne      loc_0325C  ; 0000:3262
+  03264  eb19           jmp      loc_0327F  ; 0000:3264
+loc_03266:
+  03266  8bde           mov      bx, si  ; 0000:3266
+  03268  8bd7           mov      dx, di  ; 0000:3268
+  0326A  8bc1           mov      ax, cx  ; 0000:326A
+loc_0326C:
+  0326C  d0e8           shr      al, 1  ; 0000:326C
+  0326E  e99700         jmp      loc_03308  ; 0000:326E
+loc_03271:
+  03271  f6c23f         test     dl, 0x3f  ; 0000:3271
+  03274  7403           je       loc_03279  ; 0000:3274
+  03276  80ca20         or       dl, 0x20  ; 0000:3276
+loc_03279:
+  03279  d1eb           shr      bx, 1  ; 0000:3279
+  0327B  d1da           rcr      dx, 1  ; 0000:327B
+  0327D  e2fa           loop     0x3279  ; 0000:327D
+loc_0327F:
+  0327F  f6c23f         test     dl, 0x3f  ; 0000:327F
+  03282  7403           je       loc_03287  ; 0000:3282
+  03284  80ca20         or       dl, 0x20  ; 0000:3284
+loc_03287:
+  03287  d0e0           shl      al, 1  ; 0000:3287
+  03289  7014           jo       loc_0329F  ; 0000:3289
+  0328B  03d7           add      dx, di  ; 0000:328B
+  0328D  13de           adc      bx, si  ; 0000:328D
+  0328F  7350           jae      sub_032E1  ; 0000:328F
+  03291  d1db           rcr      bx, 1  ; 0000:3291
+  03293  d1da           rcr      dx, 1  ; 0000:3293
+  03295  fec4           inc      ah  ; 0000:3295
+  03297  80fcff         cmp      ah, 0xff  ; 0000:3297
+  0329A  7545           jne      sub_032E1  ; 0000:329A
+  0329C  e99af9         jmp      loc_02C39  ; 0000:329C
+loc_0329F:
+  0329F  2bfa           sub      di, dx  ; 0000:329F
+  032A1  1bf3           sbb      si, bx  ; 0000:32A1
+  032A3  8bd7           mov      dx, di  ; 0000:32A3
+  032A5  8bde           mov      bx, si  ; 0000:32A5
+  032A7  730a           jae      sub_032B3  ; 0000:32A7
+  032A9  f7d3           not      bx  ; 0000:32A9
+  032AB  f7da           neg      dx  ; 0000:32AB
+  032AD  f5             cmc        ; 0000:32AD
+  032AE  83d300         adc      bx, 0  ; 0000:32AE
+  032B1  f6d0           not      al  ; 0000:32B1
+
+
+; ---- sub_032B3 ----
+sub_032B3:
+  032B3  0bdb           or       bx, bx  ; 0000:32B3
+  032B5  750b           jne      loc_032C2  ; 0000:32B5
+  032B7  80ec10         sub      ah, 0x10  ; 0000:32B7
+  032BA  766a           jbe      loc_03326  ; 0000:32BA
+  032BC  87da           xchg     dx, bx  ; 0000:32BC
+  032BE  0bdb           or       bx, bx  ; 0000:32BE
+  032C0  7464           je       loc_03326  ; 0000:32C0
+loc_032C2:
+  032C2  0aff           or       bh, bh  ; 0000:32C2
+  032C4  750f           jne      loc_032D5  ; 0000:32C4
+  032C6  80ec08         sub      ah, 8  ; 0000:32C6
+  032C9  765b           jbe      loc_03326  ; 0000:32C9
+  032CB  8afb           mov      bh, bl  ; 0000:32CB
+  032CD  8ade           mov      bl, dh  ; 0000:32CD
+  032CF  8af2           mov      dh, dl  ; 0000:32CF
+  032D1  32d2           xor      dl, dl  ; 0000:32D1
+  032D3  0aff           or       bh, bh  ; 0000:32D3
+loc_032D5:
+  032D5  780a           js       sub_032E1  ; 0000:32D5
+loc_032D7:
+  032D7  fecc           dec      ah  ; 0000:32D7
+  032D9  744b           je       loc_03326  ; 0000:32D9
+  032DB  d1e2           shl      dx, 1  ; 0000:32DB
+  032DD  d1d3           rcl      bx, 1  ; 0000:32DD
+  032DF  71f6           jno      loc_032D7  ; 0000:32DF
+
+
+; ---- sub_032E1 ----
+sub_032E1:
+  032E1  803eec0900     cmp      byte ptr [0x9ec], 0  ; 0000:32E1
+  032E6  7403           je       loc_032EB  ; 0000:32E6
+  032E8  e97c01         jmp      loc_03467  ; 0000:32E8
+loc_032EB:
+  032EB  80fa80         cmp      dl, 0x80  ; 0000:32EB
+  032EE  7707           ja       loc_032F7  ; 0000:32EE
+  032F0  7214           jb       loc_03306  ; 0000:32F0
+  032F2  f6c601         test     dh, 1  ; 0000:32F2
+  032F5  740f           je       loc_03306  ; 0000:32F5
+loc_032F7:
+  032F7  80c601         add      dh, 1  ; 0000:32F7
+  032FA  83d300         adc      bx, 0  ; 0000:32FA
+  032FD  7307           jae      loc_03306  ; 0000:32FD
+  032FF  fec4           inc      ah  ; 0000:32FF
+  03301  80fcff         cmp      ah, 0xff  ; 0000:3301
+  03304  743a           je       loc_03340  ; 0000:3304
+loc_03306:
+  03306  d0e0           shl      al, 1  ; 0000:3306
+loc_03308:
+  03308  d1d8           rcr      ax, 1  ; 0000:3308
+  0330A  a9807f         test     ax, 0x7f80  ; 0000:330A
+  0330D  7417           je       loc_03326  ; 0000:330D
+  0330F  2480           and      al, 0x80  ; 0000:330F
+  03311  80e77f         and      bh, 0x7f  ; 0000:3311
+  03314  0ac7           or       al, bh  ; 0000:3314
+  03316  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:3316
+  0331A  894502         mov      word ptr [di + 2], ax  ; 0000:331A
+  0331D  8ae3           mov      ah, bl  ; 0000:331D
+  0331F  8ac6           mov      al, dh  ; 0000:331F
+  03321  8905           mov      word ptr [di], ax  ; 0000:3321
+  03323  8bf7           mov      si, di  ; 0000:3323
+  03325  c3             ret        ; 0000:3325
+loc_03326:
+  03326  803eec0900     cmp      byte ptr [0x9ec], 0  ; 0000:3326
+  0332B  7403           je       loc_03330  ; 0000:332B
+  0332D  e97e01         jmp      loc_034AE  ; 0000:332D
+loc_03330:
+  03330  33c0           xor      ax, ax  ; 0000:3330
+  03332  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:3332
+  03336  894502         mov      word ptr [di + 2], ax  ; 0000:3336
+  03339  8905           mov      word ptr [di], ax  ; 0000:3339
+  0333B  8bf7           mov      si, di  ; 0000:333B
+  0333D  c3             ret        ; 0000:333D
+loc_0333E:
+  0333E  79e6           jns      loc_03326  ; 0000:333E
+loc_03340:
+  03340  e9f6f8         jmp      loc_02C39  ; 0000:3340
+  03343  fc             cld        ; 0000:3343
+  03344  ad             lodsw    ax, word ptr [si]  ; 0000:3344
+  03345  8b34           mov      si, word ptr [si]  ; 0000:3345
+  03347  96             xchg     si, ax  ; 0000:3347
+  03348  d1e0           shl      ax, 1  ; 0000:3348
+  0334A  d0d8           rcr      al, 1  ; 0000:334A
+  0334C  0ae4           or       ah, ah  ; 0000:334C
+  0334E  74d6           je       loc_03326  ; 0000:334E
+  03350  8b4d02         mov      cx, word ptr [di + 2]  ; 0000:3350
+  03353  d1e1           shl      cx, 1  ; 0000:3353
+  03355  d0d9           rcr      cl, 1  ; 0000:3355
+  03357  0aed           or       ch, ch  ; 0000:3357
+  03359  74cb           je       loc_03326  ; 0000:3359
+  0335B  8b3d           mov      di, word ptr [di]  ; 0000:335B
+  0335D  8bd8           mov      bx, ax  ; 0000:335D
+  0335F  32c1           xor      al, cl  ; 0000:335F
+  03361  80ec80         sub      ah, 0x80  ; 0000:3361
+  03364  80ed7f         sub      ch, 0x7f  ; 0000:3364
+  03367  02e5           add      ah, ch  ; 0000:3367
+loc_03369:
+  03369  70d3           jo       loc_0333E  ; 0000:3369
+  0336B  80c480         add      ah, 0x80  ; 0000:336B
+  0336E  80fcff         cmp      ah, 0xff  ; 0000:336E
+loc_03371:
+  03371  74cd           je       loc_03340  ; 0000:3371
+  03373  50             push     ax  ; 0000:3373
+  03374  32ff           xor      bh, bh  ; 0000:3374
+  03376  8aef           mov      ch, bh  ; 0000:3376
+  03378  80cb80         or       bl, 0x80  ; 0000:3378
+  0337B  80c980         or       cl, 0x80  ; 0000:337B
+  0337E  8beb           mov      bp, bx  ; 0000:337E
+  03380  8bc6           mov      ax, si  ; 0000:3380
+  03382  f7e7           mul      di  ; 0000:3382
+  03384  8bda           mov      bx, dx  ; 0000:3384
+  03386  0bc0           or       ax, ax  ; 0000:3386
+  03388  9f             lahf       ; 0000:3388
+  03389  50             push     ax  ; 0000:3389
+  0338A  8bc5           mov      ax, bp  ; 0000:338A
+  0338C  f7e7           mul      di  ; 0000:338C
+  0338E  03d8           add      bx, ax  ; 0000:338E
+  03390  83d200         adc      dx, 0  ; 0000:3390
+  03393  8bfa           mov      di, dx  ; 0000:3393
+  03395  8bc1           mov      ax, cx  ; 0000:3395
+  03397  f7e6           mul      si  ; 0000:3397
+  03399  03d8           add      bx, ax  ; 0000:3399
+  0339B  13fa           adc      di, dx  ; 0000:339B
+  0339D  58             pop      ax  ; 0000:339D
+  0339E  9e             sahf       ; 0000:339E
+  0339F  7403           je       loc_033A4  ; 0000:339F
+  033A1  80cb01         or       bl, 1  ; 0000:33A1
+loc_033A4:
+  033A4  8bc5           mov      ax, bp  ; 0000:33A4
+  033A6  f6e1           mul      cl  ; 0000:33A6
+  033A8  03c7           add      ax, di  ; 0000:33A8
+  033AA  8bd3           mov      dx, bx  ; 0000:33AA
+  033AC  93             xchg     bx, ax  ; 0000:33AC
+loc_033AD:
+  033AD  58             pop      ax  ; 0000:33AD
+  033AE  0aff           or       bh, bh  ; 0000:33AE
+  033B0  780b           js       loc_033BD  ; 0000:33B0
+  033B2  d1e2           shl      dx, 1  ; 0000:33B2
+  033B4  d1d3           rcl      bx, 1  ; 0000:33B4
+  033B6  0ae4           or       ah, ah  ; 0000:33B6
+  033B8  750a           jne      loc_033C4  ; 0000:33B8
+loc_033BA:
+  033BA  e969ff         jmp      loc_03326  ; 0000:33BA
+loc_033BD:
+  033BD  fec4           inc      ah  ; 0000:33BD
+  033BF  80fcff         cmp      ah, 0xff  ; 0000:33BF
+  033C2  74ad           je       loc_03371  ; 0000:33C2
+loc_033C4:
+  033C4  e91aff         jmp      sub_032E1  ; 0000:33C4
+  033C7  87f7           xchg     di, si  ; 0000:33C7
+  033C9  8b4d02         mov      cx, word ptr [di + 2]  ; 0000:33C9
+  033CC  d1e1           shl      cx, 1  ; 0000:33CC
+  033CE  d0d9           rcr      cl, 1  ; 0000:33CE
+  033D0  8b4402         mov      ax, word ptr [si + 2]  ; 0000:33D0
+  033D3  d1e0           shl      ax, 1  ; 0000:33D3
+  033D5  d0d8           rcr      al, 1  ; 0000:33D5
+  033D7  0aed           or       ch, ch  ; 0000:33D7
+  033D9  745c           je       loc_03437  ; 0000:33D9
+  033DB  0ae4           or       ah, ah  ; 0000:33DB
+  033DD  74db           je       loc_033BA  ; 0000:33DD
+  033DF  32c1           xor      al, cl  ; 0000:33DF
+  033E1  80ec81         sub      ah, 0x81  ; 0000:33E1
+  033E4  80ed7f         sub      ch, 0x7f  ; 0000:33E4
+  033E7  2ae5           sub      ah, ch  ; 0000:33E7
+  033E9  7103           jno      loc_033EE  ; 0000:33E9
+  033EB  e97bff         jmp      loc_03369  ; 0000:33EB
+loc_033EE:
+  033EE  80c480         add      ah, 0x80  ; 0000:33EE
+  033F1  80fcff         cmp      ah, 0xff  ; 0000:33F1
+  033F4  7503           jne      loc_033F9  ; 0000:33F4
+  033F6  e978ff         jmp      loc_03371  ; 0000:33F6
+loc_033F9:
+  033F9  8b5d01         mov      bx, word ptr [di + 1]  ; 0000:33F9
+  033FC  8a2d           mov      ch, byte ptr [di]  ; 0000:33FC
+  033FE  32c9           xor      cl, cl  ; 0000:33FE
+  03400  80cf80         or       bh, 0x80  ; 0000:3400
+  03403  803eec0900     cmp      byte ptr [0x9ec], 0  ; 0000:3403
+  03408  7408           je       loc_03412  ; 0000:3408
+  0340A  d1eb           shr      bx, 1  ; 0000:340A
+  0340C  d1d9           rcr      cx, 1  ; 0000:340C
+  0340E  023eec09       add      bh, byte ptr [0x9ec]  ; 0000:340E
+loc_03412:
+  03412  50             push     ax  ; 0000:3412
+  03413  8b5401         mov      dx, word ptr [si + 1]  ; 0000:3413
+  03416  8a24           mov      ah, byte ptr [si]  ; 0000:3416
+  03418  32c0           xor      al, al  ; 0000:3418
+  0341A  80ce80         or       dh, 0x80  ; 0000:341A
+  0341D  d1ea           shr      dx, 1  ; 0000:341D
+  0341F  d1d8           rcr      ax, 1  ; 0000:341F
+  03421  e81a00         call     sub_0343E  ; 0000:3421
+  03424  8bee           mov      bp, si  ; 0000:3424
+  03426  e81100         call     sub_0343A  ; 0000:3426
+  03429  0bc2           or       ax, dx  ; 0000:3429
+  0342B  8bd6           mov      dx, si  ; 0000:342B
+  0342D  7403           je       loc_03432  ; 0000:342D
+  0342F  80ca01         or       dl, 1  ; 0000:342F
+loc_03432:
+  03432  8bdd           mov      bx, bp  ; 0000:3432
+  03434  e976ff         jmp      loc_033AD  ; 0000:3434
+loc_03437:
+  03437  e909f8         jmp      loc_02C43  ; 0000:3437
+
+
+; ---- sub_0343A ----
+sub_0343A:
+  0343A  3bd3           cmp      dx, bx  ; 0000:343A
+  0343C  731d           jae      loc_0345B  ; 0000:343C
+
+
+; ---- sub_0343E ----
+sub_0343E:
+  0343E  f7f3           div      bx  ; 0000:343E
+  03440  96             xchg     si, ax  ; 0000:3440
+  03441  33c0           xor      ax, ax  ; 0000:3441
+  03443  e315           jcxz     loc_0345A  ; 0000:3443
+  03445  8bfa           mov      di, dx  ; 0000:3445
+  03447  8bc6           mov      ax, si  ; 0000:3447
+  03449  f7e1           mul      cx  ; 0000:3449
+  0344B  f7d8           neg      ax  ; 0000:344B
+  0344D  1bfa           sbb      di, dx  ; 0000:344D
+  0344F  8bd7           mov      dx, di  ; 0000:344F
+  03451  7307           jae      loc_0345A  ; 0000:3451
+loc_03453:
+  03453  4e             dec      si  ; 0000:3453
+  03454  03c1           add      ax, cx  ; 0000:3454
+  03456  13d3           adc      dx, bx  ; 0000:3456
+  03458  73f9           jae      loc_03453  ; 0000:3458
+loc_0345A:
+  0345A  c3             ret        ; 0000:345A
+loc_0345B:
+  0345B  beffff         mov      si, 0xffff  ; 0000:345B
+  0345E  2bc1           sub      ax, cx  ; 0000:345E
+  03460  03d0           add      dx, ax  ; 0000:3460
+  03462  8bc1           mov      ax, cx  ; 0000:3462
+  03464  73ed           jae      loc_03453  ; 0000:3464
+  03466  c3             ret        ; 0000:3466
+loc_03467:
+  03467  c606ec0900     mov      byte ptr [0x9ec], 0  ; 0000:3467
+  0346C  8a2eee09       mov      ch, byte ptr [0x9ee]  ; 0000:346C
+  03470  0aed           or       ch, ch  ; 0000:3470
+  03472  7407           je       loc_0347B  ; 0000:3472
+  03474  80ed0e         sub      ch, 0xe  ; 0000:3474
+  03477  3aec           cmp      ch, ah  ; 0000:3477
+  03479  773c           ja       loc_034B7  ; 0000:3479
+loc_0347B:
+  0347B  0ae4           or       ah, ah  ; 0000:347B
+  0347D  7438           je       loc_034B7  ; 0000:347D
+  0347F  ff36e209       push     word ptr [0x9e2]  ; 0000:347F
+  03483  c706e209ef09   mov      word ptr [0x9e2], 0x9ef  ; 0000:3483
+  03489  50             push     ax  ; 0000:3489
+  0348A  53             push     bx  ; 0000:348A
+  0348B  52             push     dx  ; 0000:348B
+  0348C  33d2           xor      dx, dx  ; 0000:348C
+  0348E  32db           xor      bl, bl  ; 0000:348E
+  03490  e84efe         call     sub_032E1  ; 0000:3490
+  03493  5a             pop      dx  ; 0000:3493
+  03494  5b             pop      bx  ; 0000:3494
+  03495  58             pop      ax  ; 0000:3495
+  03496  c706e209f309   mov      word ptr [0x9e2], 0x9f3  ; 0000:3496
+  0349C  50             push     ax  ; 0000:349C
+  0349D  53             push     bx  ; 0000:349D
+  0349E  52             push     dx  ; 0000:349E
+  0349F  32ff           xor      bh, bh  ; 0000:349F
+  034A1  e80ffe         call     sub_032B3  ; 0000:34A1
+loc_034A4:
+  034A4  5a             pop      dx  ; 0000:34A4
+  034A5  5b             pop      bx  ; 0000:34A5
+  034A6  58             pop      ax  ; 0000:34A6
+  034A7  8f06e209       pop      word ptr [0x9e2]  ; 0000:34A7
+  034AB  e933fe         jmp      sub_032E1  ; 0000:34AB
+loc_034AE:
+  034AE  33c0           xor      ax, ax  ; 0000:34AE
+  034B0  33db           xor      bx, bx  ; 0000:34B0
+  034B2  33d2           xor      dx, dx  ; 0000:34B2
+  034B4  a2ec09         mov      byte ptr [0x9ec], al  ; 0000:34B4
+loc_034B7:
+  034B7  ff36e209       push     word ptr [0x9e2]  ; 0000:34B7
+  034BB  c706e209f309   mov      word ptr [0x9e2], 0x9f3  ; 0000:34BB
+  034C1  50             push     ax  ; 0000:34C1
+  034C2  53             push     bx  ; 0000:34C2
+  034C3  52             push     dx  ; 0000:34C3
+  034C4  e81afe         call     sub_032E1  ; 0000:34C4
+  034C7  33c0           xor      ax, ax  ; 0000:34C7
+  034C9  a3ef09         mov      word ptr [0x9ef], ax  ; 0000:34C9
+  034CC  a3f109         mov      word ptr [0x9f1], ax  ; 0000:34CC
+  034CF  ebd3           jmp      loc_034A4  ; 0000:34CF
+  034D1  87f7           xchg     di, si  ; 0000:34D1
+  034D3  8b6d06         mov      bp, word ptr [di + 6]  ; 0000:34D3
+  034D6  81f50080       xor      bp, 0x8000  ; 0000:34D6
+  034DA  eb1d           jmp      loc_034F9  ; 0000:34DA
+loc_034DC:
+  034DC  8bf7           mov      si, di  ; 0000:34DC
+  034DE  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:34DE
+  034E2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:34E2
+  034E3  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:34E3
+  034E4  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:34E4
+  034E5  ad             lodsw    ax, word ptr [si]  ; 0000:34E5
+  034E6  80e47f         and      ah, 0x7f  ; 0000:34E6
+  034E9  80e680         and      dh, 0x80  ; 0000:34E9
+  034EC  0ae6           or       ah, dh  ; 0000:34EC
+  034EE  ab             stosw    word ptr es:[di], ax  ; 0000:34EE
+  034EF  8b36e209       mov      si, word ptr [0x9e2]  ; 0000:34EF
+  034F3  8bfe           mov      di, si  ; 0000:34F3
+  034F5  c3             ret        ; 0000:34F5
+  034F6  8b6d06         mov      bp, word ptr [di + 6]  ; 0000:34F6
+loc_034F9:
+  034F9  fc             cld        ; 0000:34F9
+  034FA  8b4406         mov      ax, word ptr [si + 6]  ; 0000:34FA
+  034FD  d1e5           shl      bp, 1  ; 0000:34FD
+  034FF  d0de           rcr      dh, 1  ; 0000:34FF
+  03501  d1e0           shl      ax, 1  ; 0000:3501
+  03503  d0da           rcr      dl, 1  ; 0000:3503
+  03505  25e0ff         and      ax, 0xffe0  ; 0000:3505
+  03508  74d2           je       loc_034DC  ; 0000:3508
+  0350A  81e5e0ff       and      bp, 0xffe0  ; 0000:350A
+  0350E  3be8           cmp      bp, ax  ; 0000:350E
+  03510  7709           ja       loc_0351B  ; 0000:3510
+  03512  87f7           xchg     di, si  ; 0000:3512
+  03514  95             xchg     bp, ax  ; 0000:3514
+  03515  86d6           xchg     dh, dl  ; 0000:3515
+  03517  0bc0           or       ax, ax  ; 0000:3517
+  03519  74c1           je       loc_034DC  ; 0000:3519
+loc_0351B:
+  0351B  2bc5           sub      ax, bp  ; 0000:351B
+  0351D  f7d8           neg      ax  ; 0000:351D
+  0351F  3da006         cmp      ax, 0x6a0  ; 0000:351F
+  03522  77b8           ja       loc_034DC  ; 0000:3522
+  03524  d0e6           shl      dh, 1  ; 0000:3524
+  03526  d1dd           rcr      bp, 1  ; 0000:3526
+  03528  d0e2           shl      dl, 1  ; 0000:3528
+  0352A  d1dd           rcr      bp, 1  ; 0000:352A
+  0352C  57             push     di  ; 0000:352C
+  0352D  d1c0           rol      ax, 1  ; 0000:352D
+  0352F  d1c0           rol      ax, 1  ; 0000:352F
+  03531  d1c0           rol      ax, 1  ; 0000:3531
+  03533  86e0           xchg     al, ah  ; 0000:3533
+  03535  8bf8           mov      di, ax  ; 0000:3535
+  03537  ac             lodsb    al, byte ptr [si]  ; 0000:3537
+  03538  8ae0           mov      ah, al  ; 0000:3538
+  0353A  32c0           xor      al, al  ; 0000:353A
+  0353C  92             xchg     dx, ax  ; 0000:353C
+  0353D  ad             lodsw    ax, word ptr [si]  ; 0000:353D
+  0353E  91             xchg     cx, ax  ; 0000:353E
+  0353F  ad             lodsw    ax, word ptr [si]  ; 0000:353F
+  03540  93             xchg     bx, ax  ; 0000:3540
+  03541  ad             lodsw    ax, word ptr [si]  ; 0000:3541
+  03542  80e40f         and      ah, 0xf  ; 0000:3542
+  03545  80cc10         or       ah, 0x10  ; 0000:3545
+  03548  0bff           or       di, di  ; 0000:3548
+  0354A  7463           je       loc_035AF  ; 0000:354A
+loc_0354C:
+  0354C  83ff0e         cmp      di, 0xe  ; 0000:354C
+  0354F  7c18           jl       loc_03569  ; 0000:354F
+  03551  0bd2           or       dx, dx  ; 0000:3551
+  03553  7403           je       loc_03558  ; 0000:3553
+  03555  80c901         or       cl, 1  ; 0000:3555
+loc_03558:
+  03558  8bd1           mov      dx, cx  ; 0000:3558
+  0355A  8bcb           mov      cx, bx  ; 0000:355A
+  0355C  8bd8           mov      bx, ax  ; 0000:355C
+  0355E  33c0           xor      ax, ax  ; 0000:355E
+  03560  83ef10         sub      di, 0x10  ; 0000:3560
+  03563  77e7           ja       loc_0354C  ; 0000:3563
+  03565  7448           je       loc_035AF  ; 0000:3565
+  03567  7223           jb       loc_0358C  ; 0000:3567
+loc_03569:
+  03569  83ff06         cmp      di, 6  ; 0000:3569
+  0356C  7c2b           jl       loc_03599  ; 0000:356C
+  0356E  0ad2           or       dl, dl  ; 0000:356E
+  03570  7403           je       loc_03575  ; 0000:3570
+  03572  80ce01         or       dh, 1  ; 0000:3572
+loc_03575:
+  03575  8ad6           mov      dl, dh  ; 0000:3575
+  03577  8af1           mov      dh, cl  ; 0000:3577
+  03579  8acd           mov      cl, ch  ; 0000:3579
+  0357B  8aeb           mov      ch, bl  ; 0000:357B
+  0357D  8adf           mov      bl, bh  ; 0000:357D
+  0357F  8af8           mov      bh, al  ; 0000:357F
+  03581  8ac4           mov      al, ah  ; 0000:3581
+  03583  32e4           xor      ah, ah  ; 0000:3583
+  03585  83ef08         sub      di, 8  ; 0000:3585
+  03588  770f           ja       loc_03599  ; 0000:3588
+  0358A  7423           je       loc_035AF  ; 0000:358A
+loc_0358C:
+  0358C  d1e2           shl      dx, 1  ; 0000:358C
+  0358E  d1d1           rcl      cx, 1  ; 0000:358E
+  03590  d1d3           rcl      bx, 1  ; 0000:3590
+  03592  d1d0           rcl      ax, 1  ; 0000:3592
+  03594  47             inc      di  ; 0000:3594
+  03595  75f5           jne      loc_0358C  ; 0000:3595
+  03597  eb16           jmp      loc_035AF  ; 0000:3597
+loc_03599:
+  03599  87cf           xchg     di, cx  ; 0000:3599
+  0359B  f6c23f         test     dl, 0x3f  ; 0000:359B
+  0359E  7403           je       loc_035A3  ; 0000:359E
+  035A0  80ca20         or       dl, 0x20  ; 0000:35A0
+loc_035A3:
+  035A3  d1e8           shr      ax, 1  ; 0000:35A3
+  035A5  d1db           rcr      bx, 1  ; 0000:35A5
+  035A7  d1df           rcr      di, 1  ; 0000:35A7
+  035A9  d1da           rcr      dx, 1  ; 0000:35A9
+  035AB  e2f6           loop     0x35a3  ; 0000:35AB
+  035AD  87cf           xchg     di, cx  ; 0000:35AD
+loc_035AF:
+  035AF  5e             pop      si  ; 0000:35AF
+  035B0  97             xchg     di, ax  ; 0000:35B0
+  035B1  f6c23f         test     dl, 0x3f  ; 0000:35B1
+  035B4  7403           je       loc_035B9  ; 0000:35B4
+  035B6  80ca20         or       dl, 0x20  ; 0000:35B6
+loc_035B9:
+  035B9  d1e5           shl      bp, 1  ; 0000:35B9
+  035BB  703b           jo       loc_035F8  ; 0000:35BB
+  035BD  d1e5           shl      bp, 1  ; 0000:35BD
+  035BF  d0d8           rcr      al, 1  ; 0000:35BF
+  035C1  0234           add      dh, byte ptr [si]  ; 0000:35C1
+  035C3  134c01         adc      cx, word ptr [si + 1]  ; 0000:35C3
+  035C6  135c03         adc      bx, word ptr [si + 3]  ; 0000:35C6
+  035C9  50             push     ax  ; 0000:35C9
+  035CA  9f             lahf       ; 0000:35CA
+  035CB  50             push     ax  ; 0000:35CB
+  035CC  8b7405         mov      si, word ptr [si + 5]  ; 0000:35CC
+  035CF  81e6ff0f       and      si, 0xfff  ; 0000:35CF
+  035D3  81ce0010       or       si, 0x1000  ; 0000:35D3
+  035D7  58             pop      ax  ; 0000:35D7
+  035D8  9e             sahf       ; 0000:35D8
+  035D9  58             pop      ax  ; 0000:35D9
+  035DA  13fe           adc      di, si  ; 0000:35DA
+  035DC  f7c70020       test     di, 0x2000  ; 0000:35DC
+  035E0  7413           je       loc_035F5  ; 0000:35E0
+  035E2  d1df           rcr      di, 1  ; 0000:35E2
+  035E4  d1db           rcr      bx, 1  ; 0000:35E4
+  035E6  d1d9           rcr      cx, 1  ; 0000:35E6
+  035E8  d1da           rcr      dx, 1  ; 0000:35E8
+  035EA  83c520         add      bp, 0x20  ; 0000:35EA
+  035ED  83fde0         cmp      bp, -0x20  ; 0000:35ED
+  035F0  7503           jne      loc_035F5  ; 0000:35F0
+  035F2  e944f6         jmp      loc_02C39  ; 0000:35F2
+loc_035F5:
+  035F5  e98800         jmp      sub_03680  ; 0000:35F5
+loc_035F8:
+  035F8  d1e5           shl      bp, 1  ; 0000:35F8
+  035FA  d0d8           rcr      al, 1  ; 0000:35FA
+  035FC  f6d0           not      al  ; 0000:35FC
+  035FE  2a34           sub      dh, byte ptr [si]  ; 0000:35FE
+  03600  1b4c01         sbb      cx, word ptr [si + 1]  ; 0000:3600
+  03603  1b5c03         sbb      bx, word ptr [si + 3]  ; 0000:3603
+  03606  8b7405         mov      si, word ptr [si + 5]  ; 0000:3606
+  03609  9f             lahf       ; 0000:3609
+  0360A  81e6ff0f       and      si, 0xfff  ; 0000:360A
+  0360E  81ce0010       or       si, 0x1000  ; 0000:360E
+  03612  9e             sahf       ; 0000:3612
+  03613  1bfe           sbb      di, si  ; 0000:3613
+  03615  7313           jae      sub_0362A  ; 0000:3615
+  03617  33f6           xor      si, si  ; 0000:3617
+  03619  f6d0           not      al  ; 0000:3619
+  0361B  f7d7           not      di  ; 0000:361B
+  0361D  f7d3           not      bx  ; 0000:361D
+  0361F  f7d1           not      cx  ; 0000:361F
+  03621  f7da           neg      dx  ; 0000:3621
+  03623  f5             cmc        ; 0000:3623
+  03624  13ce           adc      cx, si  ; 0000:3624
+  03626  13de           adc      bx, si  ; 0000:3626
+  03628  13fe           adc      di, si  ; 0000:3628
+
+
+; ---- sub_0362A ----
+sub_0362A:
+  0362A  fc             cld        ; 0000:362A
+  0362B  be0400         mov      si, 4  ; 0000:362B
+loc_0362E:
+  0362E  0bff           or       di, di  ; 0000:362E
+  03630  7518           jne      loc_0364A  ; 0000:3630
+  03632  f6c7e0         test     bh, 0xe0  ; 0000:3632
+  03635  7513           jne      loc_0364A  ; 0000:3635
+  03637  81ed0002       sub      bp, 0x200  ; 0000:3637
+  0363B  7640           jbe      loc_0367D  ; 0000:363B
+  0363D  4e             dec      si  ; 0000:363D
+  0363E  743d           je       loc_0367D  ; 0000:363E
+  03640  8bfb           mov      di, bx  ; 0000:3640
+  03642  8bd9           mov      bx, cx  ; 0000:3642
+  03644  8bca           mov      cx, dx  ; 0000:3644
+  03646  33d2           xor      dx, dx  ; 0000:3646
+  03648  ebe4           jmp      loc_0362E  ; 0000:3648
+loc_0364A:
+  0364A  f7c7e01f       test     di, 0x1fe0  ; 0000:364A
+  0364E  7518           jne      loc_03668  ; 0000:364E
+  03650  81ed0001       sub      bp, 0x100  ; 0000:3650
+  03654  7627           jbe      loc_0367D  ; 0000:3654
+  03656  97             xchg     di, ax  ; 0000:3656
+  03657  8ae0           mov      ah, al  ; 0000:3657
+  03659  8ac7           mov      al, bh  ; 0000:3659
+  0365B  8afb           mov      bh, bl  ; 0000:365B
+  0365D  8add           mov      bl, ch  ; 0000:365D
+  0365F  8ae9           mov      ch, cl  ; 0000:365F
+  03661  8ace           mov      cl, dh  ; 0000:3661
+  03663  8af2           mov      dh, dl  ; 0000:3663
+  03665  b200           mov      dl, 0  ; 0000:3665
+  03667  97             xchg     di, ax  ; 0000:3667
+loc_03668:
+  03668  f7c70010       test     di, 0x1000  ; 0000:3668
+  0366C  7512           jne      sub_03680  ; 0000:366C
+  0366E  83ed20         sub      bp, 0x20  ; 0000:366E
+  03671  7471           je       loc_036E4  ; 0000:3671
+  03673  d1e2           shl      dx, 1  ; 0000:3673
+  03675  d1d1           rcl      cx, 1  ; 0000:3675
+  03677  d1d3           rcl      bx, 1  ; 0000:3677
+  03679  d1d7           rcl      di, 1  ; 0000:3679
+  0367B  ebeb           jmp      loc_03668  ; 0000:367B
+loc_0367D:
+  0367D  eb65           jmp      loc_036E4  ; 0000:367D
+  0367F  90             nop        ; 0000:367F
+
+
+; ---- sub_03680 ----
+; --- dmserv_fpConvert: FP conversion (int-to-float, float-to-int)
+dmserv_fpConvert:  ; was sub_03680
+  03680  fc             cld        ; 0000:3680
+  03681  803e040a00     cmp      byte ptr [0xa04], 0  ; 0000:3681
+  03686  7403           je       loc_0368B  ; 0000:3686
+  03688  e98503         jmp      loc_03A10  ; 0000:3688
+loc_0368B:
+  0368B  80fa80         cmp      dl, 0x80  ; 0000:368B
+  0368E  7707           ja       loc_03697  ; 0000:368E
+  03690  721f           jb       loc_036B1  ; 0000:3690
+  03692  f6c601         test     dh, 1  ; 0000:3692
+  03695  741a           je       loc_036B1  ; 0000:3695
+loc_03697:
+  03697  80c601         add      dh, 1  ; 0000:3697
+  0369A  83d100         adc      cx, 0  ; 0000:369A
+  0369D  83d300         adc      bx, 0  ; 0000:369D
+  036A0  83d700         adc      di, 0  ; 0000:36A0
+  036A3  f7c70020       test     di, 0x2000  ; 0000:36A3
+  036A7  7408           je       loc_036B1  ; 0000:36A7
+  036A9  83c520         add      bp, 0x20  ; 0000:36A9
+  036AC  83fde0         cmp      bp, -0x20  ; 0000:36AC
+  036AF  7430           je       loc_036E1  ; 0000:36AF
+loc_036B1:
+  036B1  8bf7           mov      si, di  ; 0000:36B1
+  036B3  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:36B3
+  036B7  87de           xchg     si, bx  ; 0000:36B7
+  036B9  2480           and      al, 0x80  ; 0000:36B9
+  036BB  80e70f         and      bh, 0xf  ; 0000:36BB
+  036BE  d1ed           shr      bp, 1  ; 0000:36BE
+  036C0  7422           je       loc_036E4  ; 0000:36C0
+  036C2  86e0           xchg     al, ah  ; 0000:36C2
+  036C4  32c0           xor      al, al  ; 0000:36C4
+  036C6  0bc5           or       ax, bp  ; 0000:36C6
+  036C8  0ac7           or       al, bh  ; 0000:36C8
+  036CA  894506         mov      word ptr [di + 6], ax  ; 0000:36CA
+  036CD  885d05         mov      byte ptr [di + 5], bl  ; 0000:36CD
+  036D0  8ac6           mov      al, dh  ; 0000:36D0
+  036D2  aa             stosb    byte ptr es:[di], al  ; 0000:36D2
+  036D3  8bc1           mov      ax, cx  ; 0000:36D3
+  036D5  ab             stosw    word ptr es:[di], ax  ; 0000:36D5
+  036D6  8bc6           mov      ax, si  ; 0000:36D6
+  036D8  ab             stosw    word ptr es:[di], ax  ; 0000:36D8
+  036D9  83ef05         sub      di, 5  ; 0000:36D9
+  036DC  8bf7           mov      si, di  ; 0000:36DC
+  036DE  c3             ret        ; 0000:36DE
+loc_036DF:
+  036DF  7903           jns      loc_036E4  ; 0000:36DF
+loc_036E1:
+  036E1  e955f5         jmp      loc_02C39  ; 0000:36E1
+loc_036E4:
+  036E4  fc             cld        ; 0000:36E4
+  036E5  803e040a00     cmp      byte ptr [0xa04], 0  ; 0000:36E5
+  036EA  7403           je       loc_036EF  ; 0000:36EA
+  036EC  e97703         jmp      loc_03A66  ; 0000:36EC
+loc_036EF:
+  036EF  33c0           xor      ax, ax  ; 0000:36EF
+  036F1  8b3ee209       mov      di, word ptr [0x9e2]  ; 0000:36F1
+  036F5  8bf7           mov      si, di  ; 0000:36F5
+  036F7  ab             stosw    word ptr es:[di], ax  ; 0000:36F7
+  036F8  ab             stosw    word ptr es:[di], ax  ; 0000:36F8
+  036F9  ab             stosw    word ptr es:[di], ax  ; 0000:36F9
+  036FA  ab             stosw    word ptr es:[di], ax  ; 0000:36FA
+  036FB  8bfe           mov      di, si  ; 0000:36FB
+  036FD  c3             ret        ; 0000:36FD
+  036FE  fc             cld        ; 0000:36FE
+  036FF  8b4406         mov      ax, word ptr [si + 6]  ; 0000:36FF
+  03702  8bd0           mov      dx, ax  ; 0000:3702
+  03704  25f07f         and      ax, 0x7ff0  ; 0000:3704
+  03707  74db           je       loc_036E4  ; 0000:3707
+  03709  8b4d06         mov      cx, word ptr [di + 6]  ; 0000:3709
+  0370C  33d1           xor      dx, cx  ; 0000:370C
+  0370E  81e1f07f       and      cx, 0x7ff0  ; 0000:370E
+loc_03712:
+  03712  74d0           je       loc_036E4  ; 0000:3712
+  03714  d1e0           shl      ax, 1  ; 0000:3714
+  03716  d1e1           shl      cx, 1  ; 0000:3716
+  03718  2d0080         sub      ax, 0x8000  ; 0000:3718
+  0371B  81e9e07f       sub      cx, 0x7fe0  ; 0000:371B
+  0371F  03c1           add      ax, cx  ; 0000:371F
+loc_03721:
+  03721  70bc           jo       loc_036DF  ; 0000:3721
+  03723  050080         add      ax, 0x8000  ; 0000:3723
+  03726  3de0ff         cmp      ax, 0xffe0  ; 0000:3726
+loc_03729:
+  03729  74b6           je       loc_036E1  ; 0000:3729
+  0372B  d0e6           shl      dh, 1  ; 0000:372B
+  0372D  d1d8           rcr      ax, 1  ; 0000:372D
+  0372F  50             push     ax  ; 0000:372F
+  03730  e88101         call     sub_038B4  ; 0000:3730
+  03733  7403           je       loc_03738  ; 0000:3733
+  03735  80ca01         or       dl, 1  ; 0000:3735
+loc_03738:
+  03738  5d             pop      bp  ; 0000:3738
+  03739  d1e5           shl      bp, 1  ; 0000:3739
+  0373B  d0d8           rcr      al, 1  ; 0000:373B
+  0373D  f7c70010       test     di, 0x1000  ; 0000:373D
+  03741  750e           jne      loc_03751  ; 0000:3741
+  03743  d1e2           shl      dx, 1  ; 0000:3743
+  03745  d1d1           rcl      cx, 1  ; 0000:3745
+  03747  d1d3           rcl      bx, 1  ; 0000:3747
+  03749  d1d7           rcl      di, 1  ; 0000:3749
+  0374B  0bed           or       bp, bp  ; 0000:374B
+  0374D  750a           jne      loc_03759  ; 0000:374D
+  0374F  eb93           jmp      loc_036E4  ; 0000:374F
+loc_03751:
+  03751  83c520         add      bp, 0x20  ; 0000:3751
+  03754  83fde0         cmp      bp, -0x20  ; 0000:3754
+  03757  7488           je       loc_036E1  ; 0000:3757
+loc_03759:
+  03759  e924ff         jmp      sub_03680  ; 0000:3759
+loc_0375C:
+  0375C  e9e4f4         jmp      loc_02C43  ; 0000:375C
+  0375F  87f7           xchg     di, si  ; 0000:375F
+  03761  fc             cld        ; 0000:3761
+  03762  8b4d06         mov      cx, word ptr [di + 6]  ; 0000:3762
+  03765  8bd1           mov      dx, cx  ; 0000:3765
+  03767  81e1f07f       and      cx, 0x7ff0  ; 0000:3767
+  0376B  74ef           je       loc_0375C  ; 0000:376B
+  0376D  8b4406         mov      ax, word ptr [si + 6]  ; 0000:376D
+  03770  33d0           xor      dx, ax  ; 0000:3770
+  03772  25f07f         and      ax, 0x7ff0  ; 0000:3772
+  03775  749b           je       loc_03712  ; 0000:3775
+  03777  d1e0           shl      ax, 1  ; 0000:3777
+  03779  d1e1           shl      cx, 1  ; 0000:3779
+  0377B  2d2080         sub      ax, 0x8020  ; 0000:377B
+  0377E  81e9e07f       sub      cx, 0x7fe0  ; 0000:377E
+  03782  2bc1           sub      ax, cx  ; 0000:3782
+  03784  709b           jo       loc_03721  ; 0000:3784
+  03786  050080         add      ax, 0x8000  ; 0000:3786
+  03789  3de0ff         cmp      ax, 0xffe0  ; 0000:3789
+  0378C  749b           je       loc_03729  ; 0000:378C
+  0378E  d0e6           shl      dh, 1  ; 0000:378E
+  03790  d1d8           rcr      ax, 1  ; 0000:3790
+  03792  50             push     ax  ; 0000:3792
+  03793  ac             lodsb    al, byte ptr [si]  ; 0000:3793
+  03794  8ae8           mov      ch, al  ; 0000:3794
+  03796  32c9           xor      cl, cl  ; 0000:3796
+  03798  ad             lodsw    ax, word ptr [si]  ; 0000:3798
+  03799  93             xchg     bx, ax  ; 0000:3799
+  0379A  ad             lodsw    ax, word ptr [si]  ; 0000:379A
+  0379B  92             xchg     dx, ax  ; 0000:379B
+  0379C  ad             lodsw    ax, word ptr [si]  ; 0000:379C
+  0379D  80e40f         and      ah, 0xf  ; 0000:379D
+  037A0  80cc10         or       ah, 0x10  ; 0000:37A0
+  037A3  92             xchg     dx, ax  ; 0000:37A3
+  037A4  50             push     ax  ; 0000:37A4
+  037A5  8bf7           mov      si, di  ; 0000:37A5
+  037A7  83c605         add      si, 5  ; 0000:37A7
+  037AA  bf020a         mov      di, 0xa02  ; 0000:37AA
+  037AD  fd             std        ; 0000:37AD
+  037AE  ad             lodsw    ax, word ptr [si]  ; 0000:37AE
+  037AF  80e40f         and      ah, 0xf  ; 0000:37AF
+  037B2  80cc10         or       ah, 0x10  ; 0000:37B2
+  037B5  ab             stosw    word ptr es:[di], ax  ; 0000:37B5
+  037B6  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:37B6
+  037B7  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:37B7
+  037B8  46             inc      si  ; 0000:37B8
+  037B9  47             inc      di  ; 0000:37B9
+  037BA  a4             movsb    byte ptr es:[di], byte ptr [si]  ; 0000:37BA
+  037BB  fc             cld        ; 0000:37BB
+  037BC  c60500         mov      byte ptr [di], 0  ; 0000:37BC
+  037BF  803e040a00     cmp      byte ptr [0xa04], 0  ; 0000:37BF
+  037C4  741f           je       loc_037E5  ; 0000:37C4
+  037C6  fd             std        ; 0000:37C6
+  037C7  bf020a         mov      di, 0xa02  ; 0000:37C7
+  037CA  8bf7           mov      si, di  ; 0000:37CA
+  037CC  ad             lodsw    ax, word ptr [si]  ; 0000:37CC
+  037CD  8be8           mov      bp, ax  ; 0000:37CD
+  037CF  d1e8           shr      ax, 1  ; 0000:37CF
+  037D1  0226040a       add      ah, byte ptr [0xa04]  ; 0000:37D1
+  037D5  ab             stosw    word ptr es:[di], ax  ; 0000:37D5
+  037D6  d1ed           shr      bp, 1  ; 0000:37D6
+  037D8  ad             lodsw    ax, word ptr [si]  ; 0000:37D8
+  037D9  d1d8           rcr      ax, 1  ; 0000:37D9
+  037DB  ab             stosw    word ptr es:[di], ax  ; 0000:37DB
+  037DC  ad             lodsw    ax, word ptr [si]  ; 0000:37DC
+  037DD  d1d8           rcr      ax, 1  ; 0000:37DD
+  037DF  ab             stosw    word ptr es:[di], ax  ; 0000:37DF
+  037E0  ad             lodsw    ax, word ptr [si]  ; 0000:37E0
+  037E1  d1d8           rcr      ax, 1  ; 0000:37E1
+  037E3  ab             stosw    word ptr es:[di], ax  ; 0000:37E3
+  037E4  fc             cld        ; 0000:37E4
+loc_037E5:
+  037E5  58             pop      ax  ; 0000:37E5
+  037E6  d1ea           shr      dx, 1  ; 0000:37E6
+  037E8  d1d8           rcr      ax, 1  ; 0000:37E8
+  037EA  d1db           rcr      bx, 1  ; 0000:37EA
+  037EC  d1d9           rcr      cx, 1  ; 0000:37EC
+  037EE  e83f00         call     sub_03830  ; 0000:37EE
+  037F1  57             push     di  ; 0000:37F1
+  037F2  e83b00         call     sub_03830  ; 0000:37F2
+  037F5  57             push     di  ; 0000:37F5
+  037F6  e83700         call     sub_03830  ; 0000:37F6
+  037F9  57             push     di  ; 0000:37F9
+  037FA  e83300         call     sub_03830  ; 0000:37FA
+  037FD  0bc3           or       ax, bx  ; 0000:37FD
+  037FF  0bc1           or       ax, cx  ; 0000:37FF
+  03801  0bc2           or       ax, dx  ; 0000:3801
+  03803  8bd7           mov      dx, di  ; 0000:3803
+  03805  59             pop      cx  ; 0000:3805
+  03806  5b             pop      bx  ; 0000:3806
+  03807  5f             pop      di  ; 0000:3807
+  03808  7403           je       loc_0380D  ; 0000:3808
+  0380A  80ca01         or       dl, 1  ; 0000:380A
+loc_0380D:
+  0380D  f6c207         test     dl, 7  ; 0000:380D
+  03810  7403           je       loc_03815  ; 0000:3810
+  03812  80ca08         or       dl, 8  ; 0000:3812
+loc_03815:
+  03815  d1ef           shr      di, 1  ; 0000:3815
+  03817  d1db           rcr      bx, 1  ; 0000:3817
+  03819  d1d9           rcr      cx, 1  ; 0000:3819
+  0381B  d1da           rcr      dx, 1  ; 0000:381B
+  0381D  d1ef           shr      di, 1  ; 0000:381D
+  0381F  d1db           rcr      bx, 1  ; 0000:381F
+  03821  d1d9           rcr      cx, 1  ; 0000:3821
+  03823  d1da           rcr      dx, 1  ; 0000:3823
+  03825  d1ef           shr      di, 1  ; 0000:3825
+  03827  d1db           rcr      bx, 1  ; 0000:3827
+  03829  d1d9           rcr      cx, 1  ; 0000:3829
+  0382B  d1da           rcr      dx, 1  ; 0000:382B
+  0382D  e908ff         jmp      loc_03738  ; 0000:382D
+
+
+; ---- sub_03830 ----
+sub_03830:
+  03830  8b36020a       mov      si, word ptr [0xa02]  ; 0000:3830
+  03834  33ff           xor      di, di  ; 0000:3834
+  03836  3bd6           cmp      dx, si  ; 0000:3836
+  03838  735c           jae      loc_03896  ; 0000:3838
+  0383A  0bd2           or       dx, dx  ; 0000:383A
+  0383C  7504           jne      loc_03842  ; 0000:383C
+  0383E  3bf0           cmp      si, ax  ; 0000:383E
+  03840  773b           ja       loc_0387D  ; 0000:3840
+loc_03842:
+  03842  f7f6           div      si  ; 0000:3842
+  03844  52             push     dx  ; 0000:3844
+  03845  97             xchg     di, ax  ; 0000:3845
+  03846  33ed           xor      bp, bp  ; 0000:3846
+  03848  8bf5           mov      si, bp  ; 0000:3848
+  0384A  a1fc09         mov      ax, word ptr [0x9fc]  ; 0000:384A
+  0384D  0bc0           or       ax, ax  ; 0000:384D
+  0384F  7404           je       loc_03855  ; 0000:384F
+  03851  f7e7           mul      di  ; 0000:3851
+  03853  8bf2           mov      si, dx  ; 0000:3853
+loc_03855:
+  03855  50             push     ax  ; 0000:3855
+  03856  a1fe09         mov      ax, word ptr [0x9fe]  ; 0000:3856
+  03859  0bc0           or       ax, ax  ; 0000:3859
+  0385B  7406           je       loc_03863  ; 0000:385B
+  0385D  f7e7           mul      di  ; 0000:385D
+  0385F  03f0           add      si, ax  ; 0000:385F
+  03861  13ea           adc      bp, dx  ; 0000:3861
+loc_03863:
+  03863  a1000a         mov      ax, word ptr [0xa00]  ; 0000:3863
+  03866  0bc0           or       ax, ax  ; 0000:3866
+  03868  7408           je       loc_03872  ; 0000:3868
+  0386A  f7e7           mul      di  ; 0000:386A
+  0386C  03e8           add      bp, ax  ; 0000:386C
+  0386E  83d200         adc      dx, 0  ; 0000:386E
+  03871  92             xchg     dx, ax  ; 0000:3871
+loc_03872:
+  03872  5a             pop      dx  ; 0000:3872
+  03873  f7da           neg      dx  ; 0000:3873
+  03875  1bce           sbb      cx, si  ; 0000:3875
+  03877  1bdd           sbb      bx, bp  ; 0000:3877
+  03879  5d             pop      bp  ; 0000:3879
+  0387A  1be8           sbb      bp, ax  ; 0000:387A
+  0387C  95             xchg     bp, ax  ; 0000:387C
+loc_0387D:
+  0387D  92             xchg     dx, ax  ; 0000:387D
+  0387E  91             xchg     cx, ax  ; 0000:387E
+  0387F  93             xchg     bx, ax  ; 0000:387F
+  03880  7313           jae      loc_03895  ; 0000:3880
+loc_03882:
+  03882  4f             dec      di  ; 0000:3882
+  03883  030efc09       add      cx, word ptr [0x9fc]  ; 0000:3883
+  03887  131efe09       adc      bx, word ptr [0x9fe]  ; 0000:3887
+  0388B  1306000a       adc      ax, word ptr [0xa00]  ; 0000:388B
+  0388F  1316020a       adc      dx, word ptr [0xa02]  ; 0000:388F
+  03893  73ed           jae      loc_03882  ; 0000:3893
+loc_03895:
+  03895  c3             ret        ; 0000:3895
+loc_03896:
+  03896  4f             dec      di  ; 0000:3896
+  03897  2b0efc09       sub      cx, word ptr [0x9fc]  ; 0000:3897
+  0389B  1b1efe09       sbb      bx, word ptr [0x9fe]  ; 0000:389B
+  0389F  1b06000a       sbb      ax, word ptr [0xa00]  ; 0000:389F
+  038A3  030efe09       add      cx, word ptr [0x9fe]  ; 0000:38A3
+  038A7  131e000a       adc      bx, word ptr [0xa00]  ; 0000:38A7
+  038AB  13c2           adc      ax, dx  ; 0000:38AB
+  038AD  8b16fc09       mov      dx, word ptr [0x9fc]  ; 0000:38AD
+  038B1  f5             cmc        ; 0000:38B1
+  038B2  ebc9           jmp      loc_0387D  ; 0000:38B2
+
+
+; ---- sub_038B4 ----
+; --- dmserv_fpCompare: FP comparison routines
+dmserv_fpCompare:  ; was sub_038B4
+  038B4  8a4406         mov      al, byte ptr [si + 6]  ; 0000:38B4
+  038B7  32e4           xor      ah, ah  ; 0000:38B7
+  038B9  240f           and      al, 0xf  ; 0000:38B9
+  038BB  0c10           or       al, 0x10  ; 0000:38BB
+  038BD  a3f809         mov      word ptr [0x9f8], ax  ; 0000:38BD
+  038C0  8a4506         mov      al, byte ptr [di + 6]  ; 0000:38C0
+  038C3  240f           and      al, 0xf  ; 0000:38C3
+  038C5  0c10           or       al, 0x10  ; 0000:38C5
+  038C7  a3fa09         mov      word ptr [0x9fa], ax  ; 0000:38C7
+  038CA  33db           xor      bx, bx  ; 0000:38CA
+  038CC  8beb           mov      bp, bx  ; 0000:38CC
+  038CE  8b0c           mov      cx, word ptr [si]  ; 0000:38CE
+  038D0  e31a           jcxz     loc_038EC  ; 0000:38D0
+  038D2  91             xchg     cx, ax  ; 0000:38D2
+  038D3  8b0d           mov      cx, word ptr [di]  ; 0000:38D3
+  038D5  e308           jcxz     loc_038DF  ; 0000:38D5
+  038D7  f7e1           mul      cx  ; 0000:38D7
+  038D9  8be8           mov      bp, ax  ; 0000:38D9
+  038DB  8bca           mov      cx, dx  ; 0000:38DB
+  038DD  8b04           mov      ax, word ptr [si]  ; 0000:38DD
+loc_038DF:
+  038DF  8b5502         mov      dx, word ptr [di + 2]  ; 0000:38DF
+  038E2  0bd2           or       dx, dx  ; 0000:38E2
+  038E4  7406           je       loc_038EC  ; 0000:38E4
+  038E6  f7e2           mul      dx  ; 0000:38E6
+  038E8  03c8           add      cx, ax  ; 0000:38E8
+  038EA  13da           adc      bx, dx  ; 0000:38EA
+loc_038EC:
+  038EC  55             push     bp  ; 0000:38EC
+  038ED  33ed           xor      bp, bp  ; 0000:38ED
+  038EF  8b4402         mov      ax, word ptr [si + 2]  ; 0000:38EF
+  038F2  0bc0           or       ax, ax  ; 0000:38F2
+  038F4  740e           je       loc_03904  ; 0000:38F4
+  038F6  8b15           mov      dx, word ptr [di]  ; 0000:38F6
+  038F8  0bd2           or       dx, dx  ; 0000:38F8
+  038FA  7408           je       loc_03904  ; 0000:38FA
+  038FC  f7e2           mul      dx  ; 0000:38FC
+  038FE  03c8           add      cx, ax  ; 0000:38FE
+  03900  13da           adc      bx, dx  ; 0000:3900
+  03902  d1d5           rcl      bp, 1  ; 0000:3902
+loc_03904:
+  03904  58             pop      ax  ; 0000:3904
+  03905  0bc1           or       ax, cx  ; 0000:3905
+  03907  50             push     ax  ; 0000:3907
+  03908  8b4402         mov      ax, word ptr [si + 2]  ; 0000:3908
+  0390B  0bc0           or       ax, ax  ; 0000:390B
+  0390D  740d           je       loc_0391C  ; 0000:390D
+  0390F  8b5502         mov      dx, word ptr [di + 2]  ; 0000:390F
+  03912  0bd2           or       dx, dx  ; 0000:3912
+  03914  7406           je       loc_0391C  ; 0000:3914
+  03916  f7e2           mul      dx  ; 0000:3916
+  03918  03d8           add      bx, ax  ; 0000:3918
+  0391A  13ea           adc      bp, dx  ; 0000:391A
+loc_0391C:
+  0391C  33c9           xor      cx, cx  ; 0000:391C
+  0391E  8b04           mov      ax, word ptr [si]  ; 0000:391E
+  03920  0bc0           or       ax, ax  ; 0000:3920
+  03922  740f           je       loc_03933  ; 0000:3922
+  03924  8b5504         mov      dx, word ptr [di + 4]  ; 0000:3924
+  03927  0bd2           or       dx, dx  ; 0000:3927
+  03929  7408           je       loc_03933  ; 0000:3929
+  0392B  f7e2           mul      dx  ; 0000:392B
+  0392D  03d8           add      bx, ax  ; 0000:392D
+  0392F  13ea           adc      bp, dx  ; 0000:392F
+  03931  d1d1           rcl      cx, 1  ; 0000:3931
+loc_03933:
+  03933  8b4404         mov      ax, word ptr [si + 4]  ; 0000:3933
+  03936  0bc0           or       ax, ax  ; 0000:3936
+  03938  740f           je       loc_03949  ; 0000:3938
+  0393A  8b15           mov      dx, word ptr [di]  ; 0000:393A
+  0393C  0bd2           or       dx, dx  ; 0000:393C
+  0393E  7409           je       loc_03949  ; 0000:393E
+  03940  f7e2           mul      dx  ; 0000:3940
+  03942  03d8           add      bx, ax  ; 0000:3942
+  03944  13ea           adc      bp, dx  ; 0000:3944
+  03946  83d100         adc      cx, 0  ; 0000:3946
+loc_03949:
+  03949  58             pop      ax  ; 0000:3949
+  0394A  0bc3           or       ax, bx  ; 0000:394A
+  0394C  50             push     ax  ; 0000:394C
+  0394D  8b04           mov      ax, word ptr [si]  ; 0000:394D
+  0394F  0bc0           or       ax, ax  ; 0000:394F
+  03951  7408           je       loc_0395B  ; 0000:3951
+  03953  f726fa09       mul      word ptr [0x9fa]  ; 0000:3953
+  03957  03e8           add      bp, ax  ; 0000:3957
+  03959  13ca           adc      cx, dx  ; 0000:3959
+loc_0395B:
+  0395B  8b05           mov      ax, word ptr [di]  ; 0000:395B
+  0395D  0bc0           or       ax, ax  ; 0000:395D
+  0395F  7408           je       loc_03969  ; 0000:395F
+  03961  f726f809       mul      word ptr [0x9f8]  ; 0000:3961
+  03965  03e8           add      bp, ax  ; 0000:3965
+  03967  13ca           adc      cx, dx  ; 0000:3967
+loc_03969:
+  03969  33db           xor      bx, bx  ; 0000:3969
+  0396B  8b4402         mov      ax, word ptr [si + 2]  ; 0000:396B
+  0396E  0bc0           or       ax, ax  ; 0000:396E
+  03970  740f           je       loc_03981  ; 0000:3970
+  03972  8b5504         mov      dx, word ptr [di + 4]  ; 0000:3972
+  03975  0bd2           or       dx, dx  ; 0000:3975
+  03977  7408           je       loc_03981  ; 0000:3977
+  03979  f7e2           mul      dx  ; 0000:3979
+  0397B  03e8           add      bp, ax  ; 0000:397B
+  0397D  13ca           adc      cx, dx  ; 0000:397D
+  0397F  d1d3           rcl      bx, 1  ; 0000:397F
+loc_03981:
+  03981  8b4404         mov      ax, word ptr [si + 4]  ; 0000:3981
+  03984  0bc0           or       ax, ax  ; 0000:3984
+  03986  7410           je       loc_03998  ; 0000:3986
+  03988  8b5502         mov      dx, word ptr [di + 2]  ; 0000:3988
+  0398B  0bd2           or       dx, dx  ; 0000:398B
+  0398D  7409           je       loc_03998  ; 0000:398D
+  0398F  f7e2           mul      dx  ; 0000:398F
+  03991  03e8           add      bp, ax  ; 0000:3991
+  03993  13ca           adc      cx, dx  ; 0000:3993
+  03995  83d300         adc      bx, 0  ; 0000:3995
+loc_03998:
+  03998  55             push     bp  ; 0000:3998
+  03999  33ed           xor      bp, bp  ; 0000:3999
+  0399B  8b4502         mov      ax, word ptr [di + 2]  ; 0000:399B
+  0399E  0bc0           or       ax, ax  ; 0000:399E
+  039A0  7408           je       loc_039AA  ; 0000:39A0
+  039A2  f726f809       mul      word ptr [0x9f8]  ; 0000:39A2
+  039A6  03c8           add      cx, ax  ; 0000:39A6
+  039A8  13da           adc      bx, dx  ; 0000:39A8
+loc_039AA:
+  039AA  8b4402         mov      ax, word ptr [si + 2]  ; 0000:39AA
+  039AD  0bc0           or       ax, ax  ; 0000:39AD
+  039AF  7408           je       loc_039B9  ; 0000:39AF
+  039B1  f726fa09       mul      word ptr [0x9fa]  ; 0000:39B1
+  039B5  03c8           add      cx, ax  ; 0000:39B5
+  039B7  13da           adc      bx, dx  ; 0000:39B7
+loc_039B9:
+  039B9  8b4404         mov      ax, word ptr [si + 4]  ; 0000:39B9
+  039BC  0bc0           or       ax, ax  ; 0000:39BC
+  039BE  741a           je       loc_039DA  ; 0000:39BE
+  039C0  8b5504         mov      dx, word ptr [di + 4]  ; 0000:39C0
+  039C3  0bd2           or       dx, dx  ; 0000:39C3
+  039C5  740b           je       loc_039D2  ; 0000:39C5
+  039C7  f7e2           mul      dx  ; 0000:39C7
+  039C9  03c8           add      cx, ax  ; 0000:39C9
+  039CB  13da           adc      bx, dx  ; 0000:39CB
+  039CD  d1d5           rcl      bp, 1  ; 0000:39CD
+  039CF  8b4404         mov      ax, word ptr [si + 4]  ; 0000:39CF
+loc_039D2:
+  039D2  f726fa09       mul      word ptr [0x9fa]  ; 0000:39D2
+  039D6  03d8           add      bx, ax  ; 0000:39D6
+  039D8  13ea           adc      bp, dx  ; 0000:39D8
+loc_039DA:
+  039DA  8b4504         mov      ax, word ptr [di + 4]  ; 0000:39DA
+  039DD  0bc0           or       ax, ax  ; 0000:39DD
+  039DF  7408           je       loc_039E9  ; 0000:39DF
+  039E1  f726f809       mul      word ptr [0x9f8]  ; 0000:39E1
+  039E5  03d8           add      bx, ax  ; 0000:39E5
+  039E7  13ea           adc      bp, dx  ; 0000:39E7
+loc_039E9:
+  039E9  a0f809         mov      al, byte ptr [0x9f8]  ; 0000:39E9
+  039EC  f626fa09       mul      byte ptr [0x9fa]  ; 0000:39EC
+  039F0  03c5           add      ax, bp  ; 0000:39F0
+  039F2  97             xchg     di, ax  ; 0000:39F2
+  039F3  5a             pop      dx  ; 0000:39F3
+  039F4  d1e2           shl      dx, 1  ; 0000:39F4
+  039F6  d1d1           rcl      cx, 1  ; 0000:39F6
+  039F8  d1d3           rcl      bx, 1  ; 0000:39F8
+  039FA  d1d7           rcl      di, 1  ; 0000:39FA
+  039FC  d1e2           shl      dx, 1  ; 0000:39FC
+  039FE  d1d1           rcl      cx, 1  ; 0000:39FE
+  03A00  d1d3           rcl      bx, 1  ; 0000:3A00
+  03A02  d1d7           rcl      di, 1  ; 0000:3A02
+  03A04  d1e2           shl      dx, 1  ; 0000:3A04
+  03A06  d1d1           rcl      cx, 1  ; 0000:3A06
+  03A08  d1d3           rcl      bx, 1  ; 0000:3A08
+  03A0A  d1d7           rcl      di, 1  ; 0000:3A0A
+  03A0C  5e             pop      si  ; 0000:3A0C
+  03A0D  0bf6           or       si, si  ; 0000:3A0D
+  03A0F  c3             ret        ; 0000:3A0F
+loc_03A10:
+  03A10  c606040a00     mov      byte ptr [0xa04], 0  ; 0000:3A10
+  03A15  8b36050a       mov      si, word ptr [0xa05]  ; 0000:3A15
+  03A19  0bf6           or       si, si  ; 0000:3A19
+  03A1B  7408           je       loc_03A25  ; 0000:3A1B
+  03A1D  81eec004       sub      si, 0x4c0  ; 0000:3A1D
+  03A21  3bf5           cmp      si, bp  ; 0000:3A21
+  03A23  7750           ja       loc_03A75  ; 0000:3A23
+loc_03A25:
+  03A25  0bed           or       bp, bp  ; 0000:3A25
+  03A27  744c           je       loc_03A75  ; 0000:3A27
+  03A29  ff36e209       push     word ptr [0x9e2]  ; 0000:3A29
+  03A2D  c706e209070a   mov      word ptr [0x9e2], 0xa07  ; 0000:3A2D
+  03A33  50             push     ax  ; 0000:3A33
+  03A34  51             push     cx  ; 0000:3A34
+  03A35  52             push     dx  ; 0000:3A35
+  03A36  53             push     bx  ; 0000:3A36
+  03A37  55             push     bp  ; 0000:3A37
+  03A38  57             push     di  ; 0000:3A38
+  03A39  33db           xor      bx, bx  ; 0000:3A39
+  03A3B  33c9           xor      cx, cx  ; 0000:3A3B
+  03A3D  33d2           xor      dx, dx  ; 0000:3A3D
+  03A3F  e83efc         call     sub_03680  ; 0000:3A3F
+  03A42  5f             pop      di  ; 0000:3A42
+  03A43  5d             pop      bp  ; 0000:3A43
+  03A44  5b             pop      bx  ; 0000:3A44
+  03A45  5a             pop      dx  ; 0000:3A45
+  03A46  59             pop      cx  ; 0000:3A46
+  03A47  58             pop      ax  ; 0000:3A47
+  03A48  c706e2090f0a   mov      word ptr [0x9e2], 0xa0f  ; 0000:3A48
+  03A4E  50             push     ax  ; 0000:3A4E
+  03A4F  51             push     cx  ; 0000:3A4F
+  03A50  52             push     dx  ; 0000:3A50
+  03A51  53             push     bx  ; 0000:3A51
+  03A52  55             push     bp  ; 0000:3A52
+  03A53  57             push     di  ; 0000:3A53
+  03A54  33ff           xor      di, di  ; 0000:3A54
+  03A56  e8d1fb         call     sub_0362A  ; 0000:3A56
+loc_03A59:
+  03A59  5f             pop      di  ; 0000:3A59
+  03A5A  5d             pop      bp  ; 0000:3A5A
+  03A5B  5b             pop      bx  ; 0000:3A5B
+  03A5C  5a             pop      dx  ; 0000:3A5C
+  03A5D  59             pop      cx  ; 0000:3A5D
+  03A5E  58             pop      ax  ; 0000:3A5E
+  03A5F  8f06e209       pop      word ptr [0x9e2]  ; 0000:3A5F
+  03A63  e91afc         jmp      sub_03680  ; 0000:3A63
+loc_03A66:
+  03A66  33c0           xor      ax, ax  ; 0000:3A66
+  03A68  33c9           xor      cx, cx  ; 0000:3A68
+  03A6A  33d2           xor      dx, dx  ; 0000:3A6A
+  03A6C  33db           xor      bx, bx  ; 0000:3A6C
+  03A6E  33ed           xor      bp, bp  ; 0000:3A6E
+  03A70  33ff           xor      di, di  ; 0000:3A70
+  03A72  a2040a         mov      byte ptr [0xa04], al  ; 0000:3A72
+loc_03A75:
+  03A75  ff36e209       push     word ptr [0x9e2]  ; 0000:3A75
+  03A79  c706e2090f0a   mov      word ptr [0x9e2], 0xa0f  ; 0000:3A79
+  03A7F  50             push     ax  ; 0000:3A7F
+  03A80  51             push     cx  ; 0000:3A80
+  03A81  52             push     dx  ; 0000:3A81
+  03A82  53             push     bx  ; 0000:3A82
+  03A83  55             push     bp  ; 0000:3A83
+  03A84  57             push     di  ; 0000:3A84
+  03A85  e8f8fb         call     sub_03680  ; 0000:3A85
+  03A88  bf070a         mov      di, 0xa07  ; 0000:3A88
+  03A8B  33c0           xor      ax, ax  ; 0000:3A8B
+  03A8D  ab             stosw    word ptr es:[di], ax  ; 0000:3A8D
+  03A8E  ab             stosw    word ptr es:[di], ax  ; 0000:3A8E
+  03A8F  ab             stosw    word ptr es:[di], ax  ; 0000:3A8F
+  03A90  ab             stosw    word ptr es:[di], ax  ; 0000:3A90
+  03A91  ebc6           jmp      loc_03A59  ; 0000:3A91
+
+
+; ---- sub_03A93 ----
+sub_03A93:
+  03A93  55             push     bp  ; 0000:3A93
+  03A94  8bec           mov      bp, sp  ; 0000:3A94
+  03A96  83ec04         sub      sp, 4  ; 0000:3A96
+  03A99  57             push     di  ; 0000:3A99
+  03A9A  56             push     si  ; 0000:3A9A
+  03A9B  8b7604         mov      si, word ptr [bp + 4]  ; 0000:3A9B
+  03A9E  8a1c           mov      bl, byte ptr [si]  ; 0000:3A9E
+  03AA0  2aff           sub      bh, bh  ; 0000:3AA0
+  03AA2  f6878b0a01     test     byte ptr [bx + 0xa8b], 1  ; 0000:3AA2
+  03AA7  7409           je       loc_03AB2  ; 0000:3AA7
+  03AA9  8ac3           mov      al, bl  ; 0000:3AA9
+  03AAB  2ae4           sub      ah, ah  ; 0000:3AAB
+  03AAD  052000         add      ax, 0x20  ; 0000:3AAD
+  03AB0  eb03           jmp      loc_03AB5  ; 0000:3AB0
+loc_03AB2:
+  03AB2  8a04           mov      al, byte ptr [si]  ; 0000:3AB2
+  03AB4  98             cwde       ; 0000:3AB4
+loc_03AB5:
+  03AB5  3d6500         cmp      ax, 0x65  ; 0000:3AB5
+  03AB8  740c           je       loc_03AC6  ; 0000:3AB8
+loc_03ABA:
+  03ABA  46             inc      si  ; 0000:3ABA
+  03ABB  8a1c           mov      bl, byte ptr [si]  ; 0000:3ABB
+  03ABD  2aff           sub      bh, bh  ; 0000:3ABD
+  03ABF  f6878b0a04     test     byte ptr [bx + 0xa8b], 4  ; 0000:3ABF
+  03AC4  75f4           jne      loc_03ABA  ; 0000:3AC4
+loc_03AC6:
+  03AC6  8a04           mov      al, byte ptr [si]  ; 0000:3AC6
+  03AC8  98             cwde       ; 0000:3AC8
+  03AC9  8bf8           mov      di, ax  ; 0000:3AC9
+  03ACB  c6042e         mov      byte ptr [si], 0x2e  ; 0000:3ACB
+  03ACE  46             inc      si  ; 0000:3ACE
+loc_03ACF:
+  03ACF  8a04           mov      al, byte ptr [si]  ; 0000:3ACF
+  03AD1  98             cwde       ; 0000:3AD1
+  03AD2  8946fc         mov      word ptr [bp - 4], ax  ; 0000:3AD2
+  03AD5  8bc7           mov      ax, di  ; 0000:3AD5
+  03AD7  8804           mov      byte ptr [si], al  ; 0000:3AD7
+  03AD9  8b7efc         mov      di, word ptr [bp - 4]  ; 0000:3AD9
+  03ADC  46             inc      si  ; 0000:3ADC
+  03ADD  807cff00       cmp      byte ptr [si - 1], 0  ; 0000:3ADD
+  03AE1  75ec           jne      loc_03ACF  ; 0000:3AE1
+  03AE3  5e             pop      si  ; 0000:3AE3
+  03AE4  5f             pop      di  ; 0000:3AE4
+  03AE5  8be5           mov      sp, bp  ; 0000:3AE5
+  03AE7  5d             pop      bp  ; 0000:3AE7
+  03AE8  c3             ret        ; 0000:3AE8
+
+
+; ---- sub_03AE9 ----
+sub_03AE9:
+  03AE9  55             push     bp  ; 0000:3AE9
+  03AEA  8bec           mov      bp, sp  ; 0000:3AEA
+  03AEC  83ec02         sub      sp, 2  ; 0000:3AEC
+  03AEF  57             push     di  ; 0000:3AEF
+  03AF0  56             push     si  ; 0000:3AF0
+  03AF1  8b7604         mov      si, word ptr [bp + 4]  ; 0000:3AF1
+  03AF4  eb06           jmp      loc_03AFC  ; 0000:3AF4
+loc_03AF6:
+  03AF6  803c2e         cmp      byte ptr [si], 0x2e  ; 0000:3AF6
+  03AF9  7406           je       loc_03B01  ; 0000:3AF9
+  03AFB  46             inc      si  ; 0000:3AFB
+loc_03AFC:
+  03AFC  803c00         cmp      byte ptr [si], 0  ; 0000:3AFC
+  03AFF  75f5           jne      loc_03AF6  ; 0000:3AFF
+loc_03B01:
+  03B01  46             inc      si  ; 0000:3B01
+  03B02  807cff00       cmp      byte ptr [si - 1], 0  ; 0000:3B02
+  03B06  742f           je       loc_03B37  ; 0000:3B06
+  03B08  eb0b           jmp      loc_03B15  ; 0000:3B08
+loc_03B0A:
+  03B0A  803c65         cmp      byte ptr [si], 0x65  ; 0000:3B0A
+  03B0D  740b           je       loc_03B1A  ; 0000:3B0D
+  03B0F  803c45         cmp      byte ptr [si], 0x45  ; 0000:3B0F
+  03B12  7406           je       loc_03B1A  ; 0000:3B12
+  03B14  46             inc      si  ; 0000:3B14
+loc_03B15:
+  03B15  803c00         cmp      byte ptr [si], 0  ; 0000:3B15
+  03B18  75f0           jne      loc_03B0A  ; 0000:3B18
+loc_03B1A:
+  03B1A  8bc6           mov      ax, si  ; 0000:3B1A
+  03B1C  4e             dec      si  ; 0000:3B1C
+  03B1D  8bf8           mov      di, ax  ; 0000:3B1D
+  03B1F  eb01           jmp      loc_03B22  ; 0000:3B1F
+loc_03B21:
+  03B21  4e             dec      si  ; 0000:3B21
+loc_03B22:
+  03B22  803c30         cmp      byte ptr [si], 0x30  ; 0000:3B22
+  03B25  74fa           je       loc_03B21  ; 0000:3B25
+  03B27  803c2e         cmp      byte ptr [si], 0x2e  ; 0000:3B27
+  03B2A  7501           jne      loc_03B2D  ; 0000:3B2A
+  03B2C  4e             dec      si  ; 0000:3B2C
+loc_03B2D:
+  03B2D  46             inc      si  ; 0000:3B2D
+  03B2E  8a05           mov      al, byte ptr [di]  ; 0000:3B2E
+  03B30  47             inc      di  ; 0000:3B30
+  03B31  8804           mov      byte ptr [si], al  ; 0000:3B31
+  03B33  0ac0           or       al, al  ; 0000:3B33
+  03B35  75f6           jne      loc_03B2D  ; 0000:3B35
+loc_03B37:
+  03B37  5e             pop      si  ; 0000:3B37
+  03B38  5f             pop      di  ; 0000:3B38
+  03B39  8be5           mov      sp, bp  ; 0000:3B39
+  03B3B  5d             pop      bp  ; 0000:3B3B
+  03B3C  c3             ret        ; 0000:3B3C
+
+
+; ---- sub_03B3D ----
+sub_03B3D:
+  03B3D  55             push     bp  ; 0000:3B3D
+  03B3E  8bec           mov      bp, sp  ; 0000:3B3E
+  03B40  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:3B40
+  03B43  8d1f           lea      bx, [bx]  ; 0000:3B43
+  03B45  e8b6eb         call     sub_026FE  ; 0000:3B45
+  03B48  8d1ea20d       lea      bx, [0xda2]  ; 0000:3B48
+  03B4C  e8afeb         call     sub_026FE  ; 0000:3B4C
+  03B4F  e819f0         call     sub_02B6B  ; 0000:3B4F
+  03B52  7c05           jl       loc_03B59  ; 0000:3B52
+  03B54  b80100         mov      ax, 1  ; 0000:3B54
+  03B57  eb02           jmp      loc_03B5B  ; 0000:3B57
+loc_03B59:
+  03B59  2bc0           sub      ax, ax  ; 0000:3B59
+loc_03B5B:
+  03B5B  8be5           mov      sp, bp  ; 0000:3B5B
+  03B5D  5d             pop      bp  ; 0000:3B5D
+  03B5E  c3             ret        ; 0000:3B5E
+
+
+; ---- sub_03B5F ----
+sub_03B5F:
+  03B5F  55             push     bp  ; 0000:3B5F
+  03B60  8bec           mov      bp, sp  ; 0000:3B60
+  03B62  57             push     di  ; 0000:3B62
+  03B63  56             push     si  ; 0000:3B63
+  03B64  837e0400       cmp      word ptr [bp + 4], 0  ; 0000:3B64
+  03B68  741a           je       loc_03B84  ; 0000:3B68
+  03B6A  ff7608         push     word ptr [bp + 8]  ; 0000:3B6A
+  03B6D  e83e0a         call     sub_045AE  ; 0000:3B6D
+  03B70  83c402         add      sp, 2  ; 0000:3B70
+  03B73  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:3B73
+  03B76  8b1f           mov      bx, word ptr [bx]  ; 0000:3B76
+  03B78  8bfb           mov      di, bx  ; 0000:3B78
+  03B7A  8bf0           mov      si, ax  ; 0000:3B7A
+  03B7C  1e             push     ds  ; 0000:3B7C
+  03B7D  07             pop      es  ; 0000:3B7D
+  03B7E  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3B7E
+  03B7F  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3B7F
+  03B80  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3B80
+  03B81  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3B81
+  03B82  eb18           jmp      loc_03B9C  ; 0000:3B82
+loc_03B84:
+  03B84  ff7608         push     word ptr [bp + 8]  ; 0000:3B84
+  03B87  e8240a         call     sub_045AE  ; 0000:3B87
+  03B8A  83c402         add      sp, 2  ; 0000:3B8A
+  03B8D  8bd8           mov      bx, ax  ; 0000:3B8D
+  03B8F  e86ceb         call     sub_026FE  ; 0000:3B8F
+  03B92  8b5e06         mov      bx, word ptr [bp + 6]  ; 0000:3B92
+  03B95  8b1f           mov      bx, word ptr [bx]  ; 0000:3B95
+  03B97  8d1f           lea      bx, [bx]  ; 0000:3B97
+  03B99  e8b1ec         call     sub_0284D  ; 0000:3B99
+loc_03B9C:
+  03B9C  5e             pop      si  ; 0000:3B9C
+  03B9D  5f             pop      di  ; 0000:3B9D
+  03B9E  8be5           mov      sp, bp  ; 0000:3B9E
+  03BA0  5d             pop      bp  ; 0000:3BA0
+  03BA1  c3             ret        ; 0000:3BA1
+
+
+; ---- sub_03BA2 ----
+; --- dmserv_printEngine: Print output engine
+dmserv_printEngine:  ; was sub_03BA2
+  03BA2  55             push     bp  ; 0000:3BA2
+  03BA3  8bec           mov      bp, sp  ; 0000:3BA3
+  03BA5  83ec08         sub      sp, 8  ; 0000:3BA5
+  03BA8  57             push     di  ; 0000:3BA8
+  03BA9  56             push     si  ; 0000:3BA9
+  03BAA  803e1e0a00     cmp      byte ptr [0xa1e], 0  ; 0000:3BAA
+  03BAF  7430           je       loc_03BE1  ; 0000:3BAF
+  03BB1  a1420f         mov      ax, word ptr [0xf42]  ; 0000:3BB1
+  03BB4  8946fa         mov      word ptr [bp - 6], ax  ; 0000:3BB4
+  03BB7  8bd8           mov      bx, ax  ; 0000:3BB7
+  03BB9  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3BB9
+  03BBC  7505           jne      loc_03BC3  ; 0000:3BBC
+  03BBE  b80100         mov      ax, 1  ; 0000:3BBE
+  03BC1  eb02           jmp      loc_03BC5  ; 0000:3BC1
+loc_03BC3:
+  03BC3  2bc0           sub      ax, ax  ; 0000:3BC3
+loc_03BC5:
+  03BC5  8bf0           mov      si, ax  ; 0000:3BC5
+  03BC7  037606         add      si, word ptr [bp + 6]  ; 0000:3BC7
+  03BCA  837e0800       cmp      word ptr [bp + 8], 0  ; 0000:3BCA
+  03BCE  7e05           jle      loc_03BD5  ; 0000:3BCE
+  03BD0  b80100         mov      ax, 1  ; 0000:3BD0
+  03BD3  eb02           jmp      loc_03BD7  ; 0000:3BD3
+loc_03BD5:
+  03BD5  2bc0           sub      ax, ax  ; 0000:3BD5
+loc_03BD7:
+  03BD7  50             push     ax  ; 0000:3BD7
+  03BD8  56             push     si  ; 0000:3BD8
+  03BD9  e85703         call     sub_03F33  ; 0000:3BD9
+  03BDC  83c404         add      sp, 4  ; 0000:3BDC
+  03BDF  eb52           jmp      loc_03C33  ; 0000:3BDF
+loc_03BE1:
+  03BE1  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:3BE1
+  03BE4  83ec08         sub      sp, 8  ; 0000:3BE4
+  03BE7  56             push     si  ; 0000:3BE7
+  03BE8  57             push     di  ; 0000:3BE8
+  03BE9  8bf0           mov      si, ax  ; 0000:3BE9
+  03BEB  8bfc           mov      di, sp  ; 0000:3BEB
+  03BED  83c704         add      di, 4  ; 0000:3BED
+  03BF0  16             push     ss  ; 0000:3BF0
+  03BF1  07             pop      es  ; 0000:3BF1
+  03BF2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3BF2
+  03BF3  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3BF3
+  03BF4  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3BF4
+  03BF5  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3BF5
+  03BF6  5f             pop      di  ; 0000:3BF6
+  03BF7  5e             pop      si  ; 0000:3BF7
+  03BF8  e86003         call     sub_03F5B  ; 0000:3BF8
+  03BFB  83c408         add      sp, 8  ; 0000:3BFB
+  03BFE  8946fa         mov      word ptr [bp - 6], ax  ; 0000:3BFE
+  03C01  50             push     ax  ; 0000:3C01
+  03C02  8b4608         mov      ax, word ptr [bp + 8]  ; 0000:3C02
+  03C05  40             inc      ax  ; 0000:3C05
+  03C06  50             push     ax  ; 0000:3C06
+  03C07  837e0800       cmp      word ptr [bp + 8], 0  ; 0000:3C07
+  03C0B  7e05           jle      loc_03C12  ; 0000:3C0B
+  03C0D  b80100         mov      ax, 1  ; 0000:3C0D
+  03C10  eb02           jmp      loc_03C14  ; 0000:3C10
+loc_03C12:
+  03C12  2bc0           sub      ax, ax  ; 0000:3C12
+loc_03C14:
+  03C14  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:3C14
+  03C17  8946f8         mov      word ptr [bp - 8], ax  ; 0000:3C17
+  03C1A  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3C1A
+  03C1D  7505           jne      loc_03C24  ; 0000:3C1D
+  03C1F  b80100         mov      ax, 1  ; 0000:3C1F
+  03C22  eb02           jmp      loc_03C26  ; 0000:3C22
+loc_03C24:
+  03C24  2bc0           sub      ax, ax  ; 0000:3C24
+loc_03C26:
+  03C26  0346f8         add      ax, word ptr [bp - 8]  ; 0000:3C26
+  03C29  034606         add      ax, word ptr [bp + 6]  ; 0000:3C29
+  03C2C  50             push     ax  ; 0000:3C2C
+  03C2D  e8da09         call     sub_0460A  ; 0000:3C2D
+  03C30  83c406         add      sp, 6  ; 0000:3C30
+loc_03C33:
+  03C33  8b7606         mov      si, word ptr [bp + 6]  ; 0000:3C33
+  03C36  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:3C36
+  03C39  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3C39
+  03C3C  7504           jne      loc_03C42  ; 0000:3C3C
+  03C3E  c6042d         mov      byte ptr [si], 0x2d  ; 0000:3C3E
+  03C41  46             inc      si  ; 0000:3C41
+loc_03C42:
+  03C42  837e0800       cmp      word ptr [bp + 8], 0  ; 0000:3C42
+  03C46  7e09           jle      loc_03C51  ; 0000:3C46
+  03C48  8a4401         mov      al, byte ptr [si + 1]  ; 0000:3C48
+  03C4B  8804           mov      byte ptr [si], al  ; 0000:3C4B
+  03C4D  46             inc      si  ; 0000:3C4D
+  03C4E  c6042e         mov      byte ptr [si], 0x2e  ; 0000:3C4E
+loc_03C51:
+  03C51  b8180a         mov      ax, 0xa18  ; 0000:3C51
+  03C54  50             push     ax  ; 0000:3C54
+  03C55  803e1e0a00     cmp      byte ptr [0xa1e], 0  ; 0000:3C55
+  03C5A  7505           jne      loc_03C61  ; 0000:3C5A
+  03C5C  b80100         mov      ax, 1  ; 0000:3C5C
+  03C5F  eb02           jmp      loc_03C63  ; 0000:3C5F
+loc_03C61:
+  03C61  2bc0           sub      ax, ax  ; 0000:3C61
+loc_03C63:
+  03C63  034608         add      ax, word ptr [bp + 8]  ; 0000:3C63
+  03C66  03c6           add      ax, si  ; 0000:3C66
+  03C68  50             push     ax  ; 0000:3C68
+  03C69  e8f008         call     sub_0455C  ; 0000:3C69
+  03C6C  83c404         add      sp, 4  ; 0000:3C6C
+  03C6F  8bf0           mov      si, ax  ; 0000:3C6F
+  03C71  837e0a00       cmp      word ptr [bp + 0xa], 0  ; 0000:3C71
+  03C75  7403           je       loc_03C7A  ; 0000:3C75
+  03C77  c60445         mov      byte ptr [si], 0x45  ; 0000:3C77
+loc_03C7A:
+  03C7A  46             inc      si  ; 0000:3C7A
+  03C7B  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:3C7B
+  03C7E  8b5f06         mov      bx, word ptr [bx + 6]  ; 0000:3C7E
+  03C81  803f30         cmp      byte ptr [bx], 0x30  ; 0000:3C81
+  03C84  7445           je       loc_03CCB  ; 0000:3C84
+  03C86  8b5efa         mov      bx, word ptr [bp - 6]  ; 0000:3C86
+  03C89  8b7f02         mov      di, word ptr [bx + 2]  ; 0000:3C89
+  03C8C  4f             dec      di  ; 0000:3C8C
+  03C8D  7909           jns      loc_03C98  ; 0000:3C8D
+  03C8F  8bc7           mov      ax, di  ; 0000:3C8F
+  03C91  f7d8           neg      ax  ; 0000:3C91
+  03C93  8bf8           mov      di, ax  ; 0000:3C93
+  03C95  c6042d         mov      byte ptr [si], 0x2d  ; 0000:3C95
+loc_03C98:
+  03C98  46             inc      si  ; 0000:3C98
+  03C99  83ff64         cmp      di, 0x64  ; 0000:3C99
+  03C9C  7c11           jl       loc_03CAF  ; 0000:3C9C
+  03C9E  8bc7           mov      ax, di  ; 0000:3C9E
+  03CA0  99             cdq        ; 0000:3CA0
+  03CA1  b96400         mov      cx, 0x64  ; 0000:3CA1
+  03CA4  f7f9           idiv     cx  ; 0000:3CA4
+  03CA6  0004           add      byte ptr [si], al  ; 0000:3CA6
+  03CA8  8bc7           mov      ax, di  ; 0000:3CA8
+  03CAA  99             cdq        ; 0000:3CAA
+  03CAB  f7f9           idiv     cx  ; 0000:3CAB
+  03CAD  8bfa           mov      di, dx  ; 0000:3CAD
+loc_03CAF:
+  03CAF  46             inc      si  ; 0000:3CAF
+  03CB0  83ff0a         cmp      di, 0xa  ; 0000:3CB0
+  03CB3  7c11           jl       loc_03CC6  ; 0000:3CB3
+  03CB5  8bc7           mov      ax, di  ; 0000:3CB5
+  03CB7  99             cdq        ; 0000:3CB7
+  03CB8  b90a00         mov      cx, 0xa  ; 0000:3CB8
+  03CBB  f7f9           idiv     cx  ; 0000:3CBB
+  03CBD  0004           add      byte ptr [si], al  ; 0000:3CBD
+  03CBF  8bc7           mov      ax, di  ; 0000:3CBF
+  03CC1  99             cdq        ; 0000:3CC1
+  03CC2  f7f9           idiv     cx  ; 0000:3CC2
+  03CC4  8bfa           mov      di, dx  ; 0000:3CC4
+loc_03CC6:
+  03CC6  46             inc      si  ; 0000:3CC6
+  03CC7  8bc7           mov      ax, di  ; 0000:3CC7
+  03CC9  0004           add      byte ptr [si], al  ; 0000:3CC9
+loc_03CCB:
+  03CCB  8b4606         mov      ax, word ptr [bp + 6]  ; 0000:3CCB
+  03CCE  5e             pop      si  ; 0000:3CCE
+  03CCF  5f             pop      di  ; 0000:3CCF
+  03CD0  8be5           mov      sp, bp  ; 0000:3CD0
+  03CD2  5d             pop      bp  ; 0000:3CD2
+  03CD3  c3             ret        ; 0000:3CD3
+
+
+; ---- sub_03CD4 ----
+sub_03CD4:
+  03CD4  55             push     bp  ; 0000:3CD4
+  03CD5  8bec           mov      bp, sp  ; 0000:3CD5
+  03CD7  83ec02         sub      sp, 2  ; 0000:3CD7
+  03CDA  c6061e0a01     mov      byte ptr [0xa1e], 1  ; 0000:3CDA
+  03CDF  ff760a         push     word ptr [bp + 0xa]  ; 0000:3CDF
+  03CE2  ff7608         push     word ptr [bp + 8]  ; 0000:3CE2
+  03CE5  ff7606         push     word ptr [bp + 6]  ; 0000:3CE5
+  03CE8  ff7604         push     word ptr [bp + 4]  ; 0000:3CE8
+  03CEB  e8b4fe         call     sub_03BA2  ; 0000:3CEB
+  03CEE  83c408         add      sp, 8  ; 0000:3CEE
+  03CF1  8946fe         mov      word ptr [bp - 2], ax  ; 0000:3CF1
+  03CF4  c6061e0a00     mov      byte ptr [0xa1e], 0  ; 0000:3CF4
+  03CF9  8be5           mov      sp, bp  ; 0000:3CF9
+  03CFB  5d             pop      bp  ; 0000:3CFB
+  03CFC  c3             ret        ; 0000:3CFC
+
+
+; ---- sub_03CFD ----
+sub_03CFD:
+  03CFD  55             push     bp  ; 0000:3CFD
+  03CFE  8bec           mov      bp, sp  ; 0000:3CFE
+  03D00  83ec0c         sub      sp, 0xc  ; 0000:3D00
+  03D03  57             push     di  ; 0000:3D03
+  03D04  56             push     si  ; 0000:3D04
+  03D05  c646f800       mov      byte ptr [bp - 8], 0  ; 0000:3D05
+  03D09  803e1e0a00     cmp      byte ptr [0xa1e], 0  ; 0000:3D09
+  03D0E  7436           je       loc_03D46  ; 0000:3D0E
+  03D10  a1420f         mov      ax, word ptr [0xf42]  ; 0000:3D10
+  03D13  8946f6         mov      word ptr [bp - 0xa], ax  ; 0000:3D13
+  03D16  8bd8           mov      bx, ax  ; 0000:3D16
+  03D18  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3D18
+  03D1B  7505           jne      loc_03D22  ; 0000:3D1B
+  03D1D  b80100         mov      ax, 1  ; 0000:3D1D
+  03D20  eb02           jmp      loc_03D24  ; 0000:3D20
+loc_03D22:
+  03D22  2bc0           sub      ax, ax  ; 0000:3D22
+loc_03D24:
+  03D24  8bf0           mov      si, ax  ; 0000:3D24
+  03D26  037606         add      si, word ptr [bp + 6]  ; 0000:3D26
+  03D29  a1200a         mov      ax, word ptr [0xa20]  ; 0000:3D29
+  03D2C  394608         cmp      word ptr [bp + 8], ax  ; 0000:3D2C
+  03D2F  7553           jne      loc_03D84  ; 0000:3D2F
+  03D31  03c6           add      ax, si  ; 0000:3D31
+  03D33  8946f4         mov      word ptr [bp - 0xc], ax  ; 0000:3D33
+  03D36  8bd8           mov      bx, ax  ; 0000:3D36
+  03D38  ff46f4         inc      word ptr [bp - 0xc]  ; 0000:3D38
+  03D3B  c60730         mov      byte ptr [bx], 0x30  ; 0000:3D3B
+  03D3E  8b5ef4         mov      bx, word ptr [bp - 0xc]  ; 0000:3D3E
+  03D41  c60700         mov      byte ptr [bx], 0  ; 0000:3D41
+  03D44  eb3e           jmp      loc_03D84  ; 0000:3D44
+loc_03D46:
+  03D46  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:3D46
+  03D49  83ec08         sub      sp, 8  ; 0000:3D49
+  03D4C  56             push     si  ; 0000:3D4C
+  03D4D  8bf0           mov      si, ax  ; 0000:3D4D
+  03D4F  8bfc           mov      di, sp  ; 0000:3D4F
+  03D51  83c702         add      di, 2  ; 0000:3D51
+  03D54  16             push     ss  ; 0000:3D54
+  03D55  07             pop      es  ; 0000:3D55
+  03D56  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3D56
+  03D57  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3D57
+  03D58  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3D58
+  03D59  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3D59
+  03D5A  5e             pop      si  ; 0000:3D5A
+  03D5B  e8fd01         call     sub_03F5B  ; 0000:3D5B
+  03D5E  83c408         add      sp, 8  ; 0000:3D5E
+  03D61  8946f6         mov      word ptr [bp - 0xa], ax  ; 0000:3D61
+  03D64  50             push     ax  ; 0000:3D64
+  03D65  8bd8           mov      bx, ax  ; 0000:3D65
+  03D67  8b4702         mov      ax, word ptr [bx + 2]  ; 0000:3D67
+  03D6A  034608         add      ax, word ptr [bp + 8]  ; 0000:3D6A
+  03D6D  50             push     ax  ; 0000:3D6D
+  03D6E  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3D6E
+  03D71  7505           jne      loc_03D78  ; 0000:3D71
+  03D73  b80100         mov      ax, 1  ; 0000:3D73
+  03D76  eb02           jmp      loc_03D7A  ; 0000:3D76
+loc_03D78:
+  03D78  2bc0           sub      ax, ax  ; 0000:3D78
+loc_03D7A:
+  03D7A  034606         add      ax, word ptr [bp + 6]  ; 0000:3D7A
+  03D7D  50             push     ax  ; 0000:3D7D
+  03D7E  e88908         call     sub_0460A  ; 0000:3D7E
+  03D81  83c406         add      sp, 6  ; 0000:3D81
+loc_03D84:
+  03D84  8b7606         mov      si, word ptr [bp + 6]  ; 0000:3D84
+  03D87  8b5ef6         mov      bx, word ptr [bp - 0xa]  ; 0000:3D87
+  03D8A  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3D8A
+  03D8D  7504           jne      loc_03D93  ; 0000:3D8D
+  03D8F  c6042d         mov      byte ptr [si], 0x2d  ; 0000:3D8F
+  03D92  46             inc      si  ; 0000:3D92
+loc_03D93:
+  03D93  8b5ef6         mov      bx, word ptr [bp - 0xa]  ; 0000:3D93
+  03D96  837f0200       cmp      word ptr [bx + 2], 0  ; 0000:3D96
+  03D9A  7f11           jg       loc_03DAD  ; 0000:3D9A
+  03D9C  b80100         mov      ax, 1  ; 0000:3D9C
+  03D9F  50             push     ax  ; 0000:3D9F
+  03DA0  56             push     si  ; 0000:3DA0
+  03DA1  e88f01         call     sub_03F33  ; 0000:3DA1
+  03DA4  83c404         add      sp, 4  ; 0000:3DA4
+  03DA7  c60430         mov      byte ptr [si], 0x30  ; 0000:3DA7
+  03DAA  46             inc      si  ; 0000:3DAA
+  03DAB  eb06           jmp      loc_03DB3  ; 0000:3DAB
+loc_03DAD:
+  03DAD  8b5ef6         mov      bx, word ptr [bp - 0xa]  ; 0000:3DAD
+  03DB0  037702         add      si, word ptr [bx + 2]  ; 0000:3DB0
+loc_03DB3:
+  03DB3  837e0800       cmp      word ptr [bp + 8], 0  ; 0000:3DB3
+  03DB7  7e48           jle      loc_03E01  ; 0000:3DB7
+  03DB9  b80100         mov      ax, 1  ; 0000:3DB9
+  03DBC  50             push     ax  ; 0000:3DBC
+  03DBD  56             push     si  ; 0000:3DBD
+  03DBE  e87201         call     sub_03F33  ; 0000:3DBE
+  03DC1  83c404         add      sp, 4  ; 0000:3DC1
+  03DC4  c6042e         mov      byte ptr [si], 0x2e  ; 0000:3DC4
+  03DC7  46             inc      si  ; 0000:3DC7
+  03DC8  8b5ef6         mov      bx, word ptr [bp - 0xa]  ; 0000:3DC8
+  03DCB  837f0200       cmp      word ptr [bx + 2], 0  ; 0000:3DCB
+  03DCF  7d30           jge      loc_03E01  ; 0000:3DCF
+  03DD1  8b4702         mov      ax, word ptr [bx + 2]  ; 0000:3DD1
+  03DD4  f7d8           neg      ax  ; 0000:3DD4
+  03DD6  3b4608         cmp      ax, word ptr [bp + 8]  ; 0000:3DD6
+  03DD9  7e05           jle      loc_03DE0  ; 0000:3DD9
+  03DDB  8b4608         mov      ax, word ptr [bp + 8]  ; 0000:3DDB
+  03DDE  eb08           jmp      loc_03DE8  ; 0000:3DDE
+loc_03DE0:
+  03DE0  8b5ef6         mov      bx, word ptr [bp - 0xa]  ; 0000:3DE0
+  03DE3  8b4702         mov      ax, word ptr [bx + 2]  ; 0000:3DE3
+  03DE6  f7d8           neg      ax  ; 0000:3DE6
+loc_03DE8:
+  03DE8  894608         mov      word ptr [bp + 8], ax  ; 0000:3DE8
+  03DEB  50             push     ax  ; 0000:3DEB
+  03DEC  56             push     si  ; 0000:3DEC
+  03DED  e84301         call     sub_03F33  ; 0000:3DED
+  03DF0  83c404         add      sp, 4  ; 0000:3DF0
+  03DF3  ff7608         push     word ptr [bp + 8]  ; 0000:3DF3
+  03DF6  b83000         mov      ax, 0x30  ; 0000:3DF6
+  03DF9  50             push     ax  ; 0000:3DF9
+  03DFA  56             push     si  ; 0000:3DFA
+  03DFB  e82a09         call     sub_04728  ; 0000:3DFB
+  03DFE  83c406         add      sp, 6  ; 0000:3DFE
+loc_03E01:
+  03E01  8b4606         mov      ax, word ptr [bp + 6]  ; 0000:3E01
+  03E04  5e             pop      si  ; 0000:3E04
+  03E05  5f             pop      di  ; 0000:3E05
+  03E06  8be5           mov      sp, bp  ; 0000:3E06
+  03E08  5d             pop      bp  ; 0000:3E08
+  03E09  c3             ret        ; 0000:3E09
+
+
+; ---- sub_03E0A ----
+sub_03E0A:
+  03E0A  55             push     bp  ; 0000:3E0A
+  03E0B  8bec           mov      bp, sp  ; 0000:3E0B
+  03E0D  83ec02         sub      sp, 2  ; 0000:3E0D
+  03E10  c6061e0a01     mov      byte ptr [0xa1e], 1  ; 0000:3E10
+  03E15  ff7608         push     word ptr [bp + 8]  ; 0000:3E15
+  03E18  ff7606         push     word ptr [bp + 6]  ; 0000:3E18
+  03E1B  ff7604         push     word ptr [bp + 4]  ; 0000:3E1B
+  03E1E  e8dcfe         call     sub_03CFD  ; 0000:3E1E
+  03E21  83c406         add      sp, 6  ; 0000:3E21
+  03E24  8946fe         mov      word ptr [bp - 2], ax  ; 0000:3E24
+  03E27  c6061e0a00     mov      byte ptr [0xa1e], 0  ; 0000:3E27
+  03E2C  8be5           mov      sp, bp  ; 0000:3E2C
+  03E2E  5d             pop      bp  ; 0000:3E2E
+  03E2F  c3             ret        ; 0000:3E2F
+
+
+; ---- sub_03E30 ----
+sub_03E30:
+  03E30  55             push     bp  ; 0000:3E30
+  03E31  8bec           mov      bp, sp  ; 0000:3E31
+  03E33  83ec02         sub      sp, 2  ; 0000:3E33
+  03E36  57             push     di  ; 0000:3E36
+  03E37  56             push     si  ; 0000:3E37
+  03E38  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:3E38
+  03E3B  83ec08         sub      sp, 8  ; 0000:3E3B
+  03E3E  56             push     si  ; 0000:3E3E
+  03E3F  8bf0           mov      si, ax  ; 0000:3E3F
+  03E41  8bfc           mov      di, sp  ; 0000:3E41
+  03E43  83c702         add      di, 2  ; 0000:3E43
+  03E46  16             push     ss  ; 0000:3E46
+  03E47  07             pop      es  ; 0000:3E47
+  03E48  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3E48
+  03E49  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3E49
+  03E4A  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3E4A
+  03E4B  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:3E4B
+  03E4C  5e             pop      si  ; 0000:3E4C
+  03E4D  e80b01         call     sub_03F5B  ; 0000:3E4D
+  03E50  83c408         add      sp, 8  ; 0000:3E50
+  03E53  a3420f         mov      word ptr [0xf42], ax  ; 0000:3E53
+  03E56  8bd8           mov      bx, ax  ; 0000:3E56
+  03E58  8b4702         mov      ax, word ptr [bx + 2]  ; 0000:3E58
+  03E5B  48             dec      ax  ; 0000:3E5B
+  03E5C  a3200a         mov      word ptr [0xa20], ax  ; 0000:3E5C
+  03E5F  833f2d         cmp      word ptr [bx], 0x2d  ; 0000:3E5F
+  03E62  7505           jne      loc_03E69  ; 0000:3E62
+  03E64  b80100         mov      ax, 1  ; 0000:3E64
+  03E67  eb02           jmp      loc_03E6B  ; 0000:3E67
+loc_03E69:
+  03E69  2bc0           sub      ax, ax  ; 0000:3E69
+loc_03E6B:
+  03E6B  034606         add      ax, word ptr [bp + 6]  ; 0000:3E6B
+  03E6E  8946fe         mov      word ptr [bp - 2], ax  ; 0000:3E6E
+  03E71  ff36420f       push     word ptr [0xf42]  ; 0000:3E71
+  03E75  ff7608         push     word ptr [bp + 8]  ; 0000:3E75
+  03E78  50             push     ax  ; 0000:3E78
+  03E79  e88e07         call     sub_0460A  ; 0000:3E79
+  03E7C  83c406         add      sp, 6  ; 0000:3E7C
+  03E7F  8b1e420f       mov      bx, word ptr [0xf42]  ; 0000:3E7F
+  03E83  8b7702         mov      si, word ptr [bx + 2]  ; 0000:3E83
+  03E86  4e             dec      si  ; 0000:3E86
+  03E87  3936200a       cmp      word ptr [0xa20], si  ; 0000:3E87
+  03E8B  7d04           jge      loc_03E91  ; 0000:3E8B
+  03E8D  b001           mov      al, 1  ; 0000:3E8D
+  03E8F  eb02           jmp      loc_03E93  ; 0000:3E8F
+loc_03E91:
+  03E91  2ac0           sub      al, al  ; 0000:3E91
+loc_03E93:
+  03E93  a2220a         mov      byte ptr [0xa22], al  ; 0000:3E93
+  03E96  8936200a       mov      word ptr [0xa20], si  ; 0000:3E96
+  03E9A  83fefc         cmp      si, -4  ; 0000:3E9A
+  03E9D  7c05           jl       loc_03EA4  ; 0000:3E9D
+  03E9F  397608         cmp      word ptr [bp + 8], si  ; 0000:3E9F
+  03EA2  7d14           jge      loc_03EB8  ; 0000:3EA2
+loc_03EA4:
+  03EA4  ff760a         push     word ptr [bp + 0xa]  ; 0000:3EA4
+  03EA7  ff7608         push     word ptr [bp + 8]  ; 0000:3EA7
+  03EAA  ff7606         push     word ptr [bp + 6]  ; 0000:3EAA
+  03EAD  ff7604         push     word ptr [bp + 4]  ; 0000:3EAD
+  03EB0  e821fe         call     sub_03CD4  ; 0000:3EB0
+  03EB3  83c408         add      sp, 8  ; 0000:3EB3
+  03EB6  eb28           jmp      loc_03EE0  ; 0000:3EB6
+loc_03EB8:
+  03EB8  803e220a00     cmp      byte ptr [0xa22], 0  ; 0000:3EB8
+  03EBD  7412           je       loc_03ED1  ; 0000:3EBD
+loc_03EBF:
+  03EBF  8b5efe         mov      bx, word ptr [bp - 2]  ; 0000:3EBF
+  03EC2  ff46fe         inc      word ptr [bp - 2]  ; 0000:3EC2
+  03EC5  803f00         cmp      byte ptr [bx], 0  ; 0000:3EC5
+  03EC8  75f5           jne      loc_03EBF  ; 0000:3EC8
+  03ECA  8b5efe         mov      bx, word ptr [bp - 2]  ; 0000:3ECA
+  03ECD  c647fe00       mov      byte ptr [bx - 2], 0  ; 0000:3ECD
+loc_03ED1:
+  03ED1  ff7608         push     word ptr [bp + 8]  ; 0000:3ED1
+  03ED4  ff7606         push     word ptr [bp + 6]  ; 0000:3ED4
+  03ED7  ff7604         push     word ptr [bp + 4]  ; 0000:3ED7
+  03EDA  e82dff         call     sub_03E0A  ; 0000:3EDA
+  03EDD  83c406         add      sp, 6  ; 0000:3EDD
+loc_03EE0:
+  03EE0  5e             pop      si  ; 0000:3EE0
+  03EE1  5f             pop      di  ; 0000:3EE1
+  03EE2  8be5           mov      sp, bp  ; 0000:3EE2
+  03EE4  5d             pop      bp  ; 0000:3EE4
+  03EE5  c3             ret        ; 0000:3EE5
+
+
+; ---- sub_03EE6 ----
+sub_03EE6:
+  03EE6  55             push     bp  ; 0000:3EE6
+  03EE7  8bec           mov      bp, sp  ; 0000:3EE7
+  03EE9  837e0865       cmp      word ptr [bp + 8], 0x65  ; 0000:3EE9
+  03EED  7406           je       loc_03EF5  ; 0000:3EED
+  03EEF  837e0845       cmp      word ptr [bp + 8], 0x45  ; 0000:3EEF
+  03EF3  7511           jne      loc_03F06  ; 0000:3EF3
+loc_03EF5:
+  03EF5  ff760c         push     word ptr [bp + 0xc]  ; 0000:3EF5
+  03EF8  ff760a         push     word ptr [bp + 0xa]  ; 0000:3EF8
+  03EFB  ff7606         push     word ptr [bp + 6]  ; 0000:3EFB
+  03EFE  ff7604         push     word ptr [bp + 4]  ; 0000:3EFE
+  03F01  e89efc         call     sub_03BA2  ; 0000:3F01
+  03F04  eb26           jmp      loc_03F2C  ; 0000:3F04
+loc_03F06:
+  03F06  837e0866       cmp      word ptr [bp + 8], 0x66  ; 0000:3F06
+  03F0A  7511           jne      loc_03F1D  ; 0000:3F0A
+  03F0C  ff760a         push     word ptr [bp + 0xa]  ; 0000:3F0C
+  03F0F  ff7606         push     word ptr [bp + 6]  ; 0000:3F0F
+  03F12  ff7604         push     word ptr [bp + 4]  ; 0000:3F12
+  03F15  e8e5fd         call     sub_03CFD  ; 0000:3F15
+  03F18  83c406         add      sp, 6  ; 0000:3F18
+  03F1B  eb12           jmp      loc_03F2F  ; 0000:3F1B
+loc_03F1D:
+  03F1D  ff760c         push     word ptr [bp + 0xc]  ; 0000:3F1D
+  03F20  ff760a         push     word ptr [bp + 0xa]  ; 0000:3F20
+  03F23  ff7606         push     word ptr [bp + 6]  ; 0000:3F23
+  03F26  ff7604         push     word ptr [bp + 4]  ; 0000:3F26
+  03F29  e804ff         call     sub_03E30  ; 0000:3F29
+loc_03F2C:
+  03F2C  83c408         add      sp, 8  ; 0000:3F2C
+loc_03F2F:
+  03F2F  8be5           mov      sp, bp  ; 0000:3F2F
+  03F31  5d             pop      bp  ; 0000:3F31
+  03F32  c3             ret        ; 0000:3F32
+
+
+; ---- sub_03F33 ----
+sub_03F33:
+  03F33  55             push     bp  ; 0000:3F33
+  03F34  8bec           mov      bp, sp  ; 0000:3F34
+  03F36  56             push     si  ; 0000:3F36
+  03F37  8b7604         mov      si, word ptr [bp + 4]  ; 0000:3F37
+  03F3A  837e0600       cmp      word ptr [bp + 6], 0  ; 0000:3F3A
+  03F3E  7416           je       loc_03F56  ; 0000:3F3E
+  03F40  56             push     si  ; 0000:3F40
+  03F41  e84a06         call     sub_0458E  ; 0000:3F41
+  03F44  83c402         add      sp, 2  ; 0000:3F44
+  03F47  40             inc      ax  ; 0000:3F47
+  03F48  50             push     ax  ; 0000:3F48
+  03F49  56             push     si  ; 0000:3F49
+  03F4A  8b4606         mov      ax, word ptr [bp + 6]  ; 0000:3F4A
+  03F4D  03c6           add      ax, si  ; 0000:3F4D
+  03F4F  50             push     ax  ; 0000:3F4F
+  03F50  e88d07         call     sub_046E0  ; 0000:3F50
+  03F53  83c406         add      sp, 6  ; 0000:3F53
+loc_03F56:
+  03F56  5e             pop      si  ; 0000:3F56
+  03F57  8be5           mov      sp, bp  ; 0000:3F57
+  03F59  5d             pop      bp  ; 0000:3F59
+  03F5A  c3             ret        ; 0000:3F5A
+
+
+; ---- sub_03F5B ----
+sub_03F5B:
+  03F5B  55             push     bp  ; 0000:3F5B
+  03F5C  8bec           mov      bp, sp  ; 0000:3F5C
+  03F5E  56             push     si  ; 0000:3F5E
+  03F5F  57             push     di  ; 0000:3F5F
+  03F60  fc             cld        ; 0000:3F60
+  03F61  8cd8           mov      ax, ds  ; 0000:3F61
+  03F63  8ec0           mov      es, ax  ; 0000:3F63
+  03F65  8d7604         lea      si, [bp + 4]  ; 0000:3F65
+  03F68  bf2c0a         mov      di, 0xa2c  ; 0000:3F68
+  03F6B  36a5           movsw    word ptr es:[di], word ptr ss:[si]  ; 0000:3F6B
+  03F6D  36a5           movsw    word ptr es:[di], word ptr ss:[si]  ; 0000:3F6D
+  03F6F  36a5           movsw    word ptr es:[di], word ptr ss:[si]  ; 0000:3F6F
+  03F71  36a5           movsw    word ptr es:[di], word ptr ss:[si]  ; 0000:3F71
+  03F73  be2c0a         mov      si, 0xa2c  ; 0000:3F73
+  03F76  55             push     bp  ; 0000:3F76
+  03F77  e8ac00         call     sub_04026  ; 0000:3F77
+  03F7A  5d             pop      bp  ; 0000:3F7A
+  03F7B  bf340a         mov      di, 0xa34  ; 0000:3F7B
+  03F7E  8bc8           mov      cx, ax  ; 0000:3F7E
+  03F80  ac             lodsb    al, byte ptr [si]  ; 0000:3F80
+  03F81  98             cwde       ; 0000:3F81
+  03F82  91             xchg     cx, ax  ; 0000:3F82
+  03F83  f3a4           rep movsb byte ptr es:[di], byte ptr [si]  ; 0000:3F83
+  03F85  91             xchg     cx, ax  ; 0000:3F85
+  03F86  aa             stosb    byte ptr es:[di], al  ; 0000:3F86
+  03F87  bf240a         mov      di, 0xa24  ; 0000:3F87
+  03F8A  32ff           xor      bh, bh  ; 0000:3F8A
+  03F8C  891d           mov      word ptr [di], bx  ; 0000:3F8C
+  03F8E  895502         mov      word ptr [di + 2], dx  ; 0000:3F8E
+  03F91  894d04         mov      word ptr [di + 4], cx  ; 0000:3F91
+  03F94  c74506340a     mov      word ptr [di + 6], 0xa34  ; 0000:3F94
+  03F99  8bc7           mov      ax, di  ; 0000:3F99
+  03F9B  5f             pop      di  ; 0000:3F9B
+  03F9C  5e             pop      si  ; 0000:3F9C
+  03F9D  8be5           mov      sp, bp  ; 0000:3F9D
+  03F9F  5d             pop      bp  ; 0000:3F9F
+  03FA0  c3             ret        ; 0000:3FA0
+
+
+; ---- sub_03FA1 ----
+sub_03FA1:
+  03FA1  53             push     bx  ; 0000:3FA1
+  03FA2  56             push     si  ; 0000:3FA2
+  03FA3  8a6409         mov      ah, byte ptr [si + 9]  ; 0000:3FA3
+  03FA6  2e8a4709       mov      al, byte ptr cs:[bx + 9]  ; 0000:3FA6
+  03FAA  258080         and      ax, 0x8080  ; 0000:3FAA
+  03FAD  3ac4           cmp      al, ah  ; 0000:3FAD
+  03FAF  7516           jne      loc_03FC7  ; 0000:3FAF
+  03FB1  83c60a         add      si, 0xa  ; 0000:3FB1
+  03FB4  83c30a         add      bx, 0xa  ; 0000:3FB4
+  03FB7  b90500         mov      cx, 5  ; 0000:3FB7
+  03FBA  83ee02         sub      si, 2  ; 0000:3FBA
+  03FBD  83eb02         sub      bx, 2  ; 0000:3FBD
+  03FC0  8b04           mov      ax, word ptr [si]  ; 0000:3FC0
+  03FC2  2e3b07         cmp      ax, word ptr cs:[bx]  ; 0000:3FC2
+  03FC5  e1f3           loope    0x3fba  ; 0000:3FC5
+loc_03FC7:
+  03FC7  5e             pop      si  ; 0000:3FC7
+  03FC8  5b             pop      bx  ; 0000:3FC8
+  03FC9  c3             ret        ; 0000:3FC9
+
+
+; ---- sub_03FCA ----
+sub_03FCA:
+  03FCA  56             push     si  ; 0000:3FCA
+  03FCB  ad             lodsw    ax, word ptr [si]  ; 0000:3FCB
+  03FCC  95             xchg     bp, ax  ; 0000:3FCC
+  03FCD  ad             lodsw    ax, word ptr [si]  ; 0000:3FCD
+  03FCE  92             xchg     dx, ax  ; 0000:3FCE
+  03FCF  ad             lodsw    ax, word ptr [si]  ; 0000:3FCF
+  03FD0  93             xchg     bx, ax  ; 0000:3FD0
+  03FD1  ad             lodsw    ax, word ptr [si]  ; 0000:3FD1
+  03FD2  33ff           xor      di, di  ; 0000:3FD2
+  03FD4  b90500         mov      cx, 5  ; 0000:3FD4
+  03FD7  d1e8           shr      ax, 1  ; 0000:3FD7
+  03FD9  d1db           rcr      bx, 1  ; 0000:3FD9
+  03FDB  d1da           rcr      dx, 1  ; 0000:3FDB
+  03FDD  d1dd           rcr      bp, 1  ; 0000:3FDD
+  03FDF  d1df           rcr      di, 1  ; 0000:3FDF
+  03FE1  e2f4           loop     0x3fd7  ; 0000:3FE1
+  03FE3  d1e3           shl      bx, 1  ; 0000:3FE3
+  03FE5  d1d0           rcl      ax, 1  ; 0000:3FE5
+  03FE7  3d0100         cmp      ax, 1  ; 0000:3FE7
+  03FEA  f5             cmc        ; 0000:3FEA
+  03FEB  d1db           rcr      bx, 1  ; 0000:3FEB
+  03FED  2dfe03         sub      ax, 0x3fe  ; 0000:3FED
+  03FF0  5e             pop      si  ; 0000:3FF0
+  03FF1  893c           mov      word ptr [si], di  ; 0000:3FF1
+  03FF3  896c02         mov      word ptr [si + 2], bp  ; 0000:3FF3
+  03FF6  895404         mov      word ptr [si + 4], dx  ; 0000:3FF6
+  03FF9  895c06         mov      word ptr [si + 6], bx  ; 0000:3FF9
+  03FFC  894408         mov      word ptr [si + 8], ax  ; 0000:3FFC
+  03FFF  c3             ret        ; 0000:3FFF
+  04000  66fc           cld        ; 0000:4000
+  04002  ff             db       0xff  ; 0000:4002
+  04003  ff             db       0xff  ; 0000:4003
+  04004  ff             db       0xff  ; 0000:4004
+  04005  ff             db       0xff  ; 0000:4005
+  04006  ff             db       0xff  ; 0000:4006
+  04007  ff00           inc      word ptr [bx + si]  ; 0000:4007
+  04009  00cd           add      ch, cl  ; 0000:4009
+  0400B  cc             int3       ; 0000:400B
+  0400C  cc             int3       ; 0000:400C
+  0400D  cc             int3       ; 0000:400D
+  0400E  cc             int3       ; 0000:400E
+  0400F  cc             int3       ; 0000:400F
+  04010  cc             int3       ; 0000:4010
+  04011  cc             int3       ; 0000:4011
+  04012  fd             std        ; 0000:4012
+  04013  ff             db       0xff  ; 0000:4013
+loc_04014:
+  04014  be540a         mov      si, 0xa54  ; 0000:4014
+  04017  c60401         mov      byte ptr [si], 1  ; 0000:4017
+  0401A  c6440130       mov      byte ptr [si + 1], 0x30  ; 0000:401A
+  0401E  33c0           xor      ax, ax  ; 0000:401E
+  04020  8bd0           mov      dx, ax  ; 0000:4020
+  04022  40             inc      ax  ; 0000:4022
+  04023  5b             pop      bx  ; 0000:4023
+  04024  07             pop      es  ; 0000:4024
+  04025  c3             ret        ; 0000:4025
+
+
+; ---- sub_04026 ----
+sub_04026:
+  04026  06             push     es  ; 0000:4026
+  04027  8cd8           mov      ax, ds  ; 0000:4027
+  04029  8ec0           mov      es, ax  ; 0000:4029
+  0402B  fc             cld        ; 0000:402B
+  0402C  bf480a         mov      di, 0xa48  ; 0000:402C
+  0402F  57             push     di  ; 0000:402F
+  04030  b90400         mov      cx, 4  ; 0000:4030
+  04033  f3a5           rep movsw word ptr es:[di], word ptr [si]  ; 0000:4033
+  04035  5e             pop      si  ; 0000:4035
+  04036  8b4c06         mov      cx, word ptr [si + 6]  ; 0000:4036
+  04039  8064077f       and      byte ptr [si + 7], 0x7f  ; 0000:4039
+  0403D  b320           mov      bl, 0x20  ; 0000:403D
+  0403F  f7c1f07f       test     cx, 0x7ff0  ; 0000:403F
+  04043  7406           je       loc_0404B  ; 0000:4043
+  04045  0bc9           or       cx, cx  ; 0000:4045
+  04047  7902           jns      loc_0404B  ; 0000:4047
+  04049  b32d           mov      bl, 0x2d  ; 0000:4049
+loc_0404B:
+  0404B  53             push     bx  ; 0000:404B
+  0404C  e87bff         call     sub_03FCA  ; 0000:404C
+  0404F  33ff           xor      di, di  ; 0000:404F
+  04051  be4f0a         mov      si, 0xa4f  ; 0000:4051
+  04054  ac             lodsb    al, byte ptr [si]  ; 0000:4054
+  04055  a880           test     al, 0x80  ; 0000:4055
+  04057  74bb           je       loc_04014  ; 0000:4057
+  04059  8af8           mov      bh, al  ; 0000:4059
+  0405B  ad             lodsw    ax, word ptr [si]  ; 0000:405B
+  0405C  05fe3f         add      ax, 0x3ffe  ; 0000:405C
+  0405F  8bc8           mov      cx, ax  ; 0000:405F
+  04061  ba104d         mov      dx, 0x4d10  ; 0000:4061
+  04064  f7e2           mul      dx  ; 0000:4064
+  04066  91             xchg     cx, ax  ; 0000:4066
+  04067  b04d           mov      al, 0x4d  ; 0000:4067
+  04069  f6e4           mul      ah  ; 0000:4069
+  0406B  03c8           add      cx, ax  ; 0000:406B
+  0406D  13d7           adc      dx, di  ; 0000:406D
+  0406F  b09a           mov      al, 0x9a  ; 0000:406F
+  04071  f6e7           mul      bh  ; 0000:4071
+  04073  03c8           add      cx, ax  ; 0000:4073
+  04075  13fa           adc      di, dx  ; 0000:4075
+  04077  81e9f412       sub      cx, 0x12f4  ; 0000:4077
+  0407B  81df4313       sbb      di, 0x1343  ; 0000:407B
+  0407F  57             push     di  ; 0000:407F
+  04080  f7df           neg      di  ; 0000:4080
+  04082  be480a         mov      si, 0xa48  ; 0000:4082
+  04085  e80402         call     sub_0428C  ; 0000:4085
+  04088  bb0040         mov      bx, 0x4000  ; 0000:4088
+  0408B  e813ff         call     sub_03FA1  ; 0000:408B
+  0408E  5f             pop      di  ; 0000:408E
+  0408F  7209           jb       loc_0409A  ; 0000:408F
+  04091  47             inc      di  ; 0000:4091
+  04092  57             push     di  ; 0000:4092
+  04093  bb0a40         mov      bx, 0x400a  ; 0000:4093
+  04096  e88d00         call     sub_04126  ; 0000:4096
+  04099  5f             pop      di  ; 0000:4099
+loc_0409A:
+  0409A  57             push     di  ; 0000:409A
+  0409B  ad             lodsw    ax, word ptr [si]  ; 0000:409B
+  0409C  97             xchg     di, ax  ; 0000:409C
+  0409D  ad             lodsw    ax, word ptr [si]  ; 0000:409D
+  0409E  95             xchg     bp, ax  ; 0000:409E
+  0409F  ad             lodsw    ax, word ptr [si]  ; 0000:409F
+  040A0  92             xchg     dx, ax  ; 0000:40A0
+  040A1  ad             lodsw    ax, word ptr [si]  ; 0000:40A1
+  040A2  93             xchg     bx, ax  ; 0000:40A2
+  040A3  ad             lodsw    ax, word ptr [si]  ; 0000:40A3
+  040A4  91             xchg     cx, ax  ; 0000:40A4
+  040A5  f7d9           neg      cx  ; 0000:40A5
+  040A7  8bf7           mov      si, di  ; 0000:40A7
+  040A9  33c0           xor      ax, ax  ; 0000:40A9
+  040AB  e30c           jcxz     loc_040B9  ; 0000:40AB
+  040AD  d1eb           shr      bx, 1  ; 0000:40AD
+  040AF  d1da           rcr      dx, 1  ; 0000:40AF
+  040B1  d1dd           rcr      bp, 1  ; 0000:40B1
+  040B3  d1de           rcr      si, 1  ; 0000:40B3
+  040B5  d0dc           rcr      ah, 1  ; 0000:40B5
+  040B7  e2f4           loop     0x40ad  ; 0000:40B7
+loc_040B9:
+  040B9  80c456         add      ah, 0x56  ; 0000:40B9
+  040BC  81d69a03       adc      si, 0x39a  ; 0000:40BC
+  040C0  13e9           adc      bp, cx  ; 0000:40C0
+  040C2  13d1           adc      dx, cx  ; 0000:40C2
+  040C4  13d9           adc      bx, cx  ; 0000:40C4
+  040C6  bf550a         mov      di, 0xa55  ; 0000:40C6
+  040C9  b91000         mov      cx, 0x10  ; 0000:40C9
+  040CC  32c0           xor      al, al  ; 0000:40CC
+  040CE  51             push     cx  ; 0000:40CE
+  040CF  53             push     bx  ; 0000:40CF
+  040D0  52             push     dx  ; 0000:40D0
+  040D1  55             push     bp  ; 0000:40D1
+  040D2  56             push     si  ; 0000:40D2
+  040D3  50             push     ax  ; 0000:40D3
+  040D4  d0e4           shl      ah, 1  ; 0000:40D4
+  040D6  d1d6           rcl      si, 1  ; 0000:40D6
+  040D8  d1d5           rcl      bp, 1  ; 0000:40D8
+  040DA  d1d2           rcl      dx, 1  ; 0000:40DA
+  040DC  d1d3           rcl      bx, 1  ; 0000:40DC
+  040DE  d0d0           rcl      al, 1  ; 0000:40DE
+  040E0  d0e4           shl      ah, 1  ; 0000:40E0
+  040E2  d1d6           rcl      si, 1  ; 0000:40E2
+  040E4  d1d5           rcl      bp, 1  ; 0000:40E4
+  040E6  d1d2           rcl      dx, 1  ; 0000:40E6
+  040E8  d1d3           rcl      bx, 1  ; 0000:40E8
+  040EA  d0d0           rcl      al, 1  ; 0000:40EA
+  040EC  59             pop      cx  ; 0000:40EC
+  040ED  02e5           add      ah, ch  ; 0000:40ED
+  040EF  59             pop      cx  ; 0000:40EF
+  040F0  13f1           adc      si, cx  ; 0000:40F0
+  040F2  59             pop      cx  ; 0000:40F2
+  040F3  13e9           adc      bp, cx  ; 0000:40F3
+  040F5  59             pop      cx  ; 0000:40F5
+  040F6  13d1           adc      dx, cx  ; 0000:40F6
+  040F8  59             pop      cx  ; 0000:40F8
+  040F9  13d9           adc      bx, cx  ; 0000:40F9
+  040FB  1400           adc      al, 0  ; 0000:40FB
+  040FD  d0e4           shl      ah, 1  ; 0000:40FD
+  040FF  d1d6           rcl      si, 1  ; 0000:40FF
+  04101  d1d5           rcl      bp, 1  ; 0000:4101
+  04103  d1d2           rcl      dx, 1  ; 0000:4103
+  04105  d1d3           rcl      bx, 1  ; 0000:4105
+  04107  d0d0           rcl      al, 1  ; 0000:4107
+  04109  0430           add      al, 0x30  ; 0000:4109
+  0410B  aa             stosb    byte ptr es:[di], al  ; 0000:410B
+  0410C  59             pop      cx  ; 0000:410C
+  0410D  e2bd           loop     0x40cc  ; 0000:410D
+  0410F  4f             dec      di  ; 0000:410F
+  04110  49             dec      cx  ; 0000:4110
+  04111  b030           mov      al, 0x30  ; 0000:4111
+  04113  fd             std        ; 0000:4113
+  04114  f3ae           repe scasb al, byte ptr es:[di]  ; 0000:4114
+  04116  fc             cld        ; 0000:4116
+  04117  83c112         add      cx, 0x12  ; 0000:4117
+  0411A  be540a         mov      si, 0xa54  ; 0000:411A
+  0411D  880c           mov      byte ptr [si], cl  ; 0000:411D
+  0411F  b80100         mov      ax, 1  ; 0000:411F
+  04122  5a             pop      dx  ; 0000:4122
+  04123  5b             pop      bx  ; 0000:4123
+  04124  07             pop      es  ; 0000:4124
+  04125  c3             ret        ; 0000:4125
+
+
+; ---- sub_04126 ----
+sub_04126:
+  04126  bd660a         mov      bp, 0xa66  ; 0000:4126
+  04129  b90800         mov      cx, 8  ; 0000:4129
+  0412C  8bfd           mov      di, bp  ; 0000:412C
+  0412E  33c0           xor      ax, ax  ; 0000:412E
+  04130  f3ab           rep stosw word ptr es:[di], ax  ; 0000:4130
+  04132  2e8b4708       mov      ax, word ptr cs:[bx + 8]  ; 0000:4132
+  04136  014408         add      word ptr [si + 8], ax  ; 0000:4136
+  04139  bf0700         mov      di, 7  ; 0000:4139
+loc_0413C:
+  0413C  b80400         mov      ax, 4  ; 0000:413C
+  0413F  2bc7           sub      ax, di  ; 0000:413F
+  04141  22e0           and      ah, al  ; 0000:4141
+  04143  2ac4           sub      al, ah  ; 0000:4143
+  04145  2ac4           sub      al, ah  ; 0000:4145
+  04147  f6d8           neg      al  ; 0000:4147
+  04149  0404           add      al, 4  ; 0000:4149
+  0414B  98             cwde       ; 0000:414B
+  0414C  8bc8           mov      cx, ax  ; 0000:414C
+  0414E  53             push     bx  ; 0000:414E
+  0414F  56             push     si  ; 0000:414F
+  04150  2bd9           sub      bx, cx  ; 0000:4150
+  04152  2bdf           sub      bx, di  ; 0000:4152
+  04154  83c308         add      bx, 8  ; 0000:4154
+  04157  03f1           add      si, cx  ; 0000:4157
+  04159  2bf7           sub      si, di  ; 0000:4159
+  0415B  83c606         add      si, 6  ; 0000:415B
+  0415E  8b04           mov      ax, word ptr [si]  ; 0000:415E
+  04160  2ef727         mul      word ptr cs:[bx]  ; 0000:4160
+  04163  3e014600       add      word ptr ds:[bp], ax  ; 0000:4163
+  04167  3e115602       adc      word ptr ds:[bp + 2], dx  ; 0000:4167
+  0416B  3e83560400     adc      word ptr ds:[bp + 4], 0  ; 0000:416B
+  04170  83ee02         sub      si, 2  ; 0000:4170
+  04173  83c302         add      bx, 2  ; 0000:4173
+  04176  e2e6           loop     0x415e  ; 0000:4176
+  04178  5e             pop      si  ; 0000:4178
+  04179  5b             pop      bx  ; 0000:4179
+  0417A  83c502         add      bp, 2  ; 0000:417A
+  0417D  4f             dec      di  ; 0000:417D
+  0417E  75bc           jne      loc_0413C  ; 0000:417E
+  04180  83ed0e         sub      bp, 0xe  ; 0000:4180
+  04183  87f5           xchg     bp, si  ; 0000:4183
+  04185  ad             lodsw    ax, word ptr [si]  ; 0000:4185
+  04186  91             xchg     cx, ax  ; 0000:4186
+  04187  ad             lodsw    ax, word ptr [si]  ; 0000:4187
+  04188  0bc8           or       cx, ax  ; 0000:4188
+  0418A  ad             lodsw    ax, word ptr [si]  ; 0000:418A
+  0418B  0bc8           or       cx, ax  ; 0000:418B
+  0418D  0acd           or       cl, ch  ; 0000:418D
+  0418F  ad             lodsw    ax, word ptr [si]  ; 0000:418F
+  04190  92             xchg     dx, ax  ; 0000:4190
+  04191  0ad1           or       dl, cl  ; 0000:4191
+  04193  ad             lodsw    ax, word ptr [si]  ; 0000:4193
+  04194  97             xchg     di, ax  ; 0000:4194
+  04195  ad             lodsw    ax, word ptr [si]  ; 0000:4195
+  04196  91             xchg     cx, ax  ; 0000:4196
+  04197  ad             lodsw    ax, word ptr [si]  ; 0000:4197
+  04198  93             xchg     bx, ax  ; 0000:4198
+  04199  ad             lodsw    ax, word ptr [si]  ; 0000:4199
+  0419A  8bf5           mov      si, bp  ; 0000:419A
+  0419C  0bc0           or       ax, ax  ; 0000:419C
+  0419E  780d           js       loc_041AD  ; 0000:419E
+  041A0  ff4c08         dec      word ptr [si + 8]  ; 0000:41A0
+  041A3  d1e2           shl      dx, 1  ; 0000:41A3
+  041A5  d1d7           rcl      di, 1  ; 0000:41A5
+  041A7  d1d1           rcl      cx, 1  ; 0000:41A7
+  041A9  d1d3           rcl      bx, 1  ; 0000:41A9
+  041AB  d1d0           rcl      ax, 1  ; 0000:41AB
+loc_041AD:
+  041AD  bd0100         mov      bp, 1  ; 0000:41AD
+  041B0  23ef           and      bp, di  ; 0000:41B0
+  041B2  0bd5           or       dx, bp  ; 0000:41B2
+  041B4  33ed           xor      bp, bp  ; 0000:41B4
+  041B6  81fa0180       cmp      dx, 0x8001  ; 0000:41B6
+  041BA  f5             cmc        ; 0000:41BA
+  041BB  13fd           adc      di, bp  ; 0000:41BB
+  041BD  13cd           adc      cx, bp  ; 0000:41BD
+  041BF  13dd           adc      bx, bp  ; 0000:41BF
+  041C1  13c5           adc      ax, bp  ; 0000:41C1
+  041C3  d1d5           rcl      bp, 1  ; 0000:41C3
+  041C5  016c08         add      word ptr [si + 8], bp  ; 0000:41C5
+  041C8  d1cd           ror      bp, 1  ; 0000:41C8
+  041CA  0bc5           or       ax, bp  ; 0000:41CA
+  041CC  893c           mov      word ptr [si], di  ; 0000:41CC
+  041CE  894c02         mov      word ptr [si + 2], cx  ; 0000:41CE
+  041D1  895c04         mov      word ptr [si + 4], bx  ; 0000:41D1
+  041D4  894406         mov      word ptr [si + 6], ax  ; 0000:41D4
+  041D7  c3             ret        ; 0000:41D7
+  041D8  0000           add      byte ptr [bx + si], al  ; 0000:41D8
+  041DA  0000           add      byte ptr [bx + si], al  ; 0000:41DA
+  041DC  0000           add      byte ptr [bx + si], al  ; 0000:41DC
+loc_041DE:
+  041DE  00a00400       add      byte ptr [bx + si + 4], ah  ; 0000:41DE
+  041E2  0000           add      byte ptr [bx + si], al  ; 0000:41E2
+  041E4  0000           add      byte ptr [bx + si], al  ; 0000:41E4
+  041E6  0000           add      byte ptr [bx + si], al  ; 0000:41E6
+  041E8  00c8           add      al, cl  ; 0000:41E8
+  041EA  07             pop      es  ; 0000:41EA
+  041EB  0000           add      byte ptr [bx + si], al  ; 0000:41EB
+  041ED  0000           add      byte ptr [bx + si], al  ; 0000:41ED
+  041EF  0000           add      byte ptr [bx + si], al  ; 0000:41EF
+  041F1  00409c         add      byte ptr [bx + si - 0x64], al  ; 0000:41F1
+  041F4  0e             push     cs  ; 0000:41F4
+  041F5  0000           add      byte ptr [bx + si], al  ; 0000:41F5
+  041F7  0000           add      byte ptr [bx + si], al  ; 0000:41F7
+  041F9  0000           add      byte ptr [bx + si], al  ; 0000:41F9
+  041FB  20bcbe1b       and      byte ptr [si + 0x1bbe], bh  ; 0000:41FB
+  041FF  0000           add      byte ptr [bx + si], al  ; 0000:41FF
+  04201  0000           add      byte ptr [bx + si], al  ; 0000:4201
+  04203  04bf           add      al, 0xbf  ; 0000:4203
+  04205  c9             leave      ; 0000:4205
+  04206  1b8e3600       sbb      cx, word ptr [bp + 0x36]  ; 0000:4206
+  0420A  9e             sahf       ; 0000:420A
+  0420B  b570           mov      ch, 0x70  ; 0000:420B
+  0420D  2ba8adc5       sub      bp, word ptr [bx + si - 0x3a53]  ; 0000:420D
+  04211  9d             popf       ; 0000:4211
+  04212  6b00d5         imul     ax, word ptr [bx + si], -0x2b  ; 0000:4212
+  04215  a6             cmpsb    byte ptr [si], byte ptr es:[di]  ; 0000:4215
+  04216  cf             iret       ; 0000:4216
+  04217  ff491f         dec      word ptr [bx + di + 0x1f]  ; 0000:4217
+  0421A  78c2           js       loc_041DE  ; 0000:421A
+  0421C  d500           aad      0  ; 0000:421C
+  0421E  e08c           loopne   0x41ac  ; 0000:421E
+  04220  e980c9         jmp      loc_00BA3  ; 0000:4220
+loc_04223:
+  04223  47             inc      di  ; 0000:4223
+  04224  ba93aa         mov      dx, 0xaa93  ; 0000:4224
+  04227  018edef9       add      word ptr [bp - 0x622], cx  ; 0000:4227
+  0422B  9d             popf       ; 0000:422B
+  0422C  fb             sti        ; 0000:422C
+  0422D  eb7e           jmp      loc_042AD  ; 0000:422D
+  0422F  aa             stosb    byte ptr es:[di], al  ; 0000:422F
+  04230  53             push     bx  ; 0000:4230
+  04231  03cd           add      cx, bp  ; 0000:4231
+  04233  cc             int3       ; 0000:4233
+  04234  cc             int3       ; 0000:4234
+  04235  cc             int3       ; 0000:4235
+  04236  cc             int3       ; 0000:4236
+  04237  cc             int3       ; 0000:4237
+  04238  cc             int3       ; 0000:4238
+  04239  cc             int3       ; 0000:4239
+  0423A  fd             std        ; 0000:423A
+  0423B  ff0a           dec      word ptr [bp + si]  ; 0000:423B
+  0423D  d7             xlatb      ; 0000:423D
+  0423E  a3703d         mov      word ptr [0x3d70], ax  ; 0000:423E
+  04241  0ad7           or       dl, bh  ; 0000:4241
+  04243  a3faff         mov      word ptr [0xfffa], ax  ; 0000:4243
+  04246  2c65           sub      al, 0x65  ; 0000:4246
+  04248  19e2           sbb      dx, sp  ; 0000:4248
+  0424A  58             pop      ax  ; 0000:424A
+  0424B  17             pop      ss  ; 0000:424B
+  0424C  b7d1           mov      bh, 0xd1  ; 0000:424C
+  0424E  f3             db       0xf3  ; 0000:424E
+  0424F  ff             db       0xff  ; 0000:424F
+  04250  fd             std        ; 0000:4250
+  04251  ce             into       ; 0000:4251
+  04252  61             popaw      ; 0000:4252
+  04253  8411           test     byte ptr [bx + di], dl  ; 0000:4253
+  04255  77cc           ja       loc_04223  ; 0000:4255
+  04257  ab             stosw    word ptr es:[di], ax  ; 0000:4257
+  04258  e6ff           out      0xff, al  ; 0000:4258
+  0425A  5b             pop      bx  ; 0000:425A
+  0425B  e14d           loope    0x42aa  ; 0000:425B
+  0425D  c4be9495       les      di, ptr [bp - 0x6a6c]  ; 0000:425D
+  04261  e6cb           out      0xcb, al  ; 0000:4261
+  04263  ff             db       0xff  ; 0000:4263
+  04264  ba9439         mov      dx, 0x3994  ; 0000:4264
+  04267  45             inc      bp  ; 0000:4267
+  04268  ad             lodsw    ax, word ptr [si]  ; 0000:4268
+  04269  1e             push     ds  ; 0000:4269
+  0426A  b1cf           mov      cl, 0xcf  ; 0000:426A
+  0426C  96             xchg     si, ax  ; 0000:426C
+  0426D  ffa5e939       jmp      word ptr [di + 0x39e9]  ; 0000:426D
+  04271  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:4271
+  04272  27             daa        ; 0000:4272
+  04273  ea7fa82cff     ljmp     0xff2c:0xa87f  ; 0000:4273
+  04278  a1e4bc         mov      ax, word ptr [0xbce4]  ; 0000:4278
+  0427B  647c46         jl       loc_042C4  ; 0000:427B
+  0427E  d0dd           rcr      ch, 1  ; 0000:427E
+  04280  57             push     di  ; 0000:4280
+  04281  fe             db       0xfe  ; 0000:4281
+  04282  3a19           cmp      bl, byte ptr [bx + di]  ; 0000:4282
+  04284  7a63           jp       loc_042E9  ; 0000:4284
+  04286  254331         and      ax, 0x3143  ; 0000:4286
+  04289  c0aefcbbd8     shr      byte ptr [bp - 0x4404], 0xd8  ; 0000:4289
+  0428E  41             inc      cx  ; 0000:428E
+  0428F  0bff           or       di, di  ; 0000:428F
+  04291  7905           jns      loc_04298  ; 0000:4291
+  04293  bb3242         mov      bx, 0x4232  ; 0000:4293
+  04296  f7df           neg      di  ; 0000:4296
+loc_04298:
+  04298  83eb0a         sub      bx, 0xa  ; 0000:4298
+loc_0429B:
+  0429B  83c30a         add      bx, 0xa  ; 0000:429B
+  0429E  0bff           or       di, di  ; 0000:429E
+  042A0  740d           je       loc_042AF  ; 0000:42A0
+  042A2  d1ef           shr      di, 1  ; 0000:42A2
+  042A4  73f5           jae      loc_0429B  ; 0000:42A4
+  042A6  53             push     bx  ; 0000:42A6
+  042A7  57             push     di  ; 0000:42A7
+  042A8  e87bfe         call     sub_04126  ; 0000:42A8
+  042AB  5f             pop      di  ; 0000:42AB
+  042AC  5b             pop      bx  ; 0000:42AC
+loc_042AD:
+  042AD  ebec           jmp      loc_0429B  ; 0000:42AD
+loc_042AF:
+  042AF  c3             ret        ; 0000:42AF
+
+
+; ---- sub_042B0 ----
+sub_042B0:
+  042B0  55             push     bp  ; 0000:42B0
+  042B1  8bec           mov      bp, sp  ; 0000:42B1
+  042B3  b8fc00         mov      ax, 0xfc  ; 0000:42B3
+  042B6  50             push     ax  ; 0000:42B6
+  042B7  e8f701         call     sub_044B1  ; 0000:42B7
+  042BA  833e760a00     cmp      word ptr [0xa76], 0  ; 0000:42BA
+  042BF  7404           je       loc_042C5  ; 0000:42BF
+  042C1  ff16760a       call     word ptr [0xa76]  ; 0000:42C1
+loc_042C5:
+  042C5  b8ff00         mov      ax, 0xff  ; 0000:42C5
+  042C8  50             push     ax  ; 0000:42C8
+  042C9  e8e501         call     sub_044B1  ; 0000:42C9
+  042CC  8be5           mov      sp, bp  ; 0000:42CC
+  042CE  5d             pop      bp  ; 0000:42CE
+  042CF  c3             ret        ; 0000:42CF
+loc_042D0:
+  042D0  b80200         mov      ax, 2  ; 0000:42D0
+  042D3  e96fdd         jmp      sub_02045  ; 0000:42D3
+
+
+; ---- sub_042D6 ----
+sub_042D6:
+  042D6  56             push     si  ; 0000:42D6
+  042D7  33f6           xor      si, si  ; 0000:42D7
+  042D9  b94200         mov      cx, 0x42  ; 0000:42D9
+  042DC  32e4           xor      ah, ah  ; 0000:42DC
+  042DE  fc             cld        ; 0000:42DE
+  042DF  ac             lodsb    al, byte ptr [si]  ; 0000:42DF
+  042E0  32e0           xor      ah, al  ; 0000:42E0
+  042E2  e2fb           loop     0x42df  ; 0000:42E2
+  042E4  80f455         xor      ah, 0x55  ; 0000:42E4
+  042E7  740d           je       loc_042F6  ; 0000:42E7
+loc_042E9:
+  042E9  e8c4ff         call     sub_042B0  ; 0000:42E9
+  042EC  b80100         mov      ax, 1  ; 0000:42EC
+  042EF  50             push     ax  ; 0000:42EF
+  042F0  e8be01         call     sub_044B1  ; 0000:42F0
+  042F3  b80100         mov      ax, 1  ; 0000:42F3
+loc_042F6:
+  042F6  5e             pop      si  ; 0000:42F6
+  042F7  c3             ret        ; 0000:42F7
+
+
+; ---- sub_042F8 ----
+sub_042F8:
+  042F8  8f06780a       pop      word ptr [0xa78]  ; 0000:42F8
+  042FC  ba0200         mov      dx, 2  ; 0000:42FC
+  042FF  38168f07       cmp      byte ptr [0x78f], dl  ; 0000:42FF
+  04303  7429           je       loc_0432E  ; 0000:4303
+  04305  8e068d07       mov      es, word ptr [0x78d]  ; 0000:4305
+  04309  268e062c00     mov      es, word ptr es:[0x2c]  ; 0000:4309
+  0430E  8c06b207       mov      word ptr [0x7b2], es  ; 0000:430E
+  04312  33c0           xor      ax, ax  ; 0000:4312
+  04314  99             cdq        ; 0000:4314
+  04315  b90080         mov      cx, 0x8000  ; 0000:4315
+  04318  33ff           xor      di, di  ; 0000:4318
+loc_0431A:
+  0431A  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:431A
+  0431C  ae             scasb    al, byte ptr es:[di]  ; 0000:431C
+  0431D  75fb           jne      loc_0431A  ; 0000:431D
+  0431F  47             inc      di  ; 0000:431F
+  04320  47             inc      di  ; 0000:4320
+  04321  893eb007       mov      word ptr [0x7b0], di  ; 0000:4321
+  04325  b9ffff         mov      cx, 0xffff  ; 0000:4325
+  04328  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:4328
+  0432A  f7d1           not      cx  ; 0000:432A
+  0432C  8bd1           mov      dx, cx  ; 0000:432C
+loc_0432E:
+  0432E  bf0100         mov      di, 1  ; 0000:432E
+  04331  be8100         mov      si, 0x81  ; 0000:4331
+  04334  8e1e8d07       mov      ds, word ptr [0x78d]  ; 0000:4334
+loc_04338:
+  04338  ac             lodsb    al, byte ptr [si]  ; 0000:4338
+  04339  3c20           cmp      al, 0x20  ; 0000:4339
+  0433B  74fb           je       loc_04338  ; 0000:433B
+  0433D  3c09           cmp      al, 9  ; 0000:433D
+  0433F  74f7           je       loc_04338  ; 0000:433F
+  04341  3c0d           cmp      al, 0xd  ; 0000:4341
+  04343  746f           je       loc_043B4  ; 0000:4343
+  04345  0ac0           or       al, al  ; 0000:4345
+  04347  746b           je       loc_043B4  ; 0000:4347
+  04349  47             inc      di  ; 0000:4349
+loc_0434A:
+  0434A  4e             dec      si  ; 0000:434A
+loc_0434B:
+  0434B  ac             lodsb    al, byte ptr [si]  ; 0000:434B
+  0434C  3c20           cmp      al, 0x20  ; 0000:434C
+  0434E  74e8           je       loc_04338  ; 0000:434E
+  04350  3c09           cmp      al, 9  ; 0000:4350
+  04352  74e4           je       loc_04338  ; 0000:4352
+  04354  3c0d           cmp      al, 0xd  ; 0000:4354
+  04356  745c           je       loc_043B4  ; 0000:4356
+  04358  0ac0           or       al, al  ; 0000:4358
+  0435A  7458           je       loc_043B4  ; 0000:435A
+  0435C  3c22           cmp      al, 0x22  ; 0000:435C
+  0435E  7424           je       loc_04384  ; 0000:435E
+  04360  3c5c           cmp      al, 0x5c  ; 0000:4360
+  04362  7403           je       loc_04367  ; 0000:4362
+  04364  42             inc      dx  ; 0000:4364
+  04365  ebe4           jmp      loc_0434B  ; 0000:4365
+loc_04367:
+  04367  33c9           xor      cx, cx  ; 0000:4367
+loc_04369:
+  04369  41             inc      cx  ; 0000:4369
+  0436A  ac             lodsb    al, byte ptr [si]  ; 0000:436A
+  0436B  3c5c           cmp      al, 0x5c  ; 0000:436B
+  0436D  74fa           je       loc_04369  ; 0000:436D
+  0436F  3c22           cmp      al, 0x22  ; 0000:436F
+  04371  7404           je       loc_04377  ; 0000:4371
+  04373  03d1           add      dx, cx  ; 0000:4373
+  04375  ebd3           jmp      loc_0434A  ; 0000:4375
+loc_04377:
+  04377  8bc1           mov      ax, cx  ; 0000:4377
+  04379  d1e9           shr      cx, 1  ; 0000:4379
+  0437B  13d1           adc      dx, cx  ; 0000:437B
+  0437D  a801           test     al, 1  ; 0000:437D
+  0437F  75ca           jne      loc_0434B  ; 0000:437F
+  04381  eb01           jmp      loc_04384  ; 0000:4381
+loc_04383:
+  04383  4e             dec      si  ; 0000:4383
+loc_04384:
+  04384  ac             lodsb    al, byte ptr [si]  ; 0000:4384
+  04385  3c0d           cmp      al, 0xd  ; 0000:4385
+  04387  742b           je       loc_043B4  ; 0000:4387
+  04389  0ac0           or       al, al  ; 0000:4389
+  0438B  7427           je       loc_043B4  ; 0000:438B
+  0438D  3c22           cmp      al, 0x22  ; 0000:438D
+  0438F  74ba           je       loc_0434B  ; 0000:438F
+  04391  3c5c           cmp      al, 0x5c  ; 0000:4391
+  04393  7403           je       loc_04398  ; 0000:4393
+  04395  42             inc      dx  ; 0000:4395
+  04396  ebec           jmp      loc_04384  ; 0000:4396
+loc_04398:
+  04398  33c9           xor      cx, cx  ; 0000:4398
+loc_0439A:
+  0439A  41             inc      cx  ; 0000:439A
+  0439B  ac             lodsb    al, byte ptr [si]  ; 0000:439B
+  0439C  3c5c           cmp      al, 0x5c  ; 0000:439C
+  0439E  74fa           je       loc_0439A  ; 0000:439E
+  043A0  3c22           cmp      al, 0x22  ; 0000:43A0
+  043A2  7404           je       loc_043A8  ; 0000:43A2
+  043A4  03d1           add      dx, cx  ; 0000:43A4
+  043A6  ebdb           jmp      loc_04383  ; 0000:43A6
+loc_043A8:
+  043A8  8bc1           mov      ax, cx  ; 0000:43A8
+  043AA  d1e9           shr      cx, 1  ; 0000:43AA
+  043AC  13d1           adc      dx, cx  ; 0000:43AC
+  043AE  a801           test     al, 1  ; 0000:43AE
+  043B0  75d2           jne      loc_04384  ; 0000:43B0
+  043B2  eb97           jmp      loc_0434B  ; 0000:43B2
+loc_043B4:
+  043B4  16             push     ss  ; 0000:43B4
+  043B5  1f             pop      ds  ; 0000:43B5
+  043B6  893eaa07       mov      word ptr [0x7aa], di  ; 0000:43B6
+  043BA  03d7           add      dx, di  ; 0000:43BA
+  043BC  47             inc      di  ; 0000:43BC
+  043BD  d1e7           shl      di, 1  ; 0000:43BD
+  043BF  03d7           add      dx, di  ; 0000:43BF
+  043C1  80e2fe         and      dl, 0xfe  ; 0000:43C1
+  043C4  2be2           sub      sp, dx  ; 0000:43C4
+  043C6  8bc4           mov      ax, sp  ; 0000:43C6
+  043C8  a3ac07         mov      word ptr [0x7ac], ax  ; 0000:43C8
+  043CB  8bd8           mov      bx, ax  ; 0000:43CB
+  043CD  03fb           add      di, bx  ; 0000:43CD
+  043CF  16             push     ss  ; 0000:43CF
+  043D0  07             pop      es  ; 0000:43D0
+  043D1  36893f         mov      word ptr ss:[bx], di  ; 0000:43D1
+  043D4  43             inc      bx  ; 0000:43D4
+  043D5  43             inc      bx  ; 0000:43D5
+  043D6  c536b007       lds      si, ptr [0x7b0]  ; 0000:43D6
+loc_043DA:
+  043DA  ac             lodsb    al, byte ptr [si]  ; 0000:43DA
+  043DB  aa             stosb    byte ptr es:[di], al  ; 0000:43DB
+  043DC  0ac0           or       al, al  ; 0000:43DC
+  043DE  75fa           jne      loc_043DA  ; 0000:43DE
+  043E0  be8100         mov      si, 0x81  ; 0000:43E0
+  043E3  368e1e8d07     mov      ds, word ptr ss:[0x78d]  ; 0000:43E3
+  043E8  eb03           jmp      loc_043ED  ; 0000:43E8
+loc_043EA:
+  043EA  33c0           xor      ax, ax  ; 0000:43EA
+  043EC  aa             stosb    byte ptr es:[di], al  ; 0000:43EC
+loc_043ED:
+  043ED  ac             lodsb    al, byte ptr [si]  ; 0000:43ED
+  043EE  3c20           cmp      al, 0x20  ; 0000:43EE
+  043F0  74fb           je       loc_043ED  ; 0000:43F0
+  043F2  3c09           cmp      al, 9  ; 0000:43F2
+  043F4  74f7           je       loc_043ED  ; 0000:43F4
+  043F6  3c0d           cmp      al, 0xd  ; 0000:43F6
+  043F8  7503           jne      loc_043FD  ; 0000:43F8
+  043FA  e97f00         jmp      loc_0447C  ; 0000:43FA
+loc_043FD:
+  043FD  0ac0           or       al, al  ; 0000:43FD
+  043FF  7503           jne      loc_04404  ; 0000:43FF
+  04401  eb79           jmp      loc_0447C  ; 0000:4401
+  04403  90             nop        ; 0000:4403
+loc_04404:
+  04404  36893f         mov      word ptr ss:[bx], di  ; 0000:4404
+  04407  43             inc      bx  ; 0000:4407
+  04408  43             inc      bx  ; 0000:4408
+loc_04409:
+  04409  4e             dec      si  ; 0000:4409
+loc_0440A:
+  0440A  ac             lodsb    al, byte ptr [si]  ; 0000:440A
+  0440B  3c20           cmp      al, 0x20  ; 0000:440B
+  0440D  74db           je       loc_043EA  ; 0000:440D
+  0440F  3c09           cmp      al, 9  ; 0000:440F
+  04411  74d7           je       loc_043EA  ; 0000:4411
+  04413  3c0d           cmp      al, 0xd  ; 0000:4413
+  04415  7462           je       loc_04479  ; 0000:4415
+  04417  0ac0           or       al, al  ; 0000:4417
+  04419  745e           je       loc_04479  ; 0000:4419
+  0441B  3c22           cmp      al, 0x22  ; 0000:441B
+  0441D  7427           je       loc_04446  ; 0000:441D
+  0441F  3c5c           cmp      al, 0x5c  ; 0000:441F
+  04421  7403           je       loc_04426  ; 0000:4421
+  04423  aa             stosb    byte ptr es:[di], al  ; 0000:4423
+  04424  ebe4           jmp      loc_0440A  ; 0000:4424
+loc_04426:
+  04426  33c9           xor      cx, cx  ; 0000:4426
+loc_04428:
+  04428  41             inc      cx  ; 0000:4428
+  04429  ac             lodsb    al, byte ptr [si]  ; 0000:4429
+  0442A  3c5c           cmp      al, 0x5c  ; 0000:442A
+  0442C  74fa           je       loc_04428  ; 0000:442C
+  0442E  3c22           cmp      al, 0x22  ; 0000:442E
+  04430  7406           je       loc_04438  ; 0000:4430
+  04432  b05c           mov      al, 0x5c  ; 0000:4432
+  04434  f3aa           rep stosb byte ptr es:[di], al  ; 0000:4434
+  04436  ebd1           jmp      loc_04409  ; 0000:4436
+loc_04438:
+  04438  b05c           mov      al, 0x5c  ; 0000:4438
+  0443A  d1e9           shr      cx, 1  ; 0000:443A
+  0443C  f3aa           rep stosb byte ptr es:[di], al  ; 0000:443C
+  0443E  7306           jae      loc_04446  ; 0000:443E
+  04440  b022           mov      al, 0x22  ; 0000:4440
+  04442  aa             stosb    byte ptr es:[di], al  ; 0000:4442
+  04443  ebc5           jmp      loc_0440A  ; 0000:4443
+loc_04445:
+  04445  4e             dec      si  ; 0000:4445
+loc_04446:
+  04446  ac             lodsb    al, byte ptr [si]  ; 0000:4446
+  04447  3c0d           cmp      al, 0xd  ; 0000:4447
+  04449  742e           je       loc_04479  ; 0000:4449
+  0444B  0ac0           or       al, al  ; 0000:444B
+  0444D  742a           je       loc_04479  ; 0000:444D
+  0444F  3c22           cmp      al, 0x22  ; 0000:444F
+  04451  74b7           je       loc_0440A  ; 0000:4451
+  04453  3c5c           cmp      al, 0x5c  ; 0000:4453
+  04455  7403           je       loc_0445A  ; 0000:4455
+  04457  aa             stosb    byte ptr es:[di], al  ; 0000:4457
+  04458  ebec           jmp      loc_04446  ; 0000:4458
+loc_0445A:
+  0445A  33c9           xor      cx, cx  ; 0000:445A
+loc_0445C:
+  0445C  41             inc      cx  ; 0000:445C
+  0445D  ac             lodsb    al, byte ptr [si]  ; 0000:445D
+  0445E  3c5c           cmp      al, 0x5c  ; 0000:445E
+  04460  74fa           je       loc_0445C  ; 0000:4460
+  04462  3c22           cmp      al, 0x22  ; 0000:4462
+  04464  7406           je       loc_0446C  ; 0000:4464
+  04466  b05c           mov      al, 0x5c  ; 0000:4466
+  04468  f3aa           rep stosb byte ptr es:[di], al  ; 0000:4468
+  0446A  ebd9           jmp      loc_04445  ; 0000:446A
+loc_0446C:
+  0446C  b05c           mov      al, 0x5c  ; 0000:446C
+  0446E  d1e9           shr      cx, 1  ; 0000:446E
+  04470  f3aa           rep stosb byte ptr es:[di], al  ; 0000:4470
+  04472  7396           jae      loc_0440A  ; 0000:4472
+  04474  b022           mov      al, 0x22  ; 0000:4474
+  04476  aa             stosb    byte ptr es:[di], al  ; 0000:4476
+  04477  ebcd           jmp      loc_04446  ; 0000:4477
+loc_04479:
+  04479  33c0           xor      ax, ax  ; 0000:4479
+  0447B  aa             stosb    byte ptr es:[di], al  ; 0000:447B
+loc_0447C:
+  0447C  16             push     ss  ; 0000:447C
+  0447D  1f             pop      ds  ; 0000:447D
+  0447E  c7070000       mov      word ptr [bx], 0  ; 0000:447E
+  04482  ff26780a       jmp      word ptr [0xa78]  ; 0000:4482
+
+
+; ---- sub_04486 ----
+sub_04486:
+  04486  55             push     bp  ; 0000:4486
+  04487  8bec           mov      bp, sp  ; 0000:4487
+  04489  56             push     si  ; 0000:4489
+  0448A  57             push     di  ; 0000:448A
+  0448B  1e             push     ds  ; 0000:448B
+  0448C  07             pop      es  ; 0000:448C
+  0448D  8b5604         mov      dx, word ptr [bp + 4]  ; 0000:448D
+  04490  beb20d         mov      si, 0xdb2  ; 0000:4490
+loc_04493:
+  04493  ad             lodsw    ax, word ptr [si]  ; 0000:4493
+  04494  3bc2           cmp      ax, dx  ; 0000:4494
+  04496  7410           je       loc_044A8  ; 0000:4496
+  04498  40             inc      ax  ; 0000:4498
+  04499  96             xchg     si, ax  ; 0000:4499
+  0449A  740c           je       loc_044A8  ; 0000:449A
+  0449C  97             xchg     di, ax  ; 0000:449C
+  0449D  33c0           xor      ax, ax  ; 0000:449D
+  0449F  b9ffff         mov      cx, 0xffff  ; 0000:449F
+  044A2  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:44A2
+  044A4  8bf7           mov      si, di  ; 0000:44A4
+  044A6  ebeb           jmp      loc_04493  ; 0000:44A6
+loc_044A8:
+  044A8  96             xchg     si, ax  ; 0000:44A8
+  044A9  5f             pop      di  ; 0000:44A9
+  044AA  5e             pop      si  ; 0000:44AA
+  044AB  8be5           mov      sp, bp  ; 0000:44AB
+  044AD  5d             pop      bp  ; 0000:44AD
+  044AE  c20200         ret      2  ; 0000:44AE
+
+
+; ---- sub_044B1 ----
+sub_044B1:
+  044B1  55             push     bp  ; 0000:44B1
+  044B2  8bec           mov      bp, sp  ; 0000:44B2
+  044B4  57             push     di  ; 0000:44B4
+  044B5  ff7604         push     word ptr [bp + 4]  ; 0000:44B5
+  044B8  e8cbff         call     sub_04486  ; 0000:44B8
+  044BB  0bc0           or       ax, ax  ; 0000:44BB
+  044BD  7414           je       loc_044D3  ; 0000:44BD
+  044BF  92             xchg     dx, ax  ; 0000:44BF
+  044C0  8bfa           mov      di, dx  ; 0000:44C0
+  044C2  33c0           xor      ax, ax  ; 0000:44C2
+  044C4  b9ffff         mov      cx, 0xffff  ; 0000:44C4
+  044C7  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:44C7
+  044C9  f7d1           not      cx  ; 0000:44C9
+  044CB  49             dec      cx  ; 0000:44CB
+  044CC  bb0200         mov      bx, 2  ; 0000:44CC
+  044CF  b440           mov      ah, 0x40  ; 0000:44CF
+  044D1  cd21           int      0x21  ; 0000:44D1
+loc_044D3:
+  044D3  5f             pop      di  ; 0000:44D3
+  044D4  8be5           mov      sp, bp  ; 0000:44D4
+  044D6  5d             pop      bp  ; 0000:44D6
+  044D7  c20200         ret      2  ; 0000:44D7
+
+
+; ---- sub_044DA ----
+sub_044DA:
+  044DA  8bd0           mov      dx, ax  ; 0000:44DA
+  044DC  03061c07       add      ax, word ptr [0x71c]  ; 0000:44DC
+  044E0  7235           jb       loc_04517  ; 0000:44E0
+  044E2  39061607       cmp      word ptr [0x716], ax  ; 0000:44E2
+  044E6  7325           jae      loc_0450D  ; 0000:44E6
+  044E8  050f00         add      ax, 0xf  ; 0000:44E8
+  044EB  50             push     ax  ; 0000:44EB
+  044EC  d1d8           rcr      ax, 1  ; 0000:44EC
+  044EE  b103           mov      cl, 3  ; 0000:44EE
+  044F0  d3e8           shr      ax, cl  ; 0000:44F0
+  044F2  8cd9           mov      cx, ds  ; 0000:44F2
+  044F4  8b1e8d07       mov      bx, word ptr [0x78d]  ; 0000:44F4
+  044F8  2bcb           sub      cx, bx  ; 0000:44F8
+  044FA  03c1           add      ax, cx  ; 0000:44FA
+  044FC  8ec3           mov      es, bx  ; 0000:44FC
+  044FE  8bd8           mov      bx, ax  ; 0000:44FE
+  04500  b44a           mov      ah, 0x4a  ; 0000:4500
+  04502  cd21           int      0x21  ; 0000:4502
+  04504  58             pop      ax  ; 0000:4504
+  04505  7210           jb       loc_04517  ; 0000:4505
+  04507  24f0           and      al, 0xf0  ; 0000:4507
+  04509  48             dec      ax  ; 0000:4509
+  0450A  a31607         mov      word ptr [0x716], ax  ; 0000:450A
+loc_0450D:
+  0450D  95             xchg     bp, ax  ; 0000:450D
+  0450E  8b2e1c07       mov      bp, word ptr [0x71c]  ; 0000:450E
+  04512  01161c07       add      word ptr [0x71c], dx  ; 0000:4512
+  04516  c3             ret        ; 0000:4516
+loc_04517:
+  04517  8bc7           mov      ax, di  ; 0000:4517
+  04519  e929db         jmp      sub_02045  ; 0000:4519
+
+
+; ---- sub_0451C ----
+sub_0451C:
+  0451C  55             push     bp  ; 0000:451C
+  0451D  8bec           mov      bp, sp  ; 0000:451D
+  0451F  8bd7           mov      dx, di  ; 0000:451F
+  04521  8bde           mov      bx, si  ; 0000:4521
+  04523  8cd8           mov      ax, ds  ; 0000:4523
+  04525  8ec0           mov      es, ax  ; 0000:4525
+  04527  8b7e04         mov      di, word ptr [bp + 4]  ; 0000:4527
+  0452A  33c0           xor      ax, ax  ; 0000:452A
+  0452C  b9ffff         mov      cx, 0xffff  ; 0000:452C
+  0452F  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:452F
+  04531  8d75ff         lea      si, [di - 1]  ; 0000:4531
+  04534  8b7e06         mov      di, word ptr [bp + 6]  ; 0000:4534
+  04537  b9ffff         mov      cx, 0xffff  ; 0000:4537
+  0453A  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:453A
+  0453C  f7d1           not      cx  ; 0000:453C
+  0453E  2bf9           sub      di, cx  ; 0000:453E
+  04540  87fe           xchg     si, di  ; 0000:4540
+  04542  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:4542
+  04545  f7c60100       test     si, 1  ; 0000:4545
+  04549  7402           je       loc_0454D  ; 0000:4549
+  0454B  a4             movsb    byte ptr es:[di], byte ptr [si]  ; 0000:454B
+  0454C  49             dec      cx  ; 0000:454C
+loc_0454D:
+  0454D  d1e9           shr      cx, 1  ; 0000:454D
+  0454F  f3a5           rep movsw word ptr es:[di], word ptr [si]  ; 0000:454F
+  04551  13c9           adc      cx, cx  ; 0000:4551
+  04553  f3a4           rep movsb byte ptr es:[di], byte ptr [si]  ; 0000:4553
+  04555  8bf3           mov      si, bx  ; 0000:4555
+  04557  8bfa           mov      di, dx  ; 0000:4557
+  04559  5d             pop      bp  ; 0000:4559
+  0455A  c3             ret        ; 0000:455A
+  0455B  00558b         add      byte ptr [di - 0x75], dl  ; 0000:455B
+  0455E  ec             in       al, dx  ; 0000:455E
+  0455F  8bd7           mov      dx, di  ; 0000:455F
+  04561  8bde           mov      bx, si  ; 0000:4561
+  04563  8b7606         mov      si, word ptr [bp + 6]  ; 0000:4563
+  04566  8bfe           mov      di, si  ; 0000:4566
+  04568  8cd8           mov      ax, ds  ; 0000:4568
+  0456A  8ec0           mov      es, ax  ; 0000:456A
+  0456C  33c0           xor      ax, ax  ; 0000:456C
+  0456E  b9ffff         mov      cx, 0xffff  ; 0000:456E
+  04571  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:4571
+  04573  f7d1           not      cx  ; 0000:4573
+  04575  8b7e04         mov      di, word ptr [bp + 4]  ; 0000:4575
+  04578  8bc7           mov      ax, di  ; 0000:4578
+  0457A  a801           test     al, 1  ; 0000:457A
+  0457C  7402           je       loc_04580  ; 0000:457C
+  0457E  a4             movsb    byte ptr es:[di], byte ptr [si]  ; 0000:457E
+  0457F  49             dec      cx  ; 0000:457F
+loc_04580:
+  04580  d1e9           shr      cx, 1  ; 0000:4580
+  04582  f3a5           rep movsw word ptr es:[di], word ptr [si]  ; 0000:4582
+  04584  13c9           adc      cx, cx  ; 0000:4584
+  04586  f3a4           rep movsb byte ptr es:[di], byte ptr [si]  ; 0000:4586
+  04588  8bf3           mov      si, bx  ; 0000:4588
+  0458A  8bfa           mov      di, dx  ; 0000:458A
+  0458C  5d             pop      bp  ; 0000:458C
+  0458D  c3             ret        ; 0000:458D
+
+
+; ---- sub_0458E ----
+sub_0458E:
+  0458E  55             push     bp  ; 0000:458E
+  0458F  8bec           mov      bp, sp  ; 0000:458F
+  04591  8bd7           mov      dx, di  ; 0000:4591
+  04593  8cd8           mov      ax, ds  ; 0000:4593
+  04595  8ec0           mov      es, ax  ; 0000:4595
+  04597  8b7e04         mov      di, word ptr [bp + 4]  ; 0000:4597
+  0459A  33c0           xor      ax, ax  ; 0000:459A
+  0459C  b9ffff         mov      cx, 0xffff  ; 0000:459C
+  0459F  f2ae           repne scasb al, byte ptr es:[di]  ; 0000:459F
+  045A1  f7d1           not      cx  ; 0000:45A1
+  045A3  49             dec      cx  ; 0000:45A3
+  045A4  91             xchg     cx, ax  ; 0000:45A4
+  045A5  8bfa           mov      di, dx  ; 0000:45A5
+  045A7  5d             pop      bp  ; 0000:45A7
+  045A8  c3             ret        ; 0000:45A8
+  045A9  00e9           add      cl, ch  ; 0000:45A9
+  045AB  0103           add      word ptr [bp + di], ax  ; 0000:45AB
+  045AD  00558b         add      byte ptr [di - 0x75], dl  ; 0000:45AD
+  045B0  ec             in       al, dx  ; 0000:45B0
+  045B1  57             push     di  ; 0000:45B1
+  045B2  56             push     si  ; 0000:45B2
+  045B3  8b7604         mov      si, word ptr [bp + 4]  ; 0000:45B3
+loc_045B6:
+  045B6  803c20         cmp      byte ptr [si], 0x20  ; 0000:45B6
+  045B9  7405           je       loc_045C0  ; 0000:45B9
+  045BB  803c09         cmp      byte ptr [si], 9  ; 0000:45BB
+  045BE  7504           jne      loc_045C4  ; 0000:45BE
+loc_045C0:
+  045C0  46             inc      si  ; 0000:45C0
+  045C1  ebf3           jmp      loc_045B6  ; 0000:45C1
+  045C3  90             nop        ; 0000:45C3
+loc_045C4:
+  045C4  2bc0           sub      ax, ax  ; 0000:45C4
+  045C6  50             push     ax  ; 0000:45C6
+  045C7  50             push     ax  ; 0000:45C7
+  045C8  56             push     si  ; 0000:45C8
+  045C9  e8c2ff         call     sub_0458E  ; 0000:45C9
+  045CC  83c402         add      sp, 2  ; 0000:45CC
+  045CF  50             push     ax  ; 0000:45CF
+  045D0  56             push     si  ; 0000:45D0
+  045D1  e8b403         call     sub_04988  ; 0000:45D1
+  045D4  83c408         add      sp, 8  ; 0000:45D4
+  045D7  8bd8           mov      bx, ax  ; 0000:45D7
+  045D9  56             push     si  ; 0000:45D9
+  045DA  bf440f         mov      di, 0xf44  ; 0000:45DA
+  045DD  8d7708         lea      si, [bx + 8]  ; 0000:45DD
+  045E0  1e             push     ds  ; 0000:45E0
+  045E1  07             pop      es  ; 0000:45E1
+  045E2  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:45E2
+  045E3  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:45E3
+  045E4  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:45E4
+  045E5  a5             movsw    word ptr es:[di], word ptr [si]  ; 0000:45E5
+  045E6  5e             pop      si  ; 0000:45E6
+  045E7  b8440f         mov      ax, 0xf44  ; 0000:45E7
+  045EA  5e             pop      si  ; 0000:45EA
+  045EB  5f             pop      di  ; 0000:45EB
+  045EC  5d             pop      bp  ; 0000:45EC
+  045ED  c3             ret        ; 0000:45ED
+
+
+; ---- sub_045EE ----
+sub_045EE:
+  045EE  55             push     bp  ; 0000:45EE
+  045EF  8bec           mov      bp, sp  ; 0000:45EF
+  045F1  56             push     si  ; 0000:45F1
+  045F2  57             push     di  ; 0000:45F2
+  045F3  b301           mov      bl, 1  ; 0000:45F3
+  045F5  8b4e08         mov      cx, word ptr [bp + 8]  ; 0000:45F5
+  045F8  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:45F8
+  045FB  33d2           xor      dx, dx  ; 0000:45FB
+  045FD  83f90a         cmp      cx, 0xa  ; 0000:45FD
+  04600  7501           jne      loc_04603  ; 0000:4600
+  04602  99             cdq        ; 0000:4602
+loc_04603:
+  04603  8b7e06         mov      di, word ptr [bp + 6]  ; 0000:4603
+  04606  e90503         jmp      loc_0490E  ; 0000:4606
+  04609  00558b         add      byte ptr [di - 0x75], dl  ; 0000:4609
+  0460C  ec             in       al, dx  ; 0000:460C
+  0460D  83ec04         sub      sp, 4  ; 0000:460D
+  04610  57             push     di  ; 0000:4610
+  04611  56             push     si  ; 0000:4611
+  04612  8b7604         mov      si, word ptr [bp + 4]  ; 0000:4612
+  04615  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:4615
+  04618  8b7f06         mov      di, word ptr [bx + 6]  ; 0000:4618
+  0461B  c60430         mov      byte ptr [si], 0x30  ; 0000:461B
+  0461E  46             inc      si  ; 0000:461E
+  0461F  837e0600       cmp      word ptr [bp + 6], 0  ; 0000:461F
+  04623  7e17           jle      loc_0463C  ; 0000:4623
+  04625  8b4e06         mov      cx, word ptr [bp + 6]  ; 0000:4625
+  04628  803d00         cmp      byte ptr [di], 0  ; 0000:4628
+  0462B  7405           je       loc_04632  ; 0000:462B
+  0462D  8a05           mov      al, byte ptr [di]  ; 0000:462D
+  0462F  47             inc      di  ; 0000:462F
+  04630  eb02           jmp      loc_04634  ; 0000:4630
+loc_04632:
+  04632  b030           mov      al, 0x30  ; 0000:4632
+loc_04634:
+  04634  8804           mov      byte ptr [si], al  ; 0000:4634
+  04636  46             inc      si  ; 0000:4636
+  04637  e2ef           loop     0x4628  ; 0000:4637
+  04639  894e06         mov      word ptr [bp + 6], cx  ; 0000:4639
+loc_0463C:
+  0463C  c60400         mov      byte ptr [si], 0  ; 0000:463C
+  0463F  837e0600       cmp      word ptr [bp + 6], 0  ; 0000:463F
+  04643  7c14           jl       loc_04659  ; 0000:4643
+  04645  803d35         cmp      byte ptr [di], 0x35  ; 0000:4645
+  04648  7c0f           jl       loc_04659  ; 0000:4648
+  0464A  eb05           jmp      loc_04651  ; 0000:464A
+  0464C  90             nop        ; 0000:464C
+  0464D  90             nop        ; 0000:464D
+loc_0464E:
+  0464E  c60430         mov      byte ptr [si], 0x30  ; 0000:464E
+loc_04651:
+  04651  4e             dec      si  ; 0000:4651
+  04652  803c39         cmp      byte ptr [si], 0x39  ; 0000:4652
+  04655  74f7           je       loc_0464E  ; 0000:4655
+  04657  fe04           inc      byte ptr [si]  ; 0000:4657
+loc_04659:
+  04659  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:4659
+  0465C  803f31         cmp      byte ptr [bx], 0x31  ; 0000:465C
+  0465F  750d           jne      loc_0466E  ; 0000:465F
+  04661  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:4661
+  04664  ff4702         inc      word ptr [bx + 2]  ; 0000:4664
+  04667  5e             pop      si  ; 0000:4667
+  04668  5f             pop      di  ; 0000:4668
+  04669  8be5           mov      sp, bp  ; 0000:4669
+  0466B  5d             pop      bp  ; 0000:466B
+  0466C  c3             ret        ; 0000:466C
+  0466D  90             nop        ; 0000:466D
+loc_0466E:
+  0466E  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:466E
+  04671  40             inc      ax  ; 0000:4671
+  04672  50             push     ax  ; 0000:4672
+  04673  ff7604         push     word ptr [bp + 4]  ; 0000:4673
+  04676  e8e3fe         call     sub_0455C  ; 0000:4676
+  04679  83c404         add      sp, 4  ; 0000:4679
+  0467C  5e             pop      si  ; 0000:467C
+  0467D  5f             pop      di  ; 0000:467D
+  0467E  8be5           mov      sp, bp  ; 0000:467E
+  04680  5d             pop      bp  ; 0000:4680
+  04681  c3             ret        ; 0000:4681
+  04682  0000           add      byte ptr [bx + si], al  ; 0000:4682
+
+
+; ---- sub_04684 ----
+sub_04684:
+  04684  55             push     bp  ; 0000:4684
+  04685  8bec           mov      bp, sp  ; 0000:4685
+  04687  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:4687
+  0468A  f6878b0a02     test     byte ptr [bx + 0xa8b], 2  ; 0000:468A
+  0468F  7407           je       loc_04698  ; 0000:468F
+  04691  8bc3           mov      ax, bx  ; 0000:4691
+  04693  2d2000         sub      ax, 0x20  ; 0000:4693
+  04696  5d             pop      bp  ; 0000:4696
+  04697  c3             ret        ; 0000:4697
+loc_04698:
+  04698  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:4698
+  0469B  5d             pop      bp  ; 0000:469B
+  0469C  c3             ret        ; 0000:469C
+  0469D  90             nop        ; 0000:469D
+
+
+; ---- sub_0469E ----
+sub_0469E:
+  0469E  55             push     bp  ; 0000:469E
+  0469F  8bec           mov      bp, sp  ; 0000:469F
+  046A1  8bd6           mov      dx, si  ; 0000:46A1
+  046A3  8b7606         mov      si, word ptr [bp + 6]  ; 0000:46A3
+  046A6  8b5e04         mov      bx, word ptr [bp + 4]  ; 0000:46A6
+  046A9  b0ff           mov      al, 0xff  ; 0000:46A9
+loc_046AB:
+  046AB  0ac0           or       al, al  ; 0000:46AB
+  046AD  742c           je       loc_046DB  ; 0000:46AD
+  046AF  ac             lodsb    al, byte ptr [si]  ; 0000:46AF
+  046B0  8a27           mov      ah, byte ptr [bx]  ; 0000:46B0
+  046B2  43             inc      bx  ; 0000:46B2
+  046B3  3ae0           cmp      ah, al  ; 0000:46B3
+  046B5  74f4           je       loc_046AB  ; 0000:46B5
+  046B7  2c41           sub      al, 0x41  ; 0000:46B7
+  046B9  3c1a           cmp      al, 0x1a  ; 0000:46B9
+  046BB  1ac9           sbb      cl, cl  ; 0000:46BB
+  046BD  80e120         and      cl, 0x20  ; 0000:46BD
+  046C0  02c1           add      al, cl  ; 0000:46C0
+  046C2  0441           add      al, 0x41  ; 0000:46C2
+  046C4  86e0           xchg     al, ah  ; 0000:46C4
+  046C6  2c41           sub      al, 0x41  ; 0000:46C6
+  046C8  3c1a           cmp      al, 0x1a  ; 0000:46C8
+  046CA  1ac9           sbb      cl, cl  ; 0000:46CA
+  046CC  80e120         and      cl, 0x20  ; 0000:46CC
+  046CF  02c1           add      al, cl  ; 0000:46CF
+  046D1  0441           add      al, 0x41  ; 0000:46D1
+  046D3  3ac4           cmp      al, ah  ; 0000:46D3
+  046D5  74d4           je       loc_046AB  ; 0000:46D5
+  046D7  1ac0           sbb      al, al  ; 0000:46D7
+  046D9  1cff           sbb      al, 0xff  ; 0000:46D9
+loc_046DB:
+  046DB  98             cwde       ; 0000:46DB
+  046DC  8bf2           mov      si, dx  ; 0000:46DC
+  046DE  5d             pop      bp  ; 0000:46DE
+  046DF  c3             ret        ; 0000:46DF
+
+
+; ---- sub_046E0 ----
+sub_046E0:
+  046E0  55             push     bp  ; 0000:46E0
+  046E1  8bec           mov      bp, sp  ; 0000:46E1
+  046E3  8bd7           mov      dx, di  ; 0000:46E3
+  046E5  8bde           mov      bx, si  ; 0000:46E5
+  046E7  8cd8           mov      ax, ds  ; 0000:46E7
+  046E9  8ec0           mov      es, ax  ; 0000:46E9
+  046EB  8b7606         mov      si, word ptr [bp + 6]  ; 0000:46EB
+  046EE  8b7e04         mov      di, word ptr [bp + 4]  ; 0000:46EE
+  046F1  8bc7           mov      ax, di  ; 0000:46F1
+  046F3  8b4e08         mov      cx, word ptr [bp + 8]  ; 0000:46F3
+  046F6  e32a           jcxz     loc_04722  ; 0000:46F6
+  046F8  3bfe           cmp      di, si  ; 0000:46F8
+  046FA  7616           jbe      loc_04712  ; 0000:46FA
+  046FC  8bc6           mov      ax, si  ; 0000:46FC
+  046FE  03c1           add      ax, cx  ; 0000:46FE
+  04700  3bf8           cmp      di, ax  ; 0000:4700
+  04702  730e           jae      loc_04712  ; 0000:4702
+  04704  8bc7           mov      ax, di  ; 0000:4704
+  04706  03f1           add      si, cx  ; 0000:4706
+  04708  03f9           add      di, cx  ; 0000:4708
+  0470A  4e             dec      si  ; 0000:470A
+  0470B  4f             dec      di  ; 0000:470B
+  0470C  fd             std        ; 0000:470C
+  0470D  f3a4           rep movsb byte ptr es:[di], byte ptr [si]  ; 0000:470D
+  0470F  fc             cld        ; 0000:470F
+  04710  eb10           jmp      loc_04722  ; 0000:4710
+loc_04712:
+  04712  8bc7           mov      ax, di  ; 0000:4712
+  04714  a801           test     al, 1  ; 0000:4714
+  04716  7402           je       loc_0471A  ; 0000:4716
+  04718  a4             movsb    byte ptr es:[di], byte ptr [si]  ; 0000:4718
+  04719  49             dec      cx  ; 0000:4719
+loc_0471A:
+  0471A  d1e9           shr      cx, 1  ; 0000:471A
+  0471C  f3a5           rep movsw word ptr es:[di], word ptr [si]  ; 0000:471C
+  0471E  13c9           adc      cx, cx  ; 0000:471E
+  04720  f3a4           rep movsb byte ptr es:[di], byte ptr [si]  ; 0000:4720
+loc_04722:
+  04722  8bf3           mov      si, bx  ; 0000:4722
+  04724  8bfa           mov      di, dx  ; 0000:4724
+  04726  5d             pop      bp  ; 0000:4726
+  04727  c3             ret        ; 0000:4727
+
+
+; ---- sub_04728 ----
+sub_04728:
+  04728  55             push     bp  ; 0000:4728
+  04729  8bec           mov      bp, sp  ; 0000:4729
+  0472B  8bd7           mov      dx, di  ; 0000:472B
+  0472D  8cd8           mov      ax, ds  ; 0000:472D
+  0472F  8ec0           mov      es, ax  ; 0000:472F
+  04731  8b7e04         mov      di, word ptr [bp + 4]  ; 0000:4731
+  04734  8bdf           mov      bx, di  ; 0000:4734
+  04736  8b4e08         mov      cx, word ptr [bp + 8]  ; 0000:4736
+  04739  e315           jcxz     loc_04750  ; 0000:4739
+  0473B  8a4606         mov      al, byte ptr [bp + 6]  ; 0000:473B
+  0473E  8ae0           mov      ah, al  ; 0000:473E
+  04740  f7c70100       test     di, 1  ; 0000:4740
+  04744  7402           je       loc_04748  ; 0000:4744
+  04746  aa             stosb    byte ptr es:[di], al  ; 0000:4746
+  04747  49             dec      cx  ; 0000:4747
+loc_04748:
+  04748  d1e9           shr      cx, 1  ; 0000:4748
+  0474A  f3ab           rep stosw word ptr es:[di], ax  ; 0000:474A
+  0474C  13c9           adc      cx, cx  ; 0000:474C
+  0474E  f3aa           rep stosb byte ptr es:[di], al  ; 0000:474E
+loc_04750:
+  04750  8bfa           mov      di, dx  ; 0000:4750
+  04752  93             xchg     bx, ax  ; 0000:4752
+  04753  5d             pop      bp  ; 0000:4753
+  04754  c3             ret        ; 0000:4754
+  04755  00558b         add      byte ptr [di - 0x75], dl  ; 0000:4755
+  04758  ec             in       al, dx  ; 0000:4758
+  04759  83ec02         sub      sp, 2  ; 0000:4759
+  0475C  56             push     si  ; 0000:475C
+  0475D  ff760a         push     word ptr [bp + 0xa]  ; 0000:475D
+  04760  ff7608         push     word ptr [bp + 8]  ; 0000:4760
+  04763  ff7606         push     word ptr [bp + 6]  ; 0000:4763
+  04766  ff7604         push     word ptr [bp + 4]  ; 0000:4766
+  04769  e8eff7         call     sub_03F5B  ; 0000:4769
+  0476C  83c408         add      sp, 8  ; 0000:476C
+  0476F  8bf0           mov      si, ax  ; 0000:476F
+  04771  ff7610         push     word ptr [bp + 0x10]  ; 0000:4771
+  04774  ff760e         push     word ptr [bp + 0xe]  ; 0000:4774
+  04777  8b4402         mov      ax, word ptr [si + 2]  ; 0000:4777
+  0477A  03460c         add      ax, word ptr [bp + 0xc]  ; 0000:477A
+  0477D  50             push     ax  ; 0000:477D
+  0477E  56             push     si  ; 0000:477E
+  0477F  e83000         call     sub_047B2  ; 0000:477F
+  04782  83c408         add      sp, 8  ; 0000:4782
+  04785  5e             pop      si  ; 0000:4785
+  04786  8be5           mov      sp, bp  ; 0000:4786
+  04788  5d             pop      bp  ; 0000:4788
+  04789  c3             ret        ; 0000:4789
+
+
+; ---- sub_0478A ----
+sub_0478A:
+  0478A  55             push     bp  ; 0000:478A
+  0478B  8bec           mov      bp, sp  ; 0000:478B
+  0478D  ff7610         push     word ptr [bp + 0x10]  ; 0000:478D
+  04790  ff760e         push     word ptr [bp + 0xe]  ; 0000:4790
+  04793  ff760c         push     word ptr [bp + 0xc]  ; 0000:4793
+  04796  ff760a         push     word ptr [bp + 0xa]  ; 0000:4796
+  04799  ff7608         push     word ptr [bp + 8]  ; 0000:4799
+  0479C  ff7606         push     word ptr [bp + 6]  ; 0000:479C
+  0479F  ff7604         push     word ptr [bp + 4]  ; 0000:479F
+  047A2  e8b6f7         call     sub_03F5B  ; 0000:47A2
+  047A5  83c408         add      sp, 8  ; 0000:47A5
+  047A8  50             push     ax  ; 0000:47A8
+  047A9  e80600         call     sub_047B2  ; 0000:47A9
+  047AC  83c408         add      sp, 8  ; 0000:47AC
+  047AF  5d             pop      bp  ; 0000:47AF
+  047B0  c3             ret        ; 0000:47B0
+  047B1  90             nop        ; 0000:47B1
+
+
+; ---- sub_047B2 ----
+sub_047B2:
+  047B2  55             push     bp  ; 0000:47B2
+  047B3  8bec           mov      bp, sp  ; 0000:47B3
+  047B5  83ec02         sub      sp, 2  ; 0000:47B5
+  047B8  56             push     si  ; 0000:47B8
+  047B9  8b7604         mov      si, word ptr [bp + 4]  ; 0000:47B9
+  047BC  56             push     si  ; 0000:47BC
+  047BD  8b4606         mov      ax, word ptr [bp + 6]  ; 0000:47BD
+  047C0  3d5b01         cmp      ax, 0x15b  ; 0000:47C0
+  047C3  7e03           jle      loc_047C8  ; 0000:47C3
+  047C5  b85b01         mov      ax, 0x15b  ; 0000:47C5
+loc_047C8:
+  047C8  50             push     ax  ; 0000:47C8
+  047C9  b84c0f         mov      ax, 0xf4c  ; 0000:47C9
+  047CC  50             push     ax  ; 0000:47CC
+  047CD  e83afe         call     sub_0460A  ; 0000:47CD
+  047D0  83c406         add      sp, 6  ; 0000:47D0
+  047D3  833c2d         cmp      word ptr [si], 0x2d  ; 0000:47D3
+  047D6  7506           jne      loc_047DE  ; 0000:47D6
+  047D8  b80100         mov      ax, 1  ; 0000:47D8
+  047DB  eb03           jmp      loc_047E0  ; 0000:47DB
+  047DD  90             nop        ; 0000:47DD
+loc_047DE:
+  047DE  2bc0           sub      ax, ax  ; 0000:47DE
+loc_047E0:
+  047E0  8b5e0a         mov      bx, word ptr [bp + 0xa]  ; 0000:47E0
+  047E3  8907           mov      word ptr [bx], ax  ; 0000:47E3
+  047E5  8b5e08         mov      bx, word ptr [bp + 8]  ; 0000:47E5
+  047E8  8b4402         mov      ax, word ptr [si + 2]  ; 0000:47E8
+  047EB  8907           mov      word ptr [bx], ax  ; 0000:47EB
+  047ED  b84c0f         mov      ax, 0xf4c  ; 0000:47ED
+  047F0  5e             pop      si  ; 0000:47F0
+  047F1  8be5           mov      sp, bp  ; 0000:47F1
+  047F3  5d             pop      bp  ; 0000:47F3
+  047F4  c3             ret        ; 0000:47F4
+  047F5  90             nop        ; 0000:47F5
+
+
+; ---- sub_047F6 ----
+sub_047F6:
+  047F6  55             push     bp  ; 0000:47F6
+  047F7  8bec           mov      bp, sp  ; 0000:47F7
+  047F9  83ec0a         sub      sp, 0xa  ; 0000:47F9
+  047FC  57             push     di  ; 0000:47FC
+  047FD  56             push     si  ; 0000:47FD
+  047FE  ff760a         push     word ptr [bp + 0xa]  ; 0000:47FE
+  04801  ff7608         push     word ptr [bp + 8]  ; 0000:4801
+  04804  ff7606         push     word ptr [bp + 6]  ; 0000:4804
+  04807  ff7604         push     word ptr [bp + 4]  ; 0000:4807
+  0480A  e84ef7         call     sub_03F5B  ; 0000:480A
+  0480D  83c408         add      sp, 8  ; 0000:480D
+  04810  8946f8         mov      word ptr [bp - 8], ax  ; 0000:4810
+  04813  8bd8           mov      bx, ax  ; 0000:4813
+  04815  8b4702         mov      ax, word ptr [bx + 2]  ; 0000:4815
+  04818  48             dec      ax  ; 0000:4818
+  04819  8946fe         mov      word ptr [bp - 2], ax  ; 0000:4819
+  0481C  3dffff         cmp      ax, 0xffff  ; 0000:481C
+  0481F  7c08           jl       loc_04829  ; 0000:481F
+  04821  8b460c         mov      ax, word ptr [bp + 0xc]  ; 0000:4821
+  04824  3946fe         cmp      word ptr [bp - 2], ax  ; 0000:4824
+  04827  7c1b           jl       loc_04844  ; 0000:4827
+loc_04829:
+  04829  2bc0           sub      ax, ax  ; 0000:4829
+  0482B  50             push     ax  ; 0000:482B
+  0482C  ff760c         push     word ptr [bp + 0xc]  ; 0000:482C
+  0482F  ff760e         push     word ptr [bp + 0xe]  ; 0000:482F
+  04832  8d4604         lea      ax, [bp + 4]  ; 0000:4832
+  04835  50             push     ax  ; 0000:4835
+  04836  e869f3         call     sub_03BA2  ; 0000:4836
+  04839  83c408         add      sp, 8  ; 0000:4839
+loc_0483C:
+  0483C  8bf0           mov      si, ax  ; 0000:483C
+  0483E  8976fc         mov      word ptr [bp - 4], si  ; 0000:483E
+  04841  eb21           jmp      loc_04864  ; 0000:4841
+  04843  90             nop        ; 0000:4843
+loc_04844:
+  04844  8b460c         mov      ax, word ptr [bp + 0xc]  ; 0000:4844
+  04847  8b5ef8         mov      bx, word ptr [bp - 8]  ; 0000:4847
+  0484A  2b4702         sub      ax, word ptr [bx + 2]  ; 0000:484A
+  0484D  50             push     ax  ; 0000:484D
+  0484E  ff760e         push     word ptr [bp + 0xe]  ; 0000:484E
+  04851  8d4604         lea      ax, [bp + 4]  ; 0000:4851
+  04854  50             push     ax  ; 0000:4854
+  04855  e8a5f4         call     sub_03CFD  ; 0000:4855
+  04858  83c406         add      sp, 6  ; 0000:4858
+  0485B  ebdf           jmp      loc_0483C  ; 0000:485B
+  0485D  90             nop        ; 0000:485D
+loc_0485E:
+  0485E  803c2e         cmp      byte ptr [si], 0x2e  ; 0000:485E
+  04861  7406           je       loc_04869  ; 0000:4861
+  04863  46             inc      si  ; 0000:4863
+loc_04864:
+  04864  803c00         cmp      byte ptr [si], 0  ; 0000:4864
+  04867  75f5           jne      loc_0485E  ; 0000:4867
+loc_04869:
+  04869  46             inc      si  ; 0000:4869
+  0486A  807cff00       cmp      byte ptr [si - 1], 0  ; 0000:486A
+  0486E  7424           je       loc_04894  ; 0000:486E
+  04870  eb06           jmp      loc_04878  ; 0000:4870
+loc_04872:
+  04872  803c65         cmp      byte ptr [si], 0x65  ; 0000:4872
+  04875  7406           je       loc_0487D  ; 0000:4875
+  04877  46             inc      si  ; 0000:4877
+loc_04878:
+  04878  803c00         cmp      byte ptr [si], 0  ; 0000:4878
+  0487B  75f5           jne      loc_04872  ; 0000:487B
+loc_0487D:
+  0487D  8bc6           mov      ax, si  ; 0000:487D
+  0487F  4e             dec      si  ; 0000:487F
+  04880  8bf8           mov      di, ax  ; 0000:4880
+  04882  eb01           jmp      loc_04885  ; 0000:4882
+loc_04884:
+  04884  4e             dec      si  ; 0000:4884
+loc_04885:
+  04885  803c30         cmp      byte ptr [si], 0x30  ; 0000:4885
+  04888  74fa           je       loc_04884  ; 0000:4888
+loc_0488A:
+  0488A  46             inc      si  ; 0000:488A
+  0488B  8a05           mov      al, byte ptr [di]  ; 0000:488B
+  0488D  47             inc      di  ; 0000:488D
+  0488E  8804           mov      byte ptr [si], al  ; 0000:488E
+  04890  0ac0           or       al, al  ; 0000:4890
+  04892  75f6           jne      loc_0488A  ; 0000:4892
+loc_04894:
+  04894  8b46fc         mov      ax, word ptr [bp - 4]  ; 0000:4894
+  04897  5e             pop      si  ; 0000:4897
+  04898  5f             pop      di  ; 0000:4898
+  04899  8be5           mov      sp, bp  ; 0000:4899
+  0489B  5d             pop      bp  ; 0000:489B
+  0489C  c3             ret        ; 0000:489C
+  0489D  90             nop        ; 0000:489D
+
+
+; ---- sub_0489E ----
+sub_0489E:
+  0489E  8a0f           mov      cl, byte ptr [bx]  ; 0000:489E
+  048A0  2aed           sub      ch, ch  ; 0000:48A0
+  048A2  43             inc      bx  ; 0000:48A2
+  048A3  8bd3           mov      dx, bx  ; 0000:48A3
+  048A5  bb0200         mov      bx, 2  ; 0000:48A5
+  048A8  b440           mov      ah, 0x40  ; 0000:48A8
+  048AA  cd21           int      0x21  ; 0000:48AA
+  048AC  c3             ret        ; 0000:48AC
+  048AD  00558b         add      byte ptr [di - 0x75], dl  ; 0000:48AD
+  048B0  ec             in       al, dx  ; 0000:48B0
+  048B1  57             push     di  ; 0000:48B1
+  048B2  56             push     si  ; 0000:48B2
+  048B3  8b7604         mov      si, word ptr [bp + 4]  ; 0000:48B3
+  048B6  33c0           xor      ax, ax  ; 0000:48B6
+  048B8  99             cdq        ; 0000:48B8
+  048B9  33db           xor      bx, bx  ; 0000:48B9
+loc_048BB:
+  048BB  ac             lodsb    al, byte ptr [si]  ; 0000:48BB
+  048BC  3c20           cmp      al, 0x20  ; 0000:48BC
+  048BE  74fb           je       loc_048BB  ; 0000:48BE
+  048C0  3c09           cmp      al, 9  ; 0000:48C0
+  048C2  74f7           je       loc_048BB  ; 0000:48C2
+  048C4  50             push     ax  ; 0000:48C4
+  048C5  3c2d           cmp      al, 0x2d  ; 0000:48C5
+  048C7  7404           je       loc_048CD  ; 0000:48C7
+  048C9  3c2b           cmp      al, 0x2b  ; 0000:48C9
+  048CB  7501           jne      loc_048CE  ; 0000:48CB
+loc_048CD:
+  048CD  ac             lodsb    al, byte ptr [si]  ; 0000:48CD
+loc_048CE:
+  048CE  3c39           cmp      al, 0x39  ; 0000:48CE
+  048D0  771f           ja       loc_048F1  ; 0000:48D0
+  048D2  2c30           sub      al, 0x30  ; 0000:48D2
+  048D4  721b           jb       loc_048F1  ; 0000:48D4
+  048D6  d1e3           shl      bx, 1  ; 0000:48D6
+  048D8  d1d2           rcl      dx, 1  ; 0000:48D8
+  048DA  8bcb           mov      cx, bx  ; 0000:48DA
+  048DC  8bfa           mov      di, dx  ; 0000:48DC
+  048DE  d1e3           shl      bx, 1  ; 0000:48DE
+  048E0  d1d2           rcl      dx, 1  ; 0000:48E0
+  048E2  d1e3           shl      bx, 1  ; 0000:48E2
+  048E4  d1d2           rcl      dx, 1  ; 0000:48E4
+  048E6  03d9           add      bx, cx  ; 0000:48E6
+  048E8  13d7           adc      dx, di  ; 0000:48E8
+  048EA  03d8           add      bx, ax  ; 0000:48EA
+  048EC  83d200         adc      dx, 0  ; 0000:48EC
+  048EF  ebdc           jmp      loc_048CD  ; 0000:48EF
+loc_048F1:
+  048F1  58             pop      ax  ; 0000:48F1
+  048F2  3c2d           cmp      al, 0x2d  ; 0000:48F2
+  048F4  93             xchg     bx, ax  ; 0000:48F4
+  048F5  7507           jne      loc_048FE  ; 0000:48F5
+  048F7  f7d8           neg      ax  ; 0000:48F7
+  048F9  83d200         adc      dx, 0  ; 0000:48F9
+  048FC  f7da           neg      dx  ; 0000:48FC
+loc_048FE:
+  048FE  5e             pop      si  ; 0000:48FE
+  048FF  5f             pop      di  ; 0000:48FF
+  04900  5d             pop      bp  ; 0000:4900
+  04901  c3             ret        ; 0000:4901
+  04902  8b4e0a         mov      cx, word ptr [bp + 0xa]  ; 0000:4902
+  04905  8b4604         mov      ax, word ptr [bp + 4]  ; 0000:4905
+  04908  8b5606         mov      dx, word ptr [bp + 6]  ; 0000:4908
+  0490B  8b7e08         mov      di, word ptr [bp + 8]  ; 0000:490B
+loc_0490E:
+  0490E  57             push     di  ; 0000:490E
+  0490F  1e             push     ds  ; 0000:490F
+  04910  07             pop      es  ; 0000:4910
+  04911  fc             cld        ; 0000:4911
+  04912  93             xchg     bx, ax  ; 0000:4912
+  04913  0ac0           or       al, al  ; 0000:4913
+  04915  7413           je       loc_0492A  ; 0000:4915
+  04917  83f90a         cmp      cx, 0xa  ; 0000:4917
+  0491A  750e           jne      loc_0492A  ; 0000:491A
+  0491C  0bd2           or       dx, dx  ; 0000:491C
+  0491E  790a           jns      loc_0492A  ; 0000:491E
+  04920  b02d           mov      al, 0x2d  ; 0000:4920
+  04922  aa             stosb    byte ptr es:[di], al  ; 0000:4922
+  04923  f7db           neg      bx  ; 0000:4923
+  04925  83d200         adc      dx, 0  ; 0000:4925
+  04928  f7da           neg      dx  ; 0000:4928
+loc_0492A:
+  0492A  8bf7           mov      si, di  ; 0000:492A
+loc_0492C:
+  0492C  92             xchg     dx, ax  ; 0000:492C
+  0492D  33d2           xor      dx, dx  ; 0000:492D
+  0492F  0bc0           or       ax, ax  ; 0000:492F
+  04931  7402           je       loc_04935  ; 0000:4931
+  04933  f7f1           div      cx  ; 0000:4933
+loc_04935:
+  04935  93             xchg     bx, ax  ; 0000:4935
+  04936  f7f1           div      cx  ; 0000:4936
+  04938  92             xchg     dx, ax  ; 0000:4938
+  04939  87d3           xchg     bx, dx  ; 0000:4939
+  0493B  0430           add      al, 0x30  ; 0000:493B
+  0493D  3c39           cmp      al, 0x39  ; 0000:493D
+  0493F  7602           jbe      loc_04943  ; 0000:493F
+  04941  0427           add      al, 0x27  ; 0000:4941
+loc_04943:
+  04943  aa             stosb    byte ptr es:[di], al  ; 0000:4943
+  04944  8bc2           mov      ax, dx  ; 0000:4944
+  04946  0bc3           or       ax, bx  ; 0000:4946
+  04948  75e2           jne      loc_0492C  ; 0000:4948
+  0494A  8805           mov      byte ptr [di], al  ; 0000:494A
+loc_0494C:
+  0494C  4f             dec      di  ; 0000:494C
+  0494D  ac             lodsb    al, byte ptr [si]  ; 0000:494D
+  0494E  8605           xchg     byte ptr [di], al  ; 0000:494E
+  04950  8844ff         mov      byte ptr [si - 1], al  ; 0000:4950
+  04953  8d4401         lea      ax, [si + 1]  ; 0000:4953
+  04956  3bc7           cmp      ax, di  ; 0000:4956
+  04958  72f2           jb       loc_0494C  ; 0000:4958
+  0495A  58             pop      ax  ; 0000:495A
+  0495B  5f             pop      di  ; 0000:495B
+  0495C  5e             pop      si  ; 0000:495C
+  0495D  8be5           mov      sp, bp  ; 0000:495D
+  0495F  5d             pop      bp  ; 0000:495F
+  04960  c3             ret        ; 0000:4960
+
+
+; ---- sub_04961 ----
+sub_04961:
+  04961  55             push     bp  ; 0000:4961
+  04962  8bec           mov      bp, sp  ; 0000:4962
+  04964  56             push     si  ; 0000:4964
+  04965  57             push     di  ; 0000:4965
+  04966  33db           xor      bx, bx  ; 0000:4966
+  04968  8b560a         mov      dx, word ptr [bp + 0xa]  ; 0000:4968
+  0496B  c6069f0b01     mov      byte ptr [0xb9f], 1  ; 0000:496B
+  04970  e82800         call     sub_0499B  ; 0000:4970
+  04973  c6069f0b00     mov      byte ptr [0xb9f], 0  ; 0000:4973
+  04978  3b7606         cmp      si, word ptr [bp + 6]  ; 0000:4978
+  0497B  7305           jae      loc_04982  ; 0000:497B
+  0497D  80c940         or       cl, 0x40  ; 0000:497D
+  04980  890d           mov      word ptr [di], cx  ; 0000:4980
+loc_04982:
+  04982  5f             pop      di  ; 0000:4982
+  04983  5e             pop      si  ; 0000:4983
+  04984  8be5           mov      sp, bp  ; 0000:4984
+  04986  5d             pop      bp  ; 0000:4986
+  04987  c3             ret        ; 0000:4987
+
+
+; ---- sub_04988 ----
+sub_04988:
+  04988  55             push     bp  ; 0000:4988
+  04989  8bec           mov      bp, sp  ; 0000:4989
+  0498B  56             push     si  ; 0000:498B
+  0498C  57             push     di  ; 0000:498C
+  0498D  33d2           xor      dx, dx  ; 0000:498D
+  0498F  8b5e0a         mov      bx, word ptr [bp + 0xa]  ; 0000:498F
+  04992  e80600         call     sub_0499B  ; 0000:4992
+  04995  5f             pop      di  ; 0000:4995
+  04996  5e             pop      si  ; 0000:4996
+  04997  8be5           mov      sp, bp  ; 0000:4997
+  04999  5d             pop      bp  ; 0000:4999
+  0499A  c3             ret        ; 0000:499A
+
+
+; ---- sub_0499B ----
+sub_0499B:
+  0499B  fc             cld        ; 0000:499B
+  0499C  8cd8           mov      ax, ds  ; 0000:499C
+  0499E  8ec0           mov      es, ax  ; 0000:499E
+  049A0  8b4e06         mov      cx, word ptr [bp + 6]  ; 0000:49A0
+  049A3  8b7604         mov      si, word ptr [bp + 4]  ; 0000:49A3
+  049A6  8b4608         mov      ax, word ptr [bp + 8]  ; 0000:49A6
+  049A9  014e04         add      word ptr [bp + 4], cx  ; 0000:49A9
+  049AC  bf940b         mov      di, 0xb94  ; 0000:49AC
+  049AF  55             push     bp  ; 0000:49AF
+  049B0  e86400         call     sub_04A17  ; 0000:49B0
+  049B3  5d             pop      bp  ; 0000:49B3
+  049B4  2b7604         sub      si, word ptr [bp + 4]  ; 0000:49B4
+  049B7  037606         add      si, word ptr [bp + 6]  ; 0000:49B7
+  049BA  bf8c0b         mov      di, 0xb8c  ; 0000:49BA
+  049BD  890d           mov      word ptr [di], cx  ; 0000:49BD
+  049BF  897502         mov      word ptr [di + 2], si  ; 0000:49BF
+  049C2  894504         mov      word ptr [di + 4], ax  ; 0000:49C2
+  049C5  895d06         mov      word ptr [di + 6], bx  ; 0000:49C5
+  049C8  8bc7           mov      ax, di  ; 0000:49C8
+  049CA  c3             ret        ; 0000:49CA
+loc_049CB:
+  049CB  58             pop      ax  ; 0000:49CB
+loc_049CC:
+  049CC  80c930         or       cl, 0x30  ; 0000:49CC
+  049CF  80c940         or       cl, 0x40  ; 0000:49CF
+loc_049D2:
+  049D2  8bd7           mov      dx, di  ; 0000:49D2
+  049D4  33ff           xor      di, di  ; 0000:49D4
+  049D6  8bef           mov      bp, di  ; 0000:49D6
+  049D8  e87b01         call     sub_04B56  ; 0000:49D8
+  049DB  33db           xor      bx, bx  ; 0000:49DB
+  049DD  e9ac00         jmp      loc_04A8C  ; 0000:49DD
+loc_049E0:
+  049E0  891eac0b       mov      word ptr [0xbac], bx  ; 0000:49E0
+  049E4  33db           xor      bx, bx  ; 0000:49E4
+  049E6  e80202         call     sub_04BEB  ; 0000:49E6
+  049E9  72e1           jb       loc_049CC  ; 0000:49E9
+  049EB  8bf8           mov      di, ax  ; 0000:49EB
+loc_049ED:
+  049ED  e8fb01         call     sub_04BEB  ; 0000:49ED
+  049F0  72e0           jb       loc_049D2  ; 0000:49F0
+  049F2  50             push     ax  ; 0000:49F2
+  049F3  8bc7           mov      ax, di  ; 0000:49F3
+  049F5  f726ac0b       mul      word ptr [0xbac]  ; 0000:49F5
+  049F9  8bf8           mov      di, ax  ; 0000:49F9
+  049FB  8bea           mov      bp, dx  ; 0000:49FB
+  049FD  8bc3           mov      ax, bx  ; 0000:49FD
+  049FF  f72eac0b       imul     word ptr [0xbac]  ; 0000:49FF
+  04A03  0bd2           or       dx, dx  ; 0000:4A03
+  04A05  75c4           jne      loc_049CB  ; 0000:4A05
+  04A07  03c5           add      ax, bp  ; 0000:4A07
+  04A09  8bd8           mov      bx, ax  ; 0000:4A09
+  04A0B  72be           jb       loc_049CB  ; 0000:4A0B
+  04A0D  58             pop      ax  ; 0000:4A0D
+  04A0E  03f8           add      di, ax  ; 0000:4A0E
+  04A10  83d300         adc      bx, 0  ; 0000:4A10
+  04A13  73d8           jae      loc_049ED  ; 0000:4A13
+  04A15  ebb5           jmp      loc_049CC  ; 0000:4A15
+
+
+; ---- sub_04A17 ----
+sub_04A17:
+  04A17  fc             cld        ; 0000:4A17
+  04A18  893ea20b       mov      word ptr [0xba2], di  ; 0000:4A18
+  04A1C  03ce           add      cx, si  ; 0000:4A1C
+  04A1E  890ea40b       mov      word ptr [0xba4], cx  ; 0000:4A1E
+  04A22  a3ae0b         mov      word ptr [0xbae], ax  ; 0000:4A22
+  04A25  8916b00b       mov      word ptr [0xbb0], dx  ; 0000:4A25
+  04A29  33c0           xor      ax, ax  ; 0000:4A29
+  04A2B  a3a80b         mov      word ptr [0xba8], ax  ; 0000:4A2B
+  04A2E  a3a60b         mov      word ptr [0xba6], ax  ; 0000:4A2E
+  04A31  a3aa0b         mov      word ptr [0xbaa], ax  ; 0000:4A31
+  04A34  91             xchg     cx, ax  ; 0000:4A34
+  04A35  e8a301         call     sub_04BDB  ; 0000:4A35
+  04A38  7503           jne      loc_04A3D  ; 0000:4A38
+  04A3A  80cd80         or       ch, 0x80  ; 0000:4A3A
+loc_04A3D:
+  04A3D  0bdb           or       bx, bx  ; 0000:4A3D
+  04A3F  759f           jne      loc_049E0  ; 0000:4A3F
+  04A41  e8dd00         call     sub_04B21  ; 0000:4A41
+  04A44  33db           xor      bx, bx  ; 0000:4A44
+  04A46  e8f301         call     sub_04C3C  ; 0000:4A46
+  04A49  7441           je       loc_04A8C  ; 0000:4A49
+  04A4B  4e             dec      si  ; 0000:4A4B
+  04A4C  3c44           cmp      al, 0x44  ; 0000:4A4C
+  04A4E  741c           je       loc_04A6C  ; 0000:4A4E
+  04A50  3c45           cmp      al, 0x45  ; 0000:4A50
+  04A52  7412           je       loc_04A66  ; 0000:4A52
+  04A54  803e9f0b00     cmp      byte ptr [0xb9f], 0  ; 0000:4A54
+  04A59  7431           je       loc_04A8C  ; 0000:4A59
+  04A5B  3c2b           cmp      al, 0x2b  ; 0000:4A5B
+  04A5D  7406           je       loc_04A65  ; 0000:4A5D
+  04A5F  3c2d           cmp      al, 0x2d  ; 0000:4A5F
+  04A61  7402           je       loc_04A65  ; 0000:4A61
+  04A63  7527           jne      loc_04A8C  ; 0000:4A63
+loc_04A65:
+  04A65  4e             dec      si  ; 0000:4A65
+loc_04A66:
+  04A66  81c90204       or       cx, 0x402  ; 0000:4A66
+  04A6A  eb03           jmp      loc_04A6F  ; 0000:4A6A
+loc_04A6C:
+  04A6C  80c90e         or       cl, 0xe  ; 0000:4A6C
+loc_04A6F:
+  04A6F  c706ae0b0000   mov      word ptr [0xbae], 0  ; 0000:4A6F
+  04A75  46             inc      si  ; 0000:4A75
+  04A76  e86201         call     sub_04BDB  ; 0000:4A76
+  04A79  9f             lahf       ; 0000:4A79
+  04A7A  50             push     ax  ; 0000:4A7A
+  04A7B  e88100         call     sub_04AFF  ; 0000:4A7B
+  04A7E  f6c502         test     ch, 2  ; 0000:4A7E
+  04A81  7503           jne      loc_04A86  ; 0000:4A81
+  04A83  80c940         or       cl, 0x40  ; 0000:4A83
+loc_04A86:
+  04A86  58             pop      ax  ; 0000:4A86
+  04A87  9e             sahf       ; 0000:4A87
+  04A88  7502           jne      loc_04A8C  ; 0000:4A88
+  04A8A  f7db           neg      bx  ; 0000:4A8A
+loc_04A8C:
+  04A8C  8b3eae0b       mov      di, word ptr [0xbae]  ; 0000:4A8C
+  04A90  0bff           or       di, di  ; 0000:4A90
+  04A92  7506           jne      loc_04A9A  ; 0000:4A92
+  04A94  f7c17218       test     cx, 0x1872  ; 0000:4A94
+  04A98  7403           je       loc_04A9D  ; 0000:4A98
+loc_04A9A:
+  04A9A  80c930         or       cl, 0x30  ; 0000:4A9A
+loc_04A9D:
+  04A9D  03fb           add      di, bx  ; 0000:4A9D
+  04A9F  033eaa0b       add      di, word ptr [0xbaa]  ; 0000:4A9F
+  04AA3  f6c510         test     ch, 0x10  ; 0000:4AA3
+  04AA6  7504           jne      loc_04AAC  ; 0000:4AA6
+  04AA8  2b3eb00b       sub      di, word ptr [0xbb0]  ; 0000:4AA8
+loc_04AAC:
+  04AAC  81ff9001       cmp      di, 0x190  ; 0000:4AAC
+  04AB0  7f46           jg       loc_04AF8  ; 0000:4AB0
+  04AB2  56             push     si  ; 0000:4AB2
+  04AB3  51             push     cx  ; 0000:4AB3
+  04AB4  beb60b         mov      si, 0xbb6  ; 0000:4AB4
+  04AB7  e8d2f7         call     sub_0428C  ; 0000:4AB7
+  04ABA  8b3ea20b       mov      di, word ptr [0xba2]  ; 0000:4ABA
+  04ABE  c606c00b00     mov      byte ptr [0xbc0], 0  ; 0000:4ABE
+  04AC3  e8a201         call     sub_04C68  ; 0000:4AC3
+  04AC6  59             pop      cx  ; 0000:4AC6
+  04AC7  5e             pop      si  ; 0000:4AC7
+  04AC8  752e           jne      loc_04AF8  ; 0000:4AC8
+  04ACA  a1b20b         mov      ax, word ptr [0xbb2]  ; 0000:4ACA
+  04ACD  8b1eb40b       mov      bx, word ptr [0xbb4]  ; 0000:4ACD
+  04AD1  f6c580         test     ch, 0x80  ; 0000:4AD1
+  04AD4  7413           je       loc_04AE9  ; 0000:4AD4
+  04AD6  f7d3           not      bx  ; 0000:4AD6
+  04AD8  f7d8           neg      ax  ; 0000:4AD8
+  04ADA  f5             cmc        ; 0000:4ADA
+  04ADB  83d300         adc      bx, 0  ; 0000:4ADB
+  04ADE  f74506f07f     test     word ptr [di + 6], 0x7ff0  ; 0000:4ADE
+  04AE3  7404           je       loc_04AE9  ; 0000:4AE3
+  04AE5  804d0780       or       byte ptr [di + 7], 0x80  ; 0000:4AE5
+loc_04AE9:
+  04AE9  833ea80b07     cmp      word ptr [0xba8], 7  ; 0000:4AE9
+  04AEE  7603           jbe      loc_04AF3  ; 0000:4AEE
+  04AF0  80c908         or       cl, 8  ; 0000:4AF0
+loc_04AF3:
+  04AF3  8a2ec00b       mov      ch, byte ptr [0xbc0]  ; 0000:4AF3
+  04AF7  c3             ret        ; 0000:4AF7
+loc_04AF8:
+  04AF8  80c901         or       cl, 1  ; 0000:4AF8
+  04AFB  c3             ret        ; 0000:4AFB
+loc_04AFC:
+  04AFC  bbff7f         mov      bx, 0x7fff  ; 0000:4AFC
+
+
+; ---- sub_04AFF ----
+sub_04AFF:
+  04AFF  c606ac0b0a     mov      byte ptr [0xbac], 0xa  ; 0000:4AFF
+  04B04  e8e400         call     sub_04BEB  ; 0000:4B04
+  04B07  7217           jb       loc_04B20  ; 0000:4B07
+  04B09  81fbcc0c       cmp      bx, 0xccc  ; 0000:4B09
+  04B0D  77ed           ja       loc_04AFC  ; 0000:4B0D
+  04B0F  80cd02         or       ch, 2  ; 0000:4B0F
+  04B12  d1e3           shl      bx, 1  ; 0000:4B12
+  04B14  03c3           add      ax, bx  ; 0000:4B14
+  04B16  d1e3           shl      bx, 1  ; 0000:4B16
+  04B18  d1e3           shl      bx, 1  ; 0000:4B18
+  04B1A  03d8           add      bx, ax  ; 0000:4B1A
+  04B1C  78de           js       loc_04AFC  ; 0000:4B1C
+  04B1E  ebdf           jmp      sub_04AFF  ; 0000:4B1E
+loc_04B20:
+  04B20  c3             ret        ; 0000:4B20
+
+
+; ---- sub_04B21 ----
+sub_04B21:
+  04B21  33ff           xor      di, di  ; 0000:4B21
+  04B23  8bef           mov      bp, di  ; 0000:4B23
+  04B25  8bdf           mov      bx, di  ; 0000:4B25
+  04B27  8bd7           mov      dx, di  ; 0000:4B27
+loc_04B29:
+  04B29  e8d600         call     sub_04C02  ; 0000:4B29
+  04B2C  7228           jb       sub_04B56  ; 0000:4B2C
+  04B2E  50             push     ax  ; 0000:4B2E
+  04B2F  e88a00         call     sub_04BBC  ; 0000:4B2F
+  04B32  58             pop      ax  ; 0000:4B32
+  04B33  03d0           add      dx, ax  ; 0000:4B33
+  04B35  83d300         adc      bx, 0  ; 0000:4B35
+  04B38  83d500         adc      bp, 0  ; 0000:4B38
+  04B3B  83d700         adc      di, 0  ; 0000:4B3B
+  04B3E  81ff9919       cmp      di, 0x1999  ; 0000:4B3E
+  04B42  72e5           jb       loc_04B29  ; 0000:4B42
+loc_04B44:
+  04B44  e8bb00         call     sub_04C02  ; 0000:4B44
+  04B47  720d           jb       sub_04B56  ; 0000:4B47
+  04B49  0ac0           or       al, al  ; 0000:4B49
+  04B4B  7403           je       loc_04B50  ; 0000:4B4B
+  04B4D  80ca01         or       dl, 1  ; 0000:4B4D
+loc_04B50:
+  04B50  ff06aa0b       inc      word ptr [0xbaa]  ; 0000:4B50
+  04B54  ebee           jmp      loc_04B44  ; 0000:4B54
+
+
+; ---- sub_04B56 ----
+sub_04B56:
+  04B56  8bc7           mov      ax, di  ; 0000:4B56
+  04B58  0bc5           or       ax, bp  ; 0000:4B58
+  04B5A  0b06aa0b       or       ax, word ptr [0xbaa]  ; 0000:4B5A
+  04B5E  7516           jne      loc_04B76  ; 0000:4B5E
+  04B60  f6c780         test     bh, 0x80  ; 0000:4B60
+  04B63  7417           je       loc_04B7C  ; 0000:4B63
+  04B65  f6c580         test     ch, 0x80  ; 0000:4B65
+  04B68  740f           je       loc_04B79  ; 0000:4B68
+  04B6A  81fb0080       cmp      bx, 0x8000  ; 0000:4B6A
+  04B6E  7509           jne      loc_04B79  ; 0000:4B6E
+  04B70  0bd2           or       dx, dx  ; 0000:4B70
+  04B72  7505           jne      loc_04B79  ; 0000:4B72
+  04B74  eb06           jmp      loc_04B7C  ; 0000:4B74
+loc_04B76:
+  04B76  80c910         or       cl, 0x10  ; 0000:4B76
+loc_04B79:
+  04B79  80c920         or       cl, 0x20  ; 0000:4B79
+loc_04B7C:
+  04B7C  8916b20b       mov      word ptr [0xbb2], dx  ; 0000:4B7C
+  04B80  891eb40b       mov      word ptr [0xbb4], bx  ; 0000:4B80
+  04B84  8bc7           mov      ax, di  ; 0000:4B84
+  04B86  0bc5           or       ax, bp  ; 0000:4B86
+  04B88  0bc3           or       ax, bx  ; 0000:4B88
+  04B8A  0bc2           or       ax, dx  ; 0000:4B8A
+  04B8C  741c           je       loc_04BAA  ; 0000:4B8C
+loc_04B8E:
+  04B8E  81ff9919       cmp      di, 0x1999  ; 0000:4B8E
+  04B92  7309           jae      loc_04B9D  ; 0000:4B92
+  04B94  e82500         call     sub_04BBC  ; 0000:4B94
+  04B97  ff0eaa0b       dec      word ptr [0xbaa]  ; 0000:4B97
+  04B9B  ebf1           jmp      loc_04B8E  ; 0000:4B9B
+loc_04B9D:
+  04B9D  b84000         mov      ax, 0x40  ; 0000:4B9D
+loc_04BA0:
+  04BA0  0bff           or       di, di  ; 0000:4BA0
+  04BA2  7806           js       loc_04BAA  ; 0000:4BA2
+  04BA4  48             dec      ax  ; 0000:4BA4
+  04BA5  e82a00         call     sub_04BD2  ; 0000:4BA5
+  04BA8  ebf6           jmp      loc_04BA0  ; 0000:4BA8
+loc_04BAA:
+  04BAA  56             push     si  ; 0000:4BAA
+  04BAB  8bf7           mov      si, di  ; 0000:4BAB
+  04BAD  bfb60b         mov      di, 0xbb6  ; 0000:4BAD
+  04BB0  92             xchg     dx, ax  ; 0000:4BB0
+  04BB1  ab             stosw    word ptr es:[di], ax  ; 0000:4BB1
+  04BB2  93             xchg     bx, ax  ; 0000:4BB2
+  04BB3  ab             stosw    word ptr es:[di], ax  ; 0000:4BB3
+  04BB4  95             xchg     bp, ax  ; 0000:4BB4
+  04BB5  ab             stosw    word ptr es:[di], ax  ; 0000:4BB5
+  04BB6  96             xchg     si, ax  ; 0000:4BB6
+  04BB7  ab             stosw    word ptr es:[di], ax  ; 0000:4BB7
+  04BB8  92             xchg     dx, ax  ; 0000:4BB8
+  04BB9  ab             stosw    word ptr es:[di], ax  ; 0000:4BB9
+  04BBA  5e             pop      si  ; 0000:4BBA
+  04BBB  c3             ret        ; 0000:4BBB
+
+
+; ---- sub_04BBC ----
+sub_04BBC:
+  04BBC  57             push     di  ; 0000:4BBC
+  04BBD  55             push     bp  ; 0000:4BBD
+  04BBE  53             push     bx  ; 0000:4BBE
+  04BBF  8bc2           mov      ax, dx  ; 0000:4BBF
+  04BC1  e80e00         call     sub_04BD2  ; 0000:4BC1
+  04BC4  e80b00         call     sub_04BD2  ; 0000:4BC4
+  04BC7  03d0           add      dx, ax  ; 0000:4BC7
+  04BC9  58             pop      ax  ; 0000:4BC9
+  04BCA  13d8           adc      bx, ax  ; 0000:4BCA
+  04BCC  58             pop      ax  ; 0000:4BCC
+  04BCD  13e8           adc      bp, ax  ; 0000:4BCD
+  04BCF  58             pop      ax  ; 0000:4BCF
+  04BD0  13f8           adc      di, ax  ; 0000:4BD0
+
+
+; ---- sub_04BD2 ----
+sub_04BD2:
+  04BD2  d1e2           shl      dx, 1  ; 0000:4BD2
+  04BD4  d1d3           rcl      bx, 1  ; 0000:4BD4
+  04BD6  d1d5           rcl      bp, 1  ; 0000:4BD6
+  04BD8  d1d7           rcl      di, 1  ; 0000:4BD8
+  04BDA  c3             ret        ; 0000:4BDA
+
+
+; ---- sub_04BDB ----
+sub_04BDB:
+  04BDB  e85e00         call     sub_04C3C  ; 0000:4BDB
+  04BDE  7408           je       loc_04BE8  ; 0000:4BDE
+  04BE0  3c2d           cmp      al, 0x2d  ; 0000:4BE0
+  04BE2  7406           je       loc_04BEA  ; 0000:4BE2
+  04BE4  3c2b           cmp      al, 0x2b  ; 0000:4BE4
+  04BE6  7501           jne      loc_04BE9  ; 0000:4BE6
+loc_04BE8:
+  04BE8  46             inc      si  ; 0000:4BE8
+loc_04BE9:
+  04BE9  4e             dec      si  ; 0000:4BE9
+loc_04BEA:
+  04BEA  c3             ret        ; 0000:4BEA
+
+
+; ---- sub_04BEB ----
+sub_04BEB:
+  04BEB  e84e00         call     sub_04C3C  ; 0000:4BEB
+  04BEE  744a           je       loc_04C3A  ; 0000:4BEE
+  04BF0  2c30           sub      al, 0x30  ; 0000:4BF0
+  04BF2  7245           jb       loc_04C39  ; 0000:4BF2
+  04BF4  3c09           cmp      al, 9  ; 0000:4BF4
+  04BF6  7e02           jle      loc_04BFA  ; 0000:4BF6
+  04BF8  2c07           sub      al, 7  ; 0000:4BF8
+loc_04BFA:
+  04BFA  3a06ac0b       cmp      al, byte ptr [0xbac]  ; 0000:4BFA
+  04BFE  7d39           jge      loc_04C39  ; 0000:4BFE
+  04C00  eb1d           jmp      loc_04C1F  ; 0000:4C00
+
+
+; ---- sub_04C02 ----
+sub_04C02:
+  04C02  e83700         call     sub_04C3C  ; 0000:4C02
+  04C05  7433           je       loc_04C3A  ; 0000:4C05
+  04C07  3c2e           cmp      al, 0x2e  ; 0000:4C07
+  04C09  7420           je       loc_04C2B  ; 0000:4C09
+  04C0B  2c30           sub      al, 0x30  ; 0000:4C0B
+  04C0D  722a           jb       loc_04C39  ; 0000:4C0D
+  04C0F  3c09           cmp      al, 9  ; 0000:4C0F
+  04C11  7726           ja       loc_04C39  ; 0000:4C11
+  04C13  f6c510         test     ch, 0x10  ; 0000:4C13
+  04C16  740e           je       loc_04C26  ; 0000:4C16
+  04C18  ff0eaa0b       dec      word ptr [0xbaa]  ; 0000:4C18
+  04C1C  80cd08         or       ch, 8  ; 0000:4C1C
+loc_04C1F:
+  04C1F  ff06a80b       inc      word ptr [0xba8]  ; 0000:4C1F
+  04C23  32e4           xor      ah, ah  ; 0000:4C23
+  04C25  c3             ret        ; 0000:4C25
+loc_04C26:
+  04C26  80cd20         or       ch, 0x20  ; 0000:4C26
+  04C29  ebf4           jmp      loc_04C1F  ; 0000:4C29
+loc_04C2B:
+  04C2B  f6c510         test     ch, 0x10  ; 0000:4C2B
+  04C2E  7509           jne      loc_04C39  ; 0000:4C2E
+  04C30  ff06a60b       inc      word ptr [0xba6]  ; 0000:4C30
+  04C34  80cd10         or       ch, 0x10  ; 0000:4C34
+  04C37  ebc9           jmp      sub_04C02  ; 0000:4C37
+loc_04C39:
+  04C39  4e             dec      si  ; 0000:4C39
+loc_04C3A:
+  04C3A  f9             stc        ; 0000:4C3A
+  04C3B  c3             ret        ; 0000:4C3B
+
+
+; ---- sub_04C3C ----
+sub_04C3C:
+  04C3C  3b36a40b       cmp      si, word ptr [0xba4]  ; 0000:4C3C
+  04C40  7d23           jge      loc_04C65  ; 0000:4C40
+  04C42  ac             lodsb    al, byte ptr [si]  ; 0000:4C42
+  04C43  803e9e0b00     cmp      byte ptr [0xb9e], 0  ; 0000:4C43
+  04C48  7410           je       loc_04C5A  ; 0000:4C48
+  04C4A  3c20           cmp      al, 0x20  ; 0000:4C4A
+  04C4C  74ee           je       sub_04C3C  ; 0000:4C4C
+  04C4E  3c09           cmp      al, 9  ; 0000:4C4E
+  04C50  74ea           je       sub_04C3C  ; 0000:4C50
+  04C52  3c0a           cmp      al, 0xa  ; 0000:4C52
+  04C54  74e6           je       sub_04C3C  ; 0000:4C54
+  04C56  3c0d           cmp      al, 0xd  ; 0000:4C56
+  04C58  74e2           je       sub_04C3C  ; 0000:4C58
+loc_04C5A:
+  04C5A  3c61           cmp      al, 0x61  ; 0000:4C5A
+  04C5C  7206           jb       loc_04C64  ; 0000:4C5C
+  04C5E  3c7a           cmp      al, 0x7a  ; 0000:4C5E
+  04C60  7702           ja       loc_04C64  ; 0000:4C60
+  04C62  245f           and      al, 0x5f  ; 0000:4C62
+loc_04C64:
+  04C64  c3             ret        ; 0000:4C64
+loc_04C65:
+  04C65  32c0           xor      al, al  ; 0000:4C65
+  04C67  c3             ret        ; 0000:4C67
+
+
+; ---- sub_04C68 ----
+sub_04C68:
+  04C68  57             push     di  ; 0000:4C68
+  04C69  ad             lodsw    ax, word ptr [si]  ; 0000:4C69
+  04C6A  92             xchg     dx, ax  ; 0000:4C6A
+  04C6B  ad             lodsw    ax, word ptr [si]  ; 0000:4C6B
+  04C6C  91             xchg     cx, ax  ; 0000:4C6C
+  04C6D  ad             lodsw    ax, word ptr [si]  ; 0000:4C6D
+  04C6E  95             xchg     bp, ax  ; 0000:4C6E
+  04C6F  ad             lodsw    ax, word ptr [si]  ; 0000:4C6F
+  04C70  8bf8           mov      di, ax  ; 0000:4C70
+  04C72  0bc5           or       ax, bp  ; 0000:4C72
+  04C74  0bc1           or       ax, cx  ; 0000:4C74
+  04C76  0bc2           or       ax, dx  ; 0000:4C76
+  04C78  7449           je       loc_04CC3  ; 0000:4C78
+  04C7A  ad             lodsw    ax, word ptr [si]  ; 0000:4C7A
+  04C7B  05fe03         add      ax, 0x3fe  ; 0000:4C7B
+  04C7E  783e           js       loc_04CBE  ; 0000:4C7E
+  04C80  d1e7           shl      di, 1  ; 0000:4C80
+  04C82  d1e8           shr      ax, 1  ; 0000:4C82
+  04C84  d1df           rcr      di, 1  ; 0000:4C84
+  04C86  bb0500         mov      bx, 5  ; 0000:4C86
+loc_04C89:
+  04C89  d1e2           shl      dx, 1  ; 0000:4C89
+  04C8B  d1d1           rcl      cx, 1  ; 0000:4C8B
+  04C8D  d1d5           rcl      bp, 1  ; 0000:4C8D
+  04C8F  d1d7           rcl      di, 1  ; 0000:4C8F
+  04C91  d1d0           rcl      ax, 1  ; 0000:4C91
+  04C93  d0d7           rcl      bh, 1  ; 0000:4C93
+  04C95  fecb           dec      bl  ; 0000:4C95
+  04C97  75f0           jne      loc_04C89  ; 0000:4C97
+  04C99  43             inc      bx  ; 0000:4C99
+  04C9A  22d9           and      bl, cl  ; 0000:4C9A
+  04C9C  0ad3           or       dl, bl  ; 0000:4C9C
+  04C9E  33f6           xor      si, si  ; 0000:4C9E
+  04CA0  81fa0180       cmp      dx, 0x8001  ; 0000:4CA0
+  04CA4  f5             cmc        ; 0000:4CA4
+  04CA5  13ce           adc      cx, si  ; 0000:4CA5
+  04CA7  13ee           adc      bp, si  ; 0000:4CA7
+  04CA9  13fe           adc      di, si  ; 0000:4CA9
+  04CAB  13c6           adc      ax, si  ; 0000:4CAB
+  04CAD  80d700         adc      bh, 0  ; 0000:4CAD
+  04CB0  a9f0ff         test     ax, 0xfff0  ; 0000:4CB0
+  04CB3  740e           je       loc_04CC3  ; 0000:4CB3
+  04CB5  3df07f         cmp      ax, 0x7ff0  ; 0000:4CB5
+  04CB8  f5             cmc        ; 0000:4CB8
+  04CB9  80d700         adc      bh, 0  ; 0000:4CB9
+  04CBC  eb0f           jmp      loc_04CCD  ; 0000:4CBC
+loc_04CBE:
+  04CBE  800ec00b01     or       byte ptr [0xbc0], 1  ; 0000:4CBE
+loc_04CC3:
+  04CC3  33c0           xor      ax, ax  ; 0000:4CC3
+  04CC5  8bd8           mov      bx, ax  ; 0000:4CC5
+  04CC7  8bc8           mov      cx, ax  ; 0000:4CC7
+  04CC9  8be8           mov      bp, ax  ; 0000:4CC9
+  04CCB  8bf8           mov      di, ax  ; 0000:4CCB
+loc_04CCD:
+  04CCD  8bf7           mov      si, di  ; 0000:4CCD
+  04CCF  5f             pop      di  ; 0000:4CCF
+  04CD0  890d           mov      word ptr [di], cx  ; 04CD:0000
+  04CD2  896d02         mov      word ptr [di + 2], bp  ; 04CD:0002
+  04CD5  897504         mov      word ptr [di + 4], si  ; 04CD:0005
+  04CD8  894506         mov      word ptr [di + 6], ax  ; 04CD:0008
+  04CDB  0aff           or       bh, bh  ; 04CD:000B
+  04CDD  c3             ret        ; 04CD:000D
+
+
+; ---- start ----
+start:
+  04CDE  b430           mov      ah, 0x30  ; 04CD:000E
+  04CE0  cd21           int      0x21  ; 04CD:0010
+  04CE2  3c02           cmp      al, 2  ; 04CD:0012
+  04CE4  7302           jae      loc_04CE8  ; 04CD:0014
+  04CE6  cd20           int      0x20  ; 04CD:0016
+loc_04CE8:
+  04CE8  bfd804         mov      di, 0x4d8  ; 04CD:0018
+  04CEB  8b360200       mov      si, word ptr [2]  ; 04CD:001B
+  04CEF  2bf7           sub      si, di  ; 04CD:001F
+  04CF1  81fe0010       cmp      si, 0x1000  ; 04CD:0021
+  04CF5  7203           jb       loc_04CFA  ; 04CD:0025
+  04CF7  be0010         mov      si, 0x1000  ; 04CD:0027
+loc_04CFA:
+  04CFA  fa             cli        ; 04CD:002A
+  04CFB  8ed7           mov      ss, di  ; 04CD:002B
+  04CFD  81c4be11       add      sp, 0x11be  ; 04CD:002D
+  04D01  fb             sti        ; 04CD:0031
+  04D02  7314           jae      loc_04D18  ; 04CD:0032
+  04D04  16             push     ss  ; 04CD:0034
+  04D05  1f             pop      ds  ; 04CD:0035
+  04D06  9a39200000     lcall    0, 0x2039  ; 04CD:0036
+  04D0B  33c0           xor      ax, ax  ; 04CD:003B
+  04D0D  50             push     ax  ; 04CD:003D
+  04D0E  9a3d200000     lcall    0, 0x203d  ; 04CD:003E
+  04D13  b8ff4c         mov      ax, 0x4cff  ; 04CD:0043
+  04D16  cd21           int      0x21  ; 04CD:0046
+loc_04D18:
+  04D18  83e4fe         and      sp, 0xfffe  ; 04CD:0048
+  04D1B  3689261c07     mov      word ptr ss:[0x71c], sp  ; 04CD:004B
+  04D20  3689261807     mov      word ptr ss:[0x718], sp  ; 04CD:0050
+  04D25  8bc6           mov      ax, si  ; 04CD:0055
+  04D27  b104           mov      cl, 4  ; 04CD:0057
+  04D29  d3e0           shl      ax, cl  ; 04CD:0059
+  04D2B  48             dec      ax  ; 04CD:005B
+  04D2C  36a31607       mov      word ptr ss:[0x716], ax  ; 04CD:005C
+  04D30  03f7           add      si, di  ; 04CD:0060
+  04D32  89360200       mov      word ptr [2], si  ; 04CD:0062
+  04D36  8cc3           mov      bx, es  ; 04CD:0066
+  04D38  2bde           sub      bx, si  ; 04CD:0068
+  04D3A  f7db           neg      bx  ; 04CD:006A
+  04D3C  b44a           mov      ah, 0x4a  ; 04CD:006C
+  04D3E  cd21           int      0x21  ; 04CD:006E
+  04D40  368c1e8d07     mov      word ptr ss:[0x78d], ds  ; 04CD:0070
+  04D45  16             push     ss  ; 04CD:0075
+  04D46  07             pop      es  ; 04CD:0076
+  04D47  fc             cld        ; 04CD:0077
+  04D48  bffc0e         mov      di, 0xefc  ; 04CD:0078
+  04D4B  b9c011         mov      cx, 0x11c0  ; 04CD:007B
+  04D4E  2bcf           sub      cx, di  ; 04CD:007E
+  04D50  33c0           xor      ax, ax  ; 04CD:0080
+  04D52  f3aa           rep stosb byte ptr es:[di], al  ; 04CD:0082
+  04D54  16             push     ss  ; 04CD:0084
+  04D55  1f             pop      ds  ; 04CD:0085
+  04D56  06             push     es  ; 04CD:0086
+  04D57  0e             push     cs  ; 04CD:0087
+  04D58  07             pop      es  ; 04CD:0088
+  04D59  9a35200000     lcall    0, 0x2035  ; 04CD:0089
+  04D5E  07             pop      es  ; 04CD:008E
+  04D5F  16             push     ss  ; 04CD:008F
+  04D60  1f             pop      ds  ; 04CD:0090
+  04D61  9a1a200000     lcall    0, 0x201a  ; 04CD:0091
+  04D66  b8d804         mov      ax, 0x4d8  ; 04CD:0096
+  04D69  8ed8           mov      ds, ax  ; 04CD:0099
+  04D6B  b80300         mov      ax, 3  ; 04CD:009B
+  04D6E  36c7061a071821 mov      word ptr ss:[0x71a], 0x2118  ; 04CD:009E
+  04D75  9a41200000     lcall    0, 0x2041  ; 04CD:00A5
+  04D7A  0000           add      byte ptr [bx + si], al  ; 04CD:00AA
+  04D7C  0000           add      byte ptr [bx + si], al  ; 04CD:00AC
+  04D7E  0000           add      byte ptr [bx + si], al  ; 04CD:00AE
+  04D80  0000           add      byte ptr [bx + si], al  ; 04CD:00B0
+  04D82  0000           add      byte ptr [bx + si], al  ; 04CD:00B2
+  04D84  0000           add      byte ptr [bx + si], al  ; 04CD:00B4
+  04D86  0000           add      byte ptr [bx + si], al  ; 04CD:00B6
+  04D88  4d             dec      bp  ; 04CD:00B8
+  04D89  53             push     bx  ; 04CD:00B9
+  04D8A  205275         and      byte ptr [bp + si + 0x75], dl  ; 04CD:00BA
+  04D8D  6e             outsb    dx, byte ptr [si]  ; 04CD:00BD
+  04D8E  2d5469         sub      ax, 0x6954  ; 04CD:00BE
+  04D91  6d             insw     word ptr es:[di], dx  ; 04CD:00C1
+  04D92  65204c69       and      byte ptr gs:[si + 0x69], cl  ; 04CD:00C2
+  04D96  627261         bound    si, dword ptr [bp + si + 0x61]  ; 04CD:00C6
+  04D99  7279           jb       loc_04E14  ; 04CD:00C9
+  04D9B  202d           and      byte ptr [di], ch  ; 04CD:00CB
+  04D9D  20436f         and      byte ptr [bp + di + 0x6f], al  ; 04CD:00CD
+  04DA0  7079           jo       loc_04E1B  ; 04CD:00D0
+  04DA2  7269           jb       loc_04E0D  ; 04CD:00D2
+  04DA4  67687420       push     0x2074  ; 04CD:00D4
+  04DA8  286329         sub      byte ptr [bp + di + 0x29], ah  ; 04CD:00D8
+  04DAB  2031           and      byte ptr [bx + di], dh  ; 04CD:00DB
+  04DAD  3938           cmp      word ptr [bx + si], di  ; 04CD:00DD
+  04DAF  37             aaa        ; 04CD:00DF
+  04DB0  2c20           sub      al, 0x20  ; 04CD:00E0
+  04DB2  4d             dec      bp  ; 04CD:00E2
+  04DB3  6963726f73     imul     sp, word ptr [bp + di + 0x72], 0x736f  ; 04CD:00E3
+  04DB8  6f             outsw    dx, word ptr [si]  ; 04CD:00E8
+  04DB9  667420         je       loc_04DDC  ; 04CD:00E9
+  04DBC  43             inc      bx  ; 04CD:00EC
+  04DBD  6f             outsw    dx, word ptr [si]  ; 04CD:00ED
+  04DBE  7270           jb       loc_04E30  ; 04CD:00EE
+  04DC0  1e             push     ds  ; 04CD:00F0
+  04DC1  0031           add      byte ptr [bx + di], dh  ; 04CD:00F1
+  04DC3  3800           cmp      byte ptr [bx + si], al  ; 04CD:00F3
+  04DC5  0000           add      byte ptr [bx + si], al  ; 04CD:00F5
+  04DC7  00f5           add      ch, dh  ; 04CD:00F7
+  04DC9  000a           add      byte ptr [bp + si], cl  ; 04CD:00F9
+  04DCB  00ff           add      bh, bh  ; 04CD:00FB
+  04DCD  0001           add      byte ptr [bx + di], al  ; 04CD:00FD
+  04DCF  005400         add      byte ptr [si], dl  ; 04CD:00FF
+  04DD2  0100           add      word ptr [bx + si], ax  ; 04CD:0102
+  04DD4  54             push     sp  ; 04CD:0104
+  04DD5  0000           add      byte ptr [bx + si], al  ; 04CD:0105
+  04DD7  00f5           add      ch, dh  ; 04CD:0107
+  04DD9  000a           add      byte ptr [bp + si], cl  ; 04CD:0109
+  04DDB  00ff           add      bh, bh  ; 04CD:010B
+  04DDD  0001           add      byte ptr [bx + di], al  ; 04CD:010D
+  04DDF  0030           add      byte ptr [bx + si], dh  ; 04CD:010F
+  04DE1  0001           add      byte ptr [bx + di], al  ; 04CD:0111
+  04DE3  0030           add      byte ptr [bx + si], dh  ; 04CD:0113
+  04DE5  0028           add      byte ptr [bx + si], ch  ; 04CD:0115
+  04DE7  0003           add      byte ptr [bp + di], al  ; 04CD:0117
+  04DE9  200a           and      byte ptr [bp + si], cl  ; 04CD:0119
+  04DEB  010a           add      word ptr [bp + si], cx  ; 04CD:011B
+  04DED  6964696401     imul     sp, word ptr [si + 0x69], 0x164  ; 04CD:011D
+  04DF2  0a01           or       al, byte ptr [bx + di]  ; 04CD:0122
+  04DF4  001e1750       add      byte ptr [0x5017], bl  ; 04CD:0124
+  04DF8  17             pop      ss  ; 04CD:0128
+  04DF9  001e2750       add      byte ptr [0x5027], bl  ; 04CD:0129
+  04DFD  27             daa        ; 04CD:012D
+  04DFE  001e3750       add      byte ptr [0x5037], bl  ; 04CD:012E
+  04E02  37             aaa        ; 04CD:0132
+  04E03  001e4850       add      byte ptr [0x5048], bl  ; 04CD:0133
+  04E07  48             dec      ax  ; 04CD:0137
+  04E08  001e5750       add      byte ptr [0x5057], bl  ; 04CD:0138
+  04E0C  57             push     di  ; 04CD:013C
+loc_04E0D:
+  04E0D  0023           add      byte ptr [bp + di], ah  ; 04CD:013D
+  04E0F  0003           add      byte ptr [bp + di], al  ; 04CD:013F
+  04E11  200a           and      byte ptr [bp + si], cl  ; 04CD:0141
+  04E13  010a           add      word ptr [bp + si], cx  ; 04CD:0143
+  04E15  7d78           jge      loc_04E8F  ; 04CD:0145
+  04E17  7d78           jge      loc_04E91  ; 04CD:0147
+  04E19  010a           add      word ptr [bp + si], cx  ; 04CD:0149
+loc_04E1B:
+  04E1B  0100           add      word ptr [bx + si], ax  ; 04CD:014B
+  04E1D  1e             push     ds  ; 04CD:014D
+  04E1E  196419         sbb      word ptr [si + 0x19], sp  ; 04CD:014E
+  04E21  001e3264       add      byte ptr [0x6432], bl  ; 04CD:0151
+  04E25  3200           xor      al, byte ptr [bx + si]  ; 04CD:0155
+  04E27  1e             push     ds  ; 04CD:0157
+  04E28  4b             dec      bx  ; 04CD:0158
+  04E29  644b           dec      bx  ; 04CD:0159
+  04E2B  001e6464       add      byte ptr [0x6464], bl  ; 04CD:015B
+  04E2F  640000         add      byte ptr fs:[bx + si], al  ; 04CD:015F
+  04E32  98             cwde       ; 04CD:0162
+  04E33  08de           or       dh, bl  ; 04CD:0163
+  04E35  0310           add      dx, word ptr [bx + si]  ; 04CD:0165
+  04E37  0e             push     cs  ; 04CD:0167
+  04E38  9c             pushf      ; 04CD:0168
+  04E39  0e             push     cs  ; 04CD:0169
+  04E3A  680200         push     2  ; 04CD:016A
+  04E3D  f8             clc        ; 04CD:016D
+  04E3E  01bc02e4       add      word ptr [si - 0x1bfe], di  ; 04CD:016E
+  04E42  0c20           or       al, 0x20  ; 04CD:0172
+  04E44  035901         add      bx, word ptr [bx + di + 1]  ; 04CD:0174
+  04E47  0d0007         or       ax, 0x700  ; 04CD:0177
+  04E4A  f5             cmc        ; 04CD:017A
+  04E4B  0200           add      al, byte ptr [bx + si]  ; 04CD:017B
+  04E4D  007402         add      byte ptr [si + 2], dh  ; 04CD:017D
+  04E50  00f8           add      al, bh  ; 04CD:0180
+  04E52  01d0           add      ax, dx  ; 04CD:0182
+  04E54  07             pop      es  ; 04CD:0184
+  04E55  e40c           in       al, 0xc  ; 04CD:0185
+  04E57  2003           and      byte ptr [bp + di], al  ; 04CD:0187
+  04E59  59             pop      cx  ; 04CD:0189
+  04E5A  011b           add      word ptr [bp + di], bx  ; 04CD:018A
+  04E5C  0008           add      byte ptr [bx + si], cl  ; 04CD:018C
+  04E5E  f5             cmc        ; 04CD:018E
+  04E5F  0200           add      al, byte ptr [bx + si]  ; 04CD:018F
+  04E61  007802         add      byte ptr [bx + si + 2], bh  ; 04CD:0191
+  04E64  8403           test     byte ptr [bp + di], al  ; 04CD:0194
+  04E66  9b             wait       ; 04CD:0196
+  04E67  005802         add      byte ptr [bx + si + 2], bl  ; 04CD:0197
+  04E6A  7902           jns      loc_04E6E  ; 04CD:019A
+  04E6C  660034         add      byte ptr [si], dh  ; 04CD:019C
+  04E6F  08a50020       or       byte ptr [di + 0x2000], ah  ; 04CD:019F
+  04E73  03d4           add      dx, sp  ; 04CD:01A3
+  04E75  018e0001       add      word ptr [bp + 0x100], cx  ; 04CD:01A5
+  04E79  0000           add      byte ptr [bx + si], al  ; 04CD:01A9
+  04E7B  0000           add      byte ptr [bx + si], al  ; 04CD:01AB
+  04E7D  01b00400       add      word ptr [bx + si + 4], si  ; 04CD:01AD
+  04E81  0001           add      byte ptr [bx + di], al  ; 04CD:01B1
+  04E83  f8             clc        ; 04CD:01B3
+  04E84  015802         add      word ptr [bx + si + 2], bx  ; 04CD:01B4
+  04E87  f7006009       test     word ptr [bx + si], 0x960  ; 04CD:01B7
+  04E8B  dc00           fadd     qword ptr [bx + si]  ; 04CD:01BB
+  04E8D  ff             db       0xff  ; 04CD:01BD
+  04E8E  ff00           inc      word ptr [bx + si]  ; 04CD:01BE
+  04E90  f5             cmc        ; 04CD:01C0
+loc_04E91:
+  04E91  0201           add      al, byte ptr [bx + di]  ; 04CD:01C1
+  04E93  0000           add      byte ptr [bx + si], al  ; 04CD:01C3
+  04E95  02f8           add      bh, al  ; 04CD:01C5
+  04E97  0000           add      byte ptr [bx + si], al  ; 04CD:01C7
+  04E99  0005           add      byte ptr [di], al  ; 04CD:01C9
+  04E9B  f8             clc        ; 04CD:01CB
+  04E9C  01540b         add      word ptr [si + 0xb], dx  ; 04CD:01CC
+  04E9F  6b032c         imul     ax, word ptr [bp + di], 0x2c  ; 04CD:01CF
+  04EA2  01dc           add      sp, bx  ; 04CD:01D2
+  04EA4  00ff           add      bh, bh  ; 04CD:01D4
+  04EA6  ff01           inc      word ptr [bx + di]  ; 04CD:01D6
+  04EA8  f5             cmc        ; 04CD:01D8
+  04EA9  0400           add      al, 0  ; 04CD:01D9
+  04EAB  0000           add      byte ptr [bx + si], al  ; 04CD:01DB
+  04EAD  0000           add      byte ptr [bx + si], al  ; 04CD:01DD
+  04EAF  002c           add      byte ptr [si], ch  ; 04CD:01DF
+  04EB1  01dc           add      sp, bx  ; 04CD:01E1
+  04EB3  0000           add      byte ptr [bx + si], al  ; 04CD:01E3
+  04EB5  ff             db       0xff  ; 04CD:01E5
+  04EB6  ff00           inc      word ptr [bx + si]  ; 04CD:01E6
+  04EB8  0000           add      byte ptr [bx + si], al  ; 04CD:01E8
+  04EBA  0000           add      byte ptr [bx + si], al  ; 04CD:01EA
+  04EBC  0000           add      byte ptr [bx + si], al  ; 04CD:01EC
+  04EBE  b211           mov      dl, 0x11  ; 04CD:01EE
+  04EC0  0000           add      byte ptr [bx + si], al  ; 04CD:01F0
+  04EC2  0400           add      al, 0  ; 04CD:01F2
+  04EC4  0000           add      byte ptr [bx + si], al  ; 04CD:01F4
+  04EC6  0000           add      byte ptr [bx + si], al  ; 04CD:01F6
+  04EC8  0105           add      word ptr [di], ax  ; 04CD:01F8
+  04ECA  f8             clc        ; 04CD:01FA
+  04ECB  01540b         add      word ptr [si + 0xb], dx  ; 04CD:01FB
+  04ECE  2305           and      ax, word ptr [di]  ; 04CD:01FE
+  04ED0  2c01           sub      al, 1  ; 04CD:0200
+  04ED2  dc00           fadd     qword ptr [bx + si]  ; 04CD:0202
+  04ED4  ff             db       0xff  ; 04CD:0204
+  04ED5  ff02           inc      word ptr [bp + si]  ; 04CD:0205
+  04ED7  f5             cmc        ; 04CD:0207
+  04ED8  0400           add      al, 0  ; 04CD:0208
+  04EDA  0000           add      byte ptr [bx + si], al  ; 04CD:020A
+  04EDC  0000           add      byte ptr [bx + si], al  ; 04CD:020C
+  04EDE  002c           add      byte ptr [si], ch  ; 04CD:020E
+  04EE0  01dc           add      sp, bx  ; 04CD:0210
+  04EE2  0000           add      byte ptr [bx + si], al  ; 04CD:0212
+  04EE4  ff             db       0xff  ; 04CD:0214
+  04EE5  ff00           inc      word ptr [bx + si]  ; 04CD:0215
+  04EE7  0000           add      byte ptr [bx + si], al  ; 04CD:0217
+  04EE9  0000           add      byte ptr [bx + si], al  ; 04CD:0219
+  04EEB  0000           add      byte ptr [bx + si], al  ; 04CD:021B
+  04EED  8611           xchg     byte ptr [bx + di], dl  ; 04CD:021D
+  04EEF  0000           add      byte ptr [bx + si], al  ; 04CD:021F
+  04EF1  0400           add      al, 0  ; 04CD:0221
+  04EF3  0000           add      byte ptr [bx + si], al  ; 04CD:0223
+  04EF5  0000           add      byte ptr [bx + si], al  ; 04CD:0225
+  04EF7  0105           add      word ptr [di], ax  ; 04CD:0227
+  04EF9  f8             clc        ; 04CD:0229
+  04EFA  01540b         add      word ptr [si + 0xb], dx  ; 04CD:022A
+  04EFD  db062c01       fild     dword ptr [0x12c]  ; 04CD:022D
+  04F01  dc00           fadd     qword ptr [bx + si]  ; 04CD:0231
+  04F03  ff             db       0xff  ; 04CD:0233
+  04F04  ff03           inc      word ptr [bp + di]  ; 04CD:0234
+  04F06  f5             cmc        ; 04CD:0236
+  04F07  0400           add      al, 0  ; 04CD:0237
+  04F09  0000           add      byte ptr [bx + si], al  ; 04CD:0239
+  04F0B  0000           add      byte ptr [bx + si], al  ; 04CD:023B
+  04F0D  002c           add      byte ptr [si], ch  ; 04CD:023D
+  04F0F  01dc           add      sp, bx  ; 04CD:023F
+  04F11  0000           add      byte ptr [bx + si], al  ; 04CD:0241
+  04F13  ff             db       0xff  ; 04CD:0243
+  04F14  ff00           inc      word ptr [bx + si]  ; 04CD:0244
+  04F16  0000           add      byte ptr [bx + si], al  ; 04CD:0246
+  04F18  0000           add      byte ptr [bx + si], al  ; 04CD:0248
+  04F1A  0000           add      byte ptr [bx + si], al  ; 04CD:024A
+  04F1C  821100         adc      byte ptr [bx + di], 0  ; 04CD:024C
+  04F1F  0004           add      byte ptr [si], al  ; 04CD:024F
+  04F21  0000           add      byte ptr [bx + si], al  ; 04CD:0251
+  04F23  0000           add      byte ptr [bx + si], al  ; 04CD:0253
+  04F25  0001           add      byte ptr [bx + di], al  ; 04CD:0255
+  04F27  05f801         add      ax, 0x1f8  ; 04CD:0257
+  04F2A  54             push     sp  ; 04CD:025A
+  04F2B  0b93082c       or       dx, word ptr [bp + di + 0x2c08]  ; 04CD:025B
+  04F2F  01dc           add      sp, bx  ; 04CD:025F
+  04F31  00ff           add      bh, bh  ; 04CD:0261
+  04F33  ff04           inc      word ptr [si]  ; 04CD:0263
+  04F35  f5             cmc        ; 04CD:0265
+  04F36  0400           add      al, 0  ; 04CD:0266
+  04F38  0000           add      byte ptr [bx + si], al  ; 04CD:0268
+  04F3A  0000           add      byte ptr [bx + si], al  ; 04CD:026A
+  04F3C  002c           add      byte ptr [si], ch  ; 04CD:026C
+  04F3E  01dc           add      sp, bx  ; 04CD:026E
+  04F40  0000           add      byte ptr [bx + si], al  ; 04CD:0270
+  04F42  ff             db       0xff  ; 04CD:0272
+  04F43  ff00           inc      word ptr [bx + si]  ; 04CD:0273
+  04F45  0000           add      byte ptr [bx + si], al  ; 04CD:0275
+  04F47  0000           add      byte ptr [bx + si], al  ; 04CD:0277
+  04F49  0000           add      byte ptr [bx + si], al  ; 04CD:0279
+  04F4B  7e11           jle      loc_04F5E  ; 04CD:027B
+  04F4D  0000           add      byte ptr [bx + si], al  ; 04CD:027D
+  04F4F  0400           add      al, 0  ; 04CD:027F
+  04F51  0000           add      byte ptr [bx + si], al  ; 04CD:0281
+  04F53  0000           add      byte ptr [bx + si], al  ; 04CD:0283
+  04F55  0104           add      word ptr [si], ax  ; 04CD:0285
+  04F57  f8             clc        ; 04CD:0287
+  04F58  015802         add      word ptr [bx + si + 2], bx  ; 04CD:0288
+  04F5B  4b             dec      bx  ; 04CD:028B
+  04F5C  0ac8           or       cl, al  ; 04CD:028C
+loc_04F5E:
+  04F5E  00dc           add      ah, bl  ; 04CD:028E
+  04F60  00ff           add      bh, bh  ; 04CD:0290
+  04F62  ff05           inc      word ptr [di]  ; 04CD:0292
+  04F64  f5             cmc        ; 04CD:0294
+  04F65  0004           add      byte ptr [si], al  ; 04CD:0295
+  04F67  f8             clc        ; 04CD:0297
+  04F68  015802         add      word ptr [bx + si + 2], bx  ; 04CD:0298
+  04F6B  5e             pop      si  ; 04CD:029B
+  04F6C  0bc8           or       cx, ax  ; 04CD:029C
+  04F6E  00dc           add      ah, bl  ; 04CD:029E
+  04F70  00ff           add      bh, bh  ; 04CD:02A0
+  04F72  ff06f500       inc      word ptr [0xf5]  ; 04CD:02A2
+  04F76  012c           add      word ptr [si], bp  ; 04CD:02A6
+  04F78  01a20300       add      word ptr [bp + si + 3], sp  ; 04CD:02A8
+  04F7C  800201         add      byte ptr [bp + si], 1  ; 04CD:02AC
+  04F7F  2c01           sub      al, 1  ; 04CD:02AF
+  04F81  5a             pop      dx  ; 04CD:02B1
+  04F82  05008e         add      ax, 0x8e00  ; 04CD:02B2
+  04F85  0201           add      al, byte ptr [bx + di]  ; 04CD:02B5
+  04F87  2c01           sub      al, 1  ; 04CD:02B7
+  04F89  1207           adc      al, byte ptr [bx]  ; 04CD:02B9
+  04F8B  00a20201       add      byte ptr [bp + si + 0x102], ah  ; 04CD:02BB
+  04F8F  2c01           sub      al, 1  ; 04CD:02BF
+  04F91  ca0800         retf     8  ; 04CD:02C1
+  04F94  b80201         mov      ax, 0x102  ; 04CD:02C4
+  04F97  8403           test     byte ptr [bp + di], al  ; 04CD:02C7
+  04F99  4b             dec      bx  ; 04CD:02C9
+  04F9A  0a00           or       al, byte ptr [bx + si]  ; 04CD:02CA
+  04F9C  d002           rol      byte ptr [bp + si], 1  ; 04CD:02CC
+  04F9E  0184035e       add      word ptr [si + 0x5e03], ax  ; 04CD:02CE
+  04FA2  0b00           or       ax, word ptr [bx + si]  ; 04CD:02D2
+  04FA4  de02           fiadd    word ptr [bp + si]  ; 04CD:02D4
+  04FA6  00f4           add      ah, dh  ; 04CD:02D6
+  04FA8  018200f6       add      word ptr [bp + si - 0xa00], ax  ; 04CD:02D8
+  04FAC  092b           or       word ptr [bp + di], bp  ; 04CD:02DC
+  04FAE  0203           add      al, byte ptr [bp + di]  ; 04CD:02DE
+  04FB0  0000           add      byte ptr [bx + si], al  ; 04CD:02E0
+  04FB2  0000           add      byte ptr [bx + si], al  ; 04CD:02E2
+  04FB4  0000           add      byte ptr [bx + si], al  ; 04CD:02E4
+  04FB6  0000           add      byte ptr [bx + si], al  ; 04CD:02E6
+  04FB8  0000           add      byte ptr [bx + si], al  ; 04CD:02E8
+  04FBA  0201           add      al, byte ptr [bx + di]  ; 04CD:02EA
+  04FBC  1a01           sbb      al, byte ptr [bx + di]  ; 04CD:02EC
+  04FBE  49             dec      cx  ; 04CD:02EE
+  04FBF  017801         add      word ptr [bx + si + 1], di  ; 04CD:02EF
+  04FC2  a7             cmpsw    word ptr [si], word ptr es:[di]  ; 04CD:02F2
+  04FC3  01d6           add      si, dx  ; 04CD:02F3
+  04FC5  01e6           add      si, sp  ; 04CD:02F5
+  04FC7  01bc00d0       add      word ptr [si - 0x3000], di  ; 04CD:02F7
+  04FCB  0001           add      byte ptr [bx + di], al  ; 04CD:02FB
+  04FCD  00f5           add      ch, dh  ; 04CD:02FD
+  04FCF  0000           add      byte ptr [bx + si], al  ; 04CD:02FF
+  04FD1  b200           mov      dl, 0  ; 04CD:0301
+  04FD3  06             push     es  ; 04CD:0303
+  04FD4  f60101         test     byte ptr [bx + di], 1  ; 04CD:0304
+  04FD7  260202         add      al, byte ptr es:[bp + si]  ; 04CD:0307
+  04FDA  e400           in       al, 0  ; 04CD:030A
+  04FDC  0930           or       word ptr [bx + si], si  ; 04CD:030C
+  04FDE  023a           add      bh, byte ptr [bp + si]  ; 04CD:030E
+  04FE0  0200           add      al, byte ptr [bx + si]  ; 04CD:0310
+  04FE2  00f2           add      dl, dh  ; 04CD:0312
+  04FE4  02ca           add      cl, dl  ; 04CD:0314
+  04FE6  1000           adc      byte ptr [bx + si], al  ; 04CD:0316
+  04FE8  50             push     ax  ; 04CD:0318
+  04FE9  61             popaw      ; 04CD:0319
+  04FEA  6765205365     and      byte ptr gs:[ebx + 0x65], dl  ; 04CD:031A
+  04FEF  7475           je       loc_05066  ; 04CD:031F
+  04FF1  7000           jo       loc_04FF3  ; 04CD:0321
+loc_04FF3:
+  04FF3  004f4b         add      byte ptr [bx + 0x4b], cl  ; 04CD:0323
+  04FF6  0000           add      byte ptr [bx + si], al  ; 04CD:0326
+  04FF8  43             inc      bx  ; 04CD:0328
+  04FF9  41             inc      cx  ; 04CD:0329
+  04FFA  4e             dec      si  ; 04CD:032A
+  04FFB  43             inc      bx  ; 04CD:032B
+  04FFC  45             inc      bp  ; 04CD:032C
+  04FFD  4c             dec      sp  ; 04CD:032D
+  04FFE  0000           add      byte ptr [bx + si], al  ; 04CD:032E
+  05000  4c             dec      sp  ; 04CD:0330
+  05001  65667420       je       loc_05025  ; 04CD:0331
+  05005  6d             insw     word ptr es:[di], dx  ; 04CD:0335
+  05006  61             popaw      ; 04CD:0336
+  05007  7267           jb       loc_05070  ; 04CD:0337
+  05009  696e3a0000     imul     bp, word ptr [bp + 0x3a], 0  ; 04CD:0339
+  0500E  50             push     ax  ; 04CD:033E
+  0500F  7269           jb       loc_0507A  ; 04CD:033F
+  05011  6e             outsb    dx, byte ptr [si]  ; 04CD:0341
+  05012  7465           je       loc_05079  ; 04CD:0342
+  05014  64206c69       and      byte ptr fs:[si + 0x69], ch  ; 04CD:0344
+  05018  6e             outsb    dx, byte ptr [si]  ; 04CD:0348
+  05019  65207769       and      byte ptr gs:[bx + 0x69], dh  ; 04CD:0349
+  0501D  647468         je       loc_05088  ; 04CD:034D
+  05020  3a00           cmp      al, byte ptr [bx + si]  ; 04CD:0350
+  05022  54             push     sp  ; 04CD:0352
+  05023  6f             outsw    dx, word ptr [si]  ; 04CD:0353
+  05024  7461           je       loc_05087  ; 04CD:0354
+  05026  6c             insb     byte ptr es:[di], dx  ; 04CD:0356
+  05027  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:0357
+  0502A  6e             outsb    dx, byte ptr [si]  ; 04CD:035A
+  0502B  657320         jae      loc_0504E  ; 04CD:035B
+  0502E  7065           jo       loc_05095  ; 04CD:035E
+  05030  7220           jb       loc_05052  ; 04CD:0360
+  05032  7061           jo       loc_05095  ; 04CD:0362
+  05034  67653a00       cmp      al, byte ptr gs:[eax]  ; 04CD:0364
+  05038  50             push     ax  ; 04CD:0368
+  05039  7269           jb       loc_050A4  ; 04CD:0369
+  0503B  6e             outsb    dx, byte ptr [si]  ; 04CD:036B
+  0503C  7465           je       loc_050A3  ; 04CD:036C
+  0503E  64206c69       and      byte ptr fs:[si + 0x69], ch  ; 04CD:036E
+  05042  6e             outsb    dx, byte ptr [si]  ; 04CD:0372
+  05043  657320         jae      loc_05066  ; 04CD:0373
+  05046  7065           jo       loc_050AD  ; 04CD:0376
+  05048  7220           jb       loc_0506A  ; 04CD:0378
+  0504A  7061           jo       loc_050AD  ; 04CD:037A
+  0504C  67653a00       cmp      al, byte ptr gs:[eax]  ; 04CD:037C
+  05050  44             inc      sp  ; 04CD:0380
+  05051  6f             outsw    dx, word ptr [si]  ; 04CD:0381
+loc_05052:
+  05052  7562           jne      loc_050B6  ; 04CD:0382
+  05054  6c             insb     byte ptr es:[di], dx  ; 04CD:0384
+  05055  65207370       and      byte ptr gs:[bp + di + 0x70], dh  ; 04CD:0385
+  05059  61             popaw      ; 04CD:0389
+  0505A  636500         arpl     word ptr [di], sp  ; 04CD:038A
+  0505D  005061         add      byte ptr [bx + si + 0x61], dl  ; 04CD:038D
+  05060  7573           jne      loc_050D5  ; 04CD:0390
+  05062  65206265       and      byte ptr gs:[bp + si + 0x65], ah  ; 04CD:0392
+loc_05066:
+  05066  7477           je       loc_050DF  ; 04CD:0396
+  05068  65656e         outsb    dx, byte ptr gs:[si]  ; 04CD:0398
+  0506B  207061         and      byte ptr [bx + si + 0x61], dh  ; 04CD:039B
+  0506E  67657300       jae      loc_05072  ; 04CD:039E
+loc_05072:
+  05072  45             inc      bp  ; 04CD:03A2
+  05073  7272           jb       loc_050E7  ; 04CD:03A3
+  05075  6f             outsw    dx, word ptr [si]  ; 04CD:03A5
+  05076  7200           jb       loc_05078  ; 04CD:03A6
+loc_05078:
+  05078  50             push     ax  ; 04CD:03A8
+loc_05079:
+  05079  6f             outsw    dx, word ptr [si]  ; 04CD:03A9
+loc_0507A:
+  0507A  7274           jb       loc_050F0  ; 04CD:03AA
+  0507C  7261           jb       loc_050DF  ; 04CD:03AC
+  0507E  697420666f     imul     si, word ptr [si + 0x20], 0x6f66  ; 04CD:03AE
+  05083  726d           jb       loc_050F2  ; 04CD:03B3
+  05085  61             popaw      ; 04CD:03B5
+  05086  7420           je       loc_050A8  ; 04CD:03B6
+loc_05088:
+  05088  0000           add      byte ptr [bx + si], al  ; 04CD:03B8
+  0508A  4c             dec      sp  ; 04CD:03BA
+  0508B  61             popaw      ; 04CD:03BB
+  0508C  6e             outsb    dx, byte ptr [si]  ; 04CD:03BC
+  0508D  647363         jae      loc_050F3  ; 04CD:03BD
+  05090  61             popaw      ; 04CD:03C0
+  05091  7065           jo       loc_050F8  ; 04CD:03C1
+  05093  20666f         and      byte ptr [bp + 0x6f], ah  ; 04CD:03C3
+  05096  726d           jb       loc_05105  ; 04CD:03C6
+  05098  61             popaw      ; 04CD:03C8
+  05099  7420           je       loc_050BB  ; 04CD:03C9
+  0509B  004c65         add      byte ptr [si + 0x65], cl  ; 04CD:03CB
+  0509E  667420         je       loc_050C1  ; 04CD:03CE
+  050A1  6d             insw     word ptr es:[di], dx  ; 04CD:03D1
+  050A2  61             popaw      ; 04CD:03D2
+loc_050A3:
+  050A3  7267           jb       loc_0510C  ; 04CD:03D3
+  050A5  696e206361     imul     bp, word ptr [bp + 0x20], 0x6163  ; 04CD:03D5
+  050AA  6e             outsb    dx, byte ptr [si]  ; 04CD:03DA
+  050AB  6e             outsb    dx, byte ptr [si]  ; 04CD:03DB
+  050AC  6f             outsw    dx, word ptr [si]  ; 04CD:03DC
+loc_050AD:
+  050AD  7420           je       loc_050CF  ; 04CD:03DD
+  050AF  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:03DF
+  050B2  6c             insb     byte ptr es:[di], dx  ; 04CD:03E2
+  050B3  657373         jae      loc_05129  ; 04CD:03E3
+loc_050B6:
+  050B6  207468         and      byte ptr [si + 0x68], dh  ; 04CD:03E6
+  050B9  61             popaw      ; 04CD:03E9
+  050BA  6e             outsb    dx, byte ptr [si]  ; 04CD:03EA
+loc_050BB:
+  050BB  2000           and      byte ptr [bx + si], al  ; 04CD:03EB
+  050BD  004c65         add      byte ptr [si + 0x65], cl  ; 04CD:03ED
+  050C0  667420         je       loc_050E3  ; 04CD:03F0
+  050C3  6d             insw     word ptr es:[di], dx  ; 04CD:03F3
+  050C4  61             popaw      ; 04CD:03F4
+  050C5  7267           jb       loc_0512E  ; 04CD:03F5
+  050C7  696e206361     imul     bp, word ptr [bp + 0x20], 0x6163  ; 04CD:03F7
+  050CC  6e             outsb    dx, byte ptr [si]  ; 04CD:03FC
+  050CD  6e             outsb    dx, byte ptr [si]  ; 04CD:03FD
+  050CE  6f             outsw    dx, word ptr [si]  ; 04CD:03FE
+loc_050CF:
+  050CF  7420           je       loc_050F1  ; 04CD:03FF
+  050D1  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:0401
+  050D4  6d             insw     word ptr es:[di], dx  ; 04CD:0404
+loc_050D5:
+  050D5  6f             outsw    dx, word ptr [si]  ; 04CD:0405
+  050D6  7265           jb       loc_0513D  ; 04CD:0406
+  050D8  207468         and      byte ptr [si + 0x68], dh  ; 04CD:0408
+  050DB  61             popaw      ; 04CD:040B
+  050DC  6e             outsb    dx, byte ptr [si]  ; 04CD:040C
+  050DD  2000           and      byte ptr [bx + si], al  ; 04CD:040D
+loc_050DF:
+  050DF  004c69         add      byte ptr [si + 0x69], cl  ; 04CD:040F
+  050E2  6e             outsb    dx, byte ptr [si]  ; 04CD:0412
+loc_050E3:
+  050E3  65207769       and      byte ptr gs:[bx + 0x69], dh  ; 04CD:0413
+loc_050E7:
+  050E7  647468         je       loc_05152  ; 04CD:0417
+  050EA  206361         and      byte ptr [bp + di + 0x61], ah  ; 04CD:041A
+  050ED  6e             outsb    dx, byte ptr [si]  ; 04CD:041D
+  050EE  6e             outsb    dx, byte ptr [si]  ; 04CD:041E
+  050EF  6f             outsw    dx, word ptr [si]  ; 04CD:041F
+loc_050F0:
+  050F0  7420           je       loc_05112  ; 04CD:0420
+loc_050F2:
+  050F2  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:0422
+  050F5  6c             insb     byte ptr es:[di], dx  ; 04CD:0425
+  050F6  657373         jae      loc_0516C  ; 04CD:0426
+  050F9  207468         and      byte ptr [si + 0x68], dh  ; 04CD:0429
+  050FC  61             popaw      ; 04CD:042C
+  050FD  6e             outsb    dx, byte ptr [si]  ; 04CD:042D
+  050FE  2000           and      byte ptr [bx + si], al  ; 04CD:042E
+  05100  4c             dec      sp  ; 04CD:0430
+  05101  696e652077     imul     bp, word ptr [bp + 0x65], 0x7720  ; 04CD:0431
+  05106  6964746820     imul     sp, word ptr [si + 0x74], 0x2068  ; 04CD:0436
+  0510B  63616e         arpl     word ptr [bx + di + 0x6e], sp  ; 04CD:043B
+  0510E  6e             outsb    dx, byte ptr [si]  ; 04CD:043E
+  0510F  6f             outsw    dx, word ptr [si]  ; 04CD:043F
+  05110  7420           je       loc_05132  ; 04CD:0440
+loc_05112:
+  05112  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:0442
+  05115  6d             insw     word ptr es:[di], dx  ; 04CD:0445
+  05116  6f             outsw    dx, word ptr [si]  ; 04CD:0446
+  05117  7265           jb       loc_0517E  ; 04CD:0447
+  05119  207468         and      byte ptr [si + 0x68], dh  ; 04CD:0449
+  0511C  61             popaw      ; 04CD:044C
+  0511D  6e             outsb    dx, byte ptr [si]  ; 04CD:044D
+  0511E  2000           and      byte ptr [bx + si], al  ; 04CD:044E
+  05120  4c             dec      sp  ; 04CD:0450
+  05121  65667420       je       loc_05145  ; 04CD:0451
+  05125  6d             insw     word ptr es:[di], dx  ; 04CD:0455
+  05126  61             popaw      ; 04CD:0456
+  05127  7267           jb       loc_05190  ; 04CD:0457
+loc_05129:
+  05129  696e20616e     imul     bp, word ptr [bp + 0x20], 0x6e61  ; 04CD:0459
+loc_0512E:
+  0512E  64207769       and      byte ptr fs:[bx + 0x69], dh  ; 04CD:045E
+loc_05132:
+  05132  647468         je       loc_0519D  ; 04CD:0462
+  05135  206172         and      byte ptr [bx + di + 0x72], ah  ; 04CD:0465
+  05138  65206d6f       and      byte ptr gs:[di + 0x6f], ch  ; 04CD:0468
+  0513C  7265           jb       loc_051A3  ; 04CD:046C
+  0513E  207468         and      byte ptr [si + 0x68], dh  ; 04CD:046E
+  05141  61             popaw      ; 04CD:0471
+  05142  6e             outsb    dx, byte ptr [si]  ; 04CD:0472
+  05143  2000           and      byte ptr [bx + si], al  ; 04CD:0473
+loc_05145:
+  05145  00546f         add      byte ptr [si + 0x6f], dl  ; 04CD:0475
+  05148  7461           je       loc_051AB  ; 04CD:0478
+  0514A  6c             insb     byte ptr es:[di], dx  ; 04CD:047A
+  0514B  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:047B
+  0514E  6e             outsb    dx, byte ptr [si]  ; 04CD:047E
+  0514F  657320         jae      loc_05172  ; 04CD:047F
+loc_05152:
+  05152  63616e         arpl     word ptr [bx + di + 0x6e], sp  ; 04CD:0482
+  05155  6e             outsb    dx, byte ptr [si]  ; 04CD:0485
+  05156  6f             outsw    dx, word ptr [si]  ; 04CD:0486
+  05157  7420           je       loc_05179  ; 04CD:0487
+  05159  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:0489
+  0515C  6c             insb     byte ptr es:[di], dx  ; 04CD:048C
+  0515D  657373         jae      loc_051D3  ; 04CD:048D
+  05160  207468         and      byte ptr [si + 0x68], dh  ; 04CD:0490
+  05163  61             popaw      ; 04CD:0493
+  05164  6e             outsb    dx, byte ptr [si]  ; 04CD:0494
+  05165  2000           and      byte ptr [bx + si], al  ; 04CD:0495
+  05167  00546f         add      byte ptr [si + 0x6f], dl  ; 04CD:0497
+  0516A  7461           je       loc_051CD  ; 04CD:049A
+loc_0516C:
+  0516C  6c             insb     byte ptr es:[di], dx  ; 04CD:049C
+  0516D  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:049D
+  05170  6e             outsb    dx, byte ptr [si]  ; 04CD:04A0
+  05171  657320         jae      loc_05194  ; 04CD:04A1
+  05174  63616e         arpl     word ptr [bx + di + 0x6e], sp  ; 04CD:04A4
+  05177  6e             outsb    dx, byte ptr [si]  ; 04CD:04A7
+  05178  6f             outsw    dx, word ptr [si]  ; 04CD:04A8
+loc_05179:
+  05179  7420           je       loc_0519B  ; 04CD:04A9
+  0517B  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:04AB
+loc_0517E:
+  0517E  6d             insw     word ptr es:[di], dx  ; 04CD:04AE
+  0517F  6f             outsw    dx, word ptr [si]  ; 04CD:04AF
+  05180  7265           jb       loc_051E7  ; 04CD:04B0
+  05182  207468         and      byte ptr [si + 0x68], dh  ; 04CD:04B2
+  05185  61             popaw      ; 04CD:04B5
+  05186  6e             outsb    dx, byte ptr [si]  ; 04CD:04B6
+  05187  2000           and      byte ptr [bx + si], al  ; 04CD:04B7
+  05189  005072         add      byte ptr [bx + si + 0x72], dl  ; 04CD:04B9
+  0518C  696e746564     imul     bp, word ptr [bp + 0x74], 0x6465  ; 04CD:04BC
+  05191  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:04C1
+loc_05194:
+  05194  6e             outsb    dx, byte ptr [si]  ; 04CD:04C4
+  05195  657320         jae      loc_051B8  ; 04CD:04C5
+  05198  63616e         arpl     word ptr [bx + di + 0x6e], sp  ; 04CD:04C8
+loc_0519B:
+  0519B  6e             outsb    dx, byte ptr [si]  ; 04CD:04CB
+  0519C  6f             outsw    dx, word ptr [si]  ; 04CD:04CC
+loc_0519D:
+  0519D  7420           je       loc_051BF  ; 04CD:04CD
+  0519F  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:04CF
+  051A2  6c             insb     byte ptr es:[di], dx  ; 04CD:04D2
+loc_051A3:
+  051A3  657373         jae      loc_05219  ; 04CD:04D3
+  051A6  207468         and      byte ptr [si + 0x68], dh  ; 04CD:04D6
+  051A9  61             popaw      ; 04CD:04D9
+  051AA  6e             outsb    dx, byte ptr [si]  ; 04CD:04DA
+loc_051AB:
+  051AB  2000           and      byte ptr [bx + si], al  ; 04CD:04DB
+  051AD  005072         add      byte ptr [bx + si + 0x72], dl  ; 04CD:04DD
+  051B0  696e746564     imul     bp, word ptr [bp + 0x74], 0x6465  ; 04CD:04E0
+  051B5  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:04E5
+loc_051B8:
+  051B8  6e             outsb    dx, byte ptr [si]  ; 04CD:04E8
+  051B9  657320         jae      loc_051DC  ; 04CD:04E9
+  051BC  63616e         arpl     word ptr [bx + di + 0x6e], sp  ; 04CD:04EC
+loc_051BF:
+  051BF  6e             outsb    dx, byte ptr [si]  ; 04CD:04EF
+  051C0  6f             outsw    dx, word ptr [si]  ; 04CD:04F0
+  051C1  7420           je       loc_051E3  ; 04CD:04F1
+  051C3  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:04F3
+  051C6  6d             insw     word ptr es:[di], dx  ; 04CD:04F6
+  051C7  6f             outsw    dx, word ptr [si]  ; 04CD:04F7
+  051C8  7265           jb       loc_0522F  ; 04CD:04F8
+  051CA  207468         and      byte ptr [si + 0x68], dh  ; 04CD:04FA
+loc_051CD:
+  051CD  61             popaw      ; 04CD:04FD
+  051CE  6e             outsb    dx, byte ptr [si]  ; 04CD:04FE
+  051CF  2000           and      byte ptr [bx + si], al  ; 04CD:04FF
+  051D1  005468         add      byte ptr [si + 0x68], dl  ; 04CD:0501
+  051D4  65206e75       and      byte ptr gs:[bp + 0x75], ch  ; 04CD:0504
+  051D8  6d             insw     word ptr es:[di], dx  ; 04CD:0508
+  051D9  626572         bound    sp, dword ptr [di + 0x72]  ; 04CD:0509
+loc_051DC:
+  051DC  206f66         and      byte ptr [bx + 0x66], ch  ; 04CD:050C
+  051DF  207072         and      byte ptr [bx + si + 0x72], dh  ; 04CD:050F
+  051E2  696e746564     imul     bp, word ptr [bp + 0x74], 0x6465  ; 04CD:0512
+loc_051E7:
+  051E7  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:0517
+  051EA  6e             outsb    dx, byte ptr [si]  ; 04CD:051A
+  051EB  657320         jae      loc_0520E  ; 04CD:051B
+  051EE  63616e         arpl     word ptr [bx + di + 0x6e], sp  ; 04CD:051E
+  051F1  6e             outsb    dx, byte ptr [si]  ; 04CD:0521
+  051F2  6f             outsw    dx, word ptr [si]  ; 04CD:0522
+  051F3  7420           je       loc_05215  ; 04CD:0523
+  051F5  626520         bound    sp, dword ptr [di + 0x20]  ; 04CD:0525
+  051F8  6d             insw     word ptr es:[di], dx  ; 04CD:0528
+  051F9  6f             outsw    dx, word ptr [si]  ; 04CD:0529
+  051FA  7265           jb       loc_05261  ; 04CD:052A
+  051FC  207468         and      byte ptr [si + 0x68], dh  ; 04CD:052C
+  051FF  61             popaw      ; 04CD:052F
+  05200  6e             outsb    dx, byte ptr [si]  ; 04CD:0530
+  05201  207468         and      byte ptr [si + 0x68], dh  ; 04CD:0531
+  05204  65206e75       and      byte ptr gs:[bp + 0x75], ch  ; 04CD:0534
+  05208  6d             insw     word ptr es:[di], dx  ; 04CD:0538
+  05209  626572         bound    sp, dword ptr [di + 0x72]  ; 04CD:0539
+  0520C  206f66         and      byte ptr [bx + 0x66], ch  ; 04CD:053C
+  0520F  20746f         and      byte ptr [si + 0x6f], dh  ; 04CD:053F
+  05212  7461           je       loc_05275  ; 04CD:0542
+  05214  6c             insb     byte ptr es:[di], dx  ; 04CD:0544
+loc_05215:
+  05215  206c69         and      byte ptr [si + 0x69], ch  ; 04CD:0545
+  05218  6e             outsb    dx, byte ptr [si]  ; 04CD:0548
+loc_05219:
+  05219  65732e         jae      loc_0524A  ; 04CD:0549
+  0521C  0000           add      byte ptr [bx + si], al  ; 04CD:054C
+  0521E  de0b           fimul    word ptr [bp + di]  ; 04CD:054E
+  05220  ef             out      dx, ax  ; 04CD:0550
+  05221  0b00           or       ax, word ptr [bx + si]  ; 04CD:0551
+  05223  0c11           or       al, 0x11  ; 04CD:0553
+  05225  0c22           or       al, 0x22  ; 04CD:0555
+  05227  0c33           or       al, 0x33  ; 04CD:0557
+  05229  0c44           or       al, 0x44  ; 04CD:0559
+  0522B  0c55           or       al, 0x55  ; 04CD:055B
+  0522D  0c00           or       al, 0  ; 04CD:055D
+loc_0522F:
+  0522F  f8             clc        ; 04CD:055F
+  05230  018e086e       add      word ptr [bp + 0x6e08], cx  ; 04CD:0560
+  05234  0020           add      byte ptr [bx + si], ah  ; 04CD:0564
+  05236  035901         add      bx, word ptr [bx + di + 1]  ; 04CD:0566
+  05239  1b00           sbb      ax, word ptr [bx + si]  ; 04CD:0569
+  0523B  00f5           add      ch, dh  ; 04CD:056B
+  0523D  0100           add      word ptr [bx + si], ax  ; 04CD:056D
+  0523F  00f4           add      ah, dh  ; 04CD:056F
+  05241  06             push     es  ; 04CD:0571
+  05242  00f8           add      al, bh  ; 04CD:0572
+  05244  01900126       add      word ptr [bx + si + 0x2601], dx  ; 04CD:0574
+  05248  02360159       add      dh, byte ptr [0x5901]  ; 04CD:0578
+  0524C  01ff           add      di, di  ; 04CD:057C
+  0524E  ff01           inc      word ptr [bx + di]  ; 04CD:057E
+  05250  f5             cmc        ; 04CD:0580
+  05251  0100           add      word ptr [bx + si], ax  ; 04CD:0581
+  05253  00660c         add      byte ptr [bp + 0xc], ah  ; 04CD:0583
+  05256  00f8           add      al, bh  ; 04CD:0586
+  05258  01bc0226       add      word ptr [si + 0x2602], di  ; 04CD:0588
+  0525C  02360159       add      dh, byte ptr [0x5901]  ; 04CD:058C
+  05260  01ff           add      di, di  ; 04CD:0590
+  05262  ff02           inc      word ptr [bp + si]  ; 04CD:0592
+  05264  f5             cmc        ; 04CD:0594
+  05265  0100           add      word ptr [bx + si], ax  ; 04CD:0595
+  05267  00680c         add      byte ptr [bx + si + 0xc], ch  ; 04CD:0597
+  0526A  00f8           add      al, bh  ; 04CD:059A
+  0526C  01e8           add      ax, bp  ; 04CD:059C
+  0526E  03260236       add      sp, word ptr [0x3602]  ; 04CD:059E
+  05272  015901         add      word ptr [bx + di + 1], bx  ; 04CD:05A2
+loc_05275:
+  05275  ff             db       0xff  ; 04CD:05A5
+  05276  ff03           inc      word ptr [bp + di]  ; 04CD:05A6
+  05278  f5             cmc        ; 04CD:05A8
+  05279  0100           add      word ptr [bx + si], ax  ; 04CD:05A9
+  0527B  006a0c         add      byte ptr [bp + si + 0xc], ch  ; 04CD:05AB
+  0527E  00f8           add      al, bh  ; 04CD:05AE
+  05280  0114           add      word ptr [si], dx  ; 04CD:05B0
+  05282  052602         add      ax, 0x226  ; 04CD:05B2
+  05285  36015901       add      word ptr ss:[bx + di + 1], bx  ; 04CD:05B5
+  05289  ff             db       0xff  ; 04CD:05B9
+  0528A  ff04           inc      word ptr [si]  ; 04CD:05BA
+  0528C  f5             cmc        ; 04CD:05BC
+  0528D  0100           add      word ptr [bx + si], ax  ; 04CD:05BD
+  0528F  00fc           add      ah, bh  ; 04CD:05BF
+  05291  06             push     es  ; 04CD:05C1
+  05292  00f8           add      al, bh  ; 04CD:05C2
+  05294  014006         add      word ptr [bx + si + 6], ax  ; 04CD:05C4
+  05297  2602360159     add      dh, byte ptr es:[0x5901]  ; 04CD:05C7
+  0529C  01ff           add      di, di  ; 04CD:05CC
+  0529E  ff05           inc      word ptr [di]  ; 04CD:05CE
+  052A0  f5             cmc        ; 04CD:05D0
+  052A1  0100           add      word ptr [bx + si], ax  ; 04CD:05D1
+  052A3  00fe           add      dh, bh  ; 04CD:05D3
+  052A5  06             push     es  ; 04CD:05D5
+  052A6  00f8           add      al, bh  ; 04CD:05D6
+  052A8  016c07         add      word ptr [si + 7], bp  ; 04CD:05D8
+  052AB  2602360159     add      dh, byte ptr es:[0x5901]  ; 04CD:05DB
+  052B0  01ff           add      di, di  ; 04CD:05E0
+  052B2  ff06f501       inc      word ptr [0x1f5]  ; 04CD:05E2
+  052B6  0000           add      byte ptr [bx + si], al  ; 04CD:05E6
+  052B8  0207           add      al, byte ptr [bx]  ; 04CD:05E8
+  052BA  00f8           add      al, bh  ; 04CD:05EA
+  052BC  01980826       add      word ptr [bx + si + 0x2608], bx  ; 04CD:05EC
+  052C0  02360159       add      dh, byte ptr [0x5901]  ; 04CD:05F0
+  052C4  01ff           add      di, di  ; 04CD:05F4
+  052C6  ff07           inc      word ptr [bx]  ; 04CD:05F6
+  052C8  f5             cmc        ; 04CD:05F8
+  052C9  0100           add      word ptr [bx + si], ax  ; 04CD:05F9
+  052CB  00060700       add      byte ptr [7], al  ; 04CD:05FB
+  052CF  f8             clc        ; 04CD:05FF
+  052D0  01c4           add      sp, ax  ; 04CD:0600
+  052D2  09260236       or       word ptr [0x3602], sp  ; 04CD:0602
+  052D6  015901         add      word ptr [bx + di + 1], bx  ; 04CD:0606
+  052D9  ff             db       0xff  ; 04CD:0609
+  052DA  ff08           dec      word ptr [bx + si]  ; 04CD:060A
+  052DC  f5             cmc        ; 04CD:060C
+  052DD  0100           add      word ptr [bx + si], ax  ; 04CD:060D
+  052DF  000a           add      byte ptr [bp + si], cl  ; 04CD:060F
+  052E1  07             pop      es  ; 04CD:0611
+  052E2  00f8           add      al, bh  ; 04CD:0612
+  052E4  019001de       add      word ptr [bx + si - 0x21ff], dx  ; 04CD:0614
+  052E8  03360159       add      si, word ptr [0x5901]  ; 04CD:0618
+  052EC  01ff           add      di, di  ; 04CD:061C
+  052EE  ff09           dec      word ptr [bx + di]  ; 04CD:061E
+  052F0  f5             cmc        ; 04CD:0620
+  052F1  0100           add      word ptr [bx + si], ax  ; 04CD:0621
+  052F3  006c0c         add      byte ptr [si + 0xc], ch  ; 04CD:0623
+  052F6  00f8           add      al, bh  ; 04CD:0626
+  052F8  01bc02de       add      word ptr [si - 0x21fe], di  ; 04CD:0628
+  052FC  03360159       add      si, word ptr [0x5901]  ; 04CD:062C
+  05300  01ff           add      di, di  ; 04CD:0630
+  05302  ff0a           dec      word ptr [bp + si]  ; 04CD:0632
+  05304  f5             cmc        ; 04CD:0634
+  05305  0100           add      word ptr [bx + si], ax  ; 04CD:0635
+  05307  006e0c         add      byte ptr [bp + 0xc], ch  ; 04CD:0637
+  0530A  00f8           add      al, bh  ; 04CD:063A
+  0530C  01e8           add      ax, bp  ; 04CD:063C
+  0530E  03de           add      bx, si  ; 04CD:063E
+  05310  03360159       add      si, word ptr [0x5901]  ; 04CD:0640
+  05314  01ff           add      di, di  ; 04CD:0644
+  05316  ff0b           dec      word ptr [bp + di]  ; 04CD:0646
+  05318  f5             cmc        ; 04CD:0648
+  05319  0100           add      word ptr [bx + si], ax  ; 04CD:0649
+  0531B  00700c         add      byte ptr [bx + si + 0xc], dh  ; 04CD:064B
+  0531E  00f8           add      al, bh  ; 04CD:064E
+  05320  0114           add      word ptr [si], dx  ; 04CD:0650
+  05322  05de03         add      ax, 0x3de  ; 04CD:0652
+  05325  36015901       add      word ptr ss:[bx + di + 1], bx  ; 04CD:0655
+  05329  ff             db       0xff  ; 04CD:0659
+  0532A  ff0c           dec      word ptr [si]  ; 04CD:065A
+  0532C  f5             cmc        ; 04CD:065C
+  0532D  0100           add      word ptr [bx + si], ax  ; 04CD:065D
+  0532F  00720c         add      byte ptr [bp + si + 0xc], dh  ; 04CD:065F
+  05332  00f8           add      al, bh  ; 04CD:0662
+  05334  014006         add      word ptr [bx + si + 6], ax  ; 04CD:0664
+  05337  de03           fiadd    word ptr [bp + di]  ; 04CD:0667
+  05339  36015901       add      word ptr ss:[bx + di + 1], bx  ; 04CD:0669
+  0533D  ff             db       0xff  ; 04CD:066D
+  0533E  ff0d           dec      word ptr [di]  ; 04CD:066E
+  05340  f5             cmc        ; 04CD:0670
+  05341  0100           add      word ptr [bx + si], ax  ; 04CD:0671
+  05343  00740c         add      byte ptr [si + 0xc], dh  ; 04CD:0673
+  05346  00f8           add      al, bh  ; 04CD:0676
+  05348  016c07         add      word ptr [si + 7], bp  ; 04CD:0678
+  0534B  de03           fiadd    word ptr [bp + di]  ; 04CD:067B
+  0534D  36015901       add      word ptr ss:[bx + di + 1], bx  ; 04CD:067D
+  05351  ff             db       0xff  ; 04CD:0681
+  05352  ff0ef501       dec      word ptr [0x1f5]  ; 04CD:0682
+  05356  0000           add      byte ptr [bx + si], al  ; 04CD:0686
+  05358  760c           jbe      loc_05366  ; 04CD:0688
+  0535A  00f8           add      al, bh  ; 04CD:068A
+  0535C  019808de       add      word ptr [bx + si - 0x21f8], bx  ; 04CD:068C
+  05360  03360159       add      si, word ptr [0x5901]  ; 04CD:0690
+  05364  01ff           add      di, di  ; 04CD:0694
+loc_05366:
+  05366  ff0f           dec      word ptr [bx]  ; 04CD:0696
+  05368  f5             cmc        ; 04CD:0698
+  05369  0100           add      word ptr [bx + si], ax  ; 04CD:0699
+  0536B  000e0700       add      byte ptr [7], cl  ; 04CD:069B
+  0536F  f8             clc        ; 04CD:069F
+  05370  01c4           add      sp, ax  ; 04CD:06A0
+  05372  09de           or       si, bx  ; 04CD:06A2
+  05374  03360159       add      si, word ptr [0x5901]  ; 04CD:06A4
+  05378  01ff           add      di, di  ; 04CD:06A8
+  0537A  ff10           call     word ptr [bx + si]  ; 04CD:06AA
+  0537C  f5             cmc        ; 04CD:06AC
+  0537D  0100           add      word ptr [bx + si], ax  ; 04CD:06AD
+  0537F  0012           add      byte ptr [bp + si], dl  ; 04CD:06AF
+  05381  07             pop      es  ; 04CD:06B1
+  05382  00f8           add      al, bh  ; 04CD:06B2
+  05384  01900196       add      word ptr [bx + si - 0x69ff], dx  ; 04CD:06B4
+  05388  053601         add      ax, 0x136  ; 04CD:06B8
+  0538B  59             pop      cx  ; 04CD:06BB
+  0538C  01ff           add      di, di  ; 04CD:06BC
+  0538E  ff11           call     word ptr [bx + di]  ; 04CD:06BE
+  05390  f5             cmc        ; 04CD:06C0
+  05391  0100           add      word ptr [bx + si], ax  ; 04CD:06C1
+  05393  00780c         add      byte ptr [bx + si + 0xc], bh  ; 04CD:06C3
+  05396  00f8           add      al, bh  ; 04CD:06C6
+  05398  01bc0296       add      word ptr [si - 0x69fe], di  ; 04CD:06C8
+  0539C  053601         add      ax, 0x136  ; 04CD:06CC
+  0539F  59             pop      cx  ; 04CD:06CF
+  053A0  01ff           add      di, di  ; 04CD:06D0
+  053A2  ff12           call     word ptr [bp + si]  ; 04CD:06D2
+  053A4  f5             cmc        ; 04CD:06D4
+  053A5  0100           add      word ptr [bx + si], ax  ; 04CD:06D5
+  053A7  007a0c         add      byte ptr [bp + si + 0xc], bh  ; 04CD:06D7
+  053AA  00f8           add      al, bh  ; 04CD:06DA
+  053AC  01e8           add      ax, bp  ; 04CD:06DC
+  053AE  03960536       add      dx, word ptr [bp + 0x3605]  ; 04CD:06DE
+  053B2  015901         add      word ptr [bx + di + 1], bx  ; 04CD:06E2
+  053B5  ff             db       0xff  ; 04CD:06E5
+  053B6  ff13           call     word ptr [bp + di]  ; 04CD:06E6
+  053B8  f5             cmc        ; 04CD:06E8
+  053B9  0100           add      word ptr [bx + si], ax  ; 04CD:06E9
+  053BB  007c0c         add      byte ptr [si + 0xc], bh  ; 04CD:06EB
+  053BE  00f8           add      al, bh  ; 04CD:06EE
+  053C0  0114           add      word ptr [si], dx  ; 04CD:06F0
+  053C2  059605         add      ax, 0x596  ; 04CD:06F2
+  053C5  36015901       add      word ptr ss:[bx + di + 1], bx  ; 04CD:06F5
+  053C9  ff             db       0xff  ; 04CD:06F9
+  053CA  ff14           call     word ptr [si]  ; 04CD:06FA
+  053CC  f5             cmc        ; 04CD:06FC
+  053CD  0100           add      word ptr [bx + si], ax  ; 04CD:06FD
+  053CF  007e0c         add      byte ptr [bp + 0xc], bh  ; 04CD:06FF
+  053D2  00f8           add      al, bh  ; 04CD:0702
+  053D4  014006         add      word ptr [bx + si + 6], ax  ; 04CD:0704
+  053D7  96             xchg     si, ax  ; 04CD:0707
+  053D8  053601         add      ax, 0x136  ; 04CD:0708
+  053DB  59             pop      cx  ; 04CD:070B
+  053DC  01ff           add      di, di  ; 04CD:070C
+  053DE  ff15           call     word ptr [di]  ; 04CD:070E
+  053E0  f5             cmc        ; 04CD:0710
+  053E1  0100           add      word ptr [bx + si], ax  ; 04CD:0711
+  053E3  00800c00       add      byte ptr [bx + si + 0xc], al  ; 04CD:0713
+  053E7  f8             clc        ; 04CD:0717
+  053E8  016c07         add      word ptr [si + 7], bp  ; 04CD:0718
+  053EB  96             xchg     si, ax  ; 04CD:071B
+  053EC  053601         add      ax, 0x136  ; 04CD:071C
+  053EF  59             pop      cx  ; 04CD:071F
+  053F0  01ff           add      di, di  ; 04CD:0720
+  053F2  ff16f501       call     word ptr [0x1f5]  ; 04CD:0722
+  053F6  0000           add      byte ptr [bx + si], al  ; 04CD:0726
+  053F8  820c00         or       byte ptr [si], 0  ; 04CD:0728
+  053FB  f8             clc        ; 04CD:072B
+  053FC  01980896       add      word ptr [bx + si - 0x69f8], bx  ; 04CD:072C
+  05400  053601         add      ax, 0x136  ; 04CD:0730
+  05403  59             pop      cx  ; 04CD:0733
+  05404  01ff           add      di, di  ; 04CD:0734
+  05406  ff17           call     word ptr [bx]  ; 04CD:0736
+  05408  f5             cmc        ; 04CD:0738
+  05409  0100           add      word ptr [bx + si], ax  ; 04CD:0739
+  0540B  00840c00       add      byte ptr [si + 0xc], al  ; 04CD:073B
+  0540F  f8             clc        ; 04CD:073F
+  05410  01c4           add      sp, ax  ; 04CD:0740
+  05412  09960536       or       word ptr [bp + 0x3605], dx  ; 04CD:0742
+  05416  015901         add      word ptr [bx + di + 1], bx  ; 04CD:0746
+  05419  ff             db       0xff  ; 04CD:0749
+  0541A  ff18           lcall    [bx + si]  ; 04CD:074A
+  0541C  f5             cmc        ; 04CD:074C
+  0541D  0100           add      word ptr [bx + si], ax  ; 04CD:074D
+  0541F  00860c02       add      byte ptr [bp + 0x20c], al  ; 04CD:074F
+  05423  8c00           mov      word ptr [bx + si], es  ; 04CD:0753
+  05425  6e             outsb    dx, byte ptr [si]  ; 04CD:0755
+  05426  00941108       add      byte ptr [si + 0x811], dl  ; 04CD:0756
+  0542A  07             pop      es  ; 04CD:075A
+  0542B  0300           add      ax, word ptr [bx + si]  ; 04CD:075B
+  0542D  0000           add      byte ptr [bx + si], al  ; 04CD:075D
+  0542F  0000           add      byte ptr [bx + si], al  ; 04CD:075F
+  05431  0000           add      byte ptr [bx + si], al  ; 04CD:0761
+  05433  0020           add      byte ptr [bx + si], ah  ; 04CD:0763
+  05435  2020           and      byte ptr [bx + si], ah  ; 04CD:0765
+  05437  2020           and      byte ptr [bx + si], ah  ; 04CD:0767
+  05439  2020           and      byte ptr [bx + si], ah  ; 04CD:0769
+  0543B  20434c         and      byte ptr [bp + di + 0x4c], al  ; 04CD:076B
+  0543E  45             inc      bp  ; 04CD:076E
+  0543F  41             inc      cx  ; 04CD:076F
+  05440  52             push     dx  ; 04CD:0770
+  05441  45             inc      bp  ; 04CD:0771
+  05442  44             inc      sp  ; 04CD:0772
+  05443  0020           add      byte ptr [bx + si], ah  ; 04CD:0773
+  05445  2020           and      byte ptr [bx + si], ah  ; 04CD:0775
+  05447  2020           and      byte ptr [bx + si], ah  ; 04CD:0777
+  05449  2028           and      byte ptr [bx + si], ch  ; 04CD:0779
+  0544B  4e             dec      si  ; 04CD:077B
+  0544C  45             inc      bp  ; 04CD:077C
+  0544D  47             inc      di  ; 04CD:077D
+  0544E  41             inc      cx  ; 04CD:077E
+  0544F  54             push     sp  ; 04CD:077F
+  05450  45             inc      bp  ; 04CD:0780
+  05451  44             inc      sp  ; 04CD:0781
+  05452  2900           sub      word ptr [bx + si], ax  ; 04CD:0782
+  05454  2020           and      byte ptr [bx + si], ah  ; 04CD:0784
+  05456  2020           and      byte ptr [bx + si], ah  ; 04CD:0786
+  05458  2020           and      byte ptr [bx + si], ah  ; 04CD:0788
+  0545A  2020           and      byte ptr [bx + si], ah  ; 04CD:078A
+  0545C  2020           and      byte ptr [bx + si], ah  ; 04CD:078C
+  0545E  45             inc      bp  ; 04CD:078E
+  0545F  52             push     dx  ; 04CD:078F
+  05460  52             push     dx  ; 04CD:0790
+  05461  4f             dec      di  ; 04CD:0791
+  05462  52             push     dx  ; 04CD:0792
+  05463  0020           add      byte ptr [bx + si], ah  ; 04CD:0793
+  05465  2020           and      byte ptr [bx + si], ah  ; 04CD:0795
+  05467  2020           and      byte ptr [bx + si], ah  ; 04CD:0797
+  05469  2020           and      byte ptr [bx + si], ah  ; 04CD:0799
+  0546B  2020           and      byte ptr [bx + si], ah  ; 04CD:079B
+  0546D  45             inc      bp  ; 04CD:079D
+  0546E  7272           jb       loc_054E2  ; 04CD:079E
+  05470  6f             outsw    dx, word ptr [si]  ; 04CD:07A0
+  05471  7220           jb       loc_05493  ; 04CD:07A1
+  05473  004341         add      byte ptr [bp + di + 0x41], al  ; 04CD:07A3
+  05476  4e             dec      si  ; 04CD:07A6
+  05477  43             inc      bx  ; 04CD:07A7
+  05478  45             inc      bp  ; 04CD:07A8
+  05479  4c             dec      sp  ; 04CD:07A9
+  0547A  0000           add      byte ptr [bx + si], al  ; 04CD:07AA
+  0547C  53             push     bx  ; 04CD:07AC
+  0547D  004345         add      byte ptr [bp + di + 0x45], al  ; 04CD:07AD
+  05480  0000           add      byte ptr [bx + si], al  ; 04CD:07B0
+  05482  43             inc      bx  ; 04CD:07B2
+  05483  41             inc      cx  ; 04CD:07B3
+  05484  0000           add      byte ptr [bx + si], al  ; 04CD:07B4
+  05486  4d             dec      bp  ; 04CD:07B6
+  05487  2b00           sub      ax, word ptr [bx + si]  ; 04CD:07B7
+  05489  004d2d         add      byte ptr [di + 0x2d], cl  ; 04CD:07B9
+  0548C  0000           add      byte ptr [bx + si], al  ; 04CD:07BC
+  0548E  4d             dec      bp  ; 04CD:07BE
+  0548F  43             inc      bx  ; 04CD:07BF
+  05490  0000           add      byte ptr [bx + si], al  ; 04CD:07C0
+  05492  4d             dec      bp  ; 04CD:07C2
+loc_05493:
+  05493  52             push     dx  ; 04CD:07C3
+  05494  0000           add      byte ptr [bx + si], al  ; 04CD:07C4
+  05496  0000           add      byte ptr [bx + si], al  ; 04CD:07C6
+  05498  0000           add      byte ptr [bx + si], al  ; 04CD:07C8
+  0549A  2f             das        ; 04CD:07CA
+  0549B  2100           and      word ptr [bx + si], ax  ; 04CD:07CB
+  0549D  00d8           add      al, bl  ; 04CD:07CD
+  0549F  0400           add      al, 0  ; 04CD:07CF
+  054A1  0000           add      byte ptr [bx + si], al  ; 04CD:07D1
+  054A3  0000           add      byte ptr [bx + si], al  ; 04CD:07D3
+  054A5  0000           add      byte ptr [bx + si], al  ; 04CD:07D5
+  054A7  0000           add      byte ptr [bx + si], al  ; 04CD:07D7
+  054A9  0000           add      byte ptr [bx + si], al  ; 04CD:07D9
+  054AB  0000           add      byte ptr [bx + si], al  ; 04CD:07DB
+  054AD  0000           add      byte ptr [bx + si], al  ; 04CD:07DD
+  054AF  0000           add      byte ptr [bx + si], al  ; 04CD:07DF
+  054B1  0000           add      byte ptr [bx + si], al  ; 04CD:07E1
+  054B3  0000           add      byte ptr [bx + si], al  ; 04CD:07E3
+  054B5  0000           add      byte ptr [bx + si], al  ; 04CD:07E5
+  054B7  0000           add      byte ptr [bx + si], al  ; 04CD:07E7
+  054B9  0000           add      byte ptr [bx + si], al  ; 04CD:07E9
+  054BB  0000           add      byte ptr [bx + si], al  ; 04CD:07EB
+  054BD  0000           add      byte ptr [bx + si], al  ; 04CD:07ED
+  054BF  0000           add      byte ptr [bx + si], al  ; 04CD:07EF
+  054C1  0000           add      byte ptr [bx + si], al  ; 04CD:07F1
+  054C3  0000           add      byte ptr [bx + si], al  ; 04CD:07F3
+  054C5  0000           add      byte ptr [bx + si], al  ; 04CD:07F5
+  054C7  0000           add      byte ptr [bx + si], al  ; 04CD:07F7
+  054C9  0000           add      byte ptr [bx + si], al  ; 04CD:07F9
+  054CB  0000           add      byte ptr [bx + si], al  ; 04CD:07FB
+  054CD  0000           add      byte ptr [bx + si], al  ; 04CD:07FD
+  054CF  0000           add      byte ptr [bx + si], al  ; 04CD:07FF
+  054D1  0000           add      byte ptr [bx + si], al  ; 04CD:0801
+  054D3  0000           add      byte ptr [bx + si], al  ; 04CD:0803
+  054D5  0000           add      byte ptr [bx + si], al  ; 04CD:0805
+  054D7  0000           add      byte ptr [bx + si], al  ; 04CD:0807
+  054D9  0000           add      byte ptr [bx + si], al  ; 04CD:0809
+  054DB  0000           add      byte ptr [bx + si], al  ; 04CD:080B
+  054DD  0000           add      byte ptr [bx + si], al  ; 04CD:080D
+  054DF  0000           add      byte ptr [bx + si], al  ; 04CD:080F
+  054E1  0000           add      byte ptr [bx + si], al  ; 04CD:0811
+  054E3  0000           add      byte ptr [bx + si], al  ; 04CD:0813
+  054E5  0000           add      byte ptr [bx + si], al  ; 04CD:0815
+  054E7  0000           add      byte ptr [bx + si], al  ; 04CD:0817
+  054E9  0000           add      byte ptr [bx + si], al  ; 04CD:0819
+  054EB  001c           add      byte ptr [si], bl  ; 04CD:081B
+  054ED  07             pop      es  ; 04CD:081D
+  054EE  3b435f         cmp      ax, word ptr [bp + di + 0x5f]  ; 04CD:081E
+  054F1  46             inc      si  ; 04CD:0821
+  054F2  49             dec      cx  ; 04CD:0822
+  054F3  4c             dec      sp  ; 04CD:0823
+  054F4  45             inc      bp  ; 04CD:0824
+  054F5  5f             pop      di  ; 04CD:0825
+  054F6  49             dec      cx  ; 04CD:0826
+  054F7  4e             dec      si  ; 04CD:0827
+  054F8  46             inc      si  ; 04CD:0828
+  054F9  4f             dec      di  ; 04CD:0829
+  054FA  0000           add      byte ptr [bx + si], al  ; 04CD:082A
+  054FC  0000           add      byte ptr [bx + si], al  ; 04CD:082C
+  054FE  0000           add      byte ptr [bx + si], al  ; 04CD:082E
+  05500  0000           add      byte ptr [bx + si], al  ; 04CD:0830
+  05502  0000           add      byte ptr [bx + si], al  ; 04CD:0832
+  05504  0000           add      byte ptr [bx + si], al  ; 04CD:0834
+  05506  0000           add      byte ptr [bx + si], al  ; 04CD:0836
+  05508  0000           add      byte ptr [bx + si], al  ; 04CD:0838
+  0550A  0000           add      byte ptr [bx + si], al  ; 04CD:083A
+  0550C  0000           add      byte ptr [bx + si], al  ; 04CD:083C
+  0550E  0000           add      byte ptr [bx + si], al  ; 04CD:083E
+  05510  0000           add      byte ptr [bx + si], al  ; 04CD:0840
+  05512  0000           add      byte ptr [bx + si], al  ; 04CD:0842
+  05514  1400           adc      al, 0  ; 04CD:0844
+  05516  818181010100   add      word ptr [bx + di + 0x181], 1  ; 04CD:0846
+  0551C  0000           add      byte ptr [bx + si], al  ; 04CD:084C
+  0551E  0000           add      byte ptr [bx + si], al  ; 04CD:084E
+  05520  0000           add      byte ptr [bx + si], al  ; 04CD:0850
+  05522  0000           add      byte ptr [bx + si], al  ; 04CD:0852
+  05524  0000           add      byte ptr [bx + si], al  ; 04CD:0854
+  05526  0000           add      byte ptr [bx + si], al  ; 04CD:0856
+  05528  0000           add      byte ptr [bx + si], al  ; 04CD:0858
+  0552A  0000           add      byte ptr [bx + si], al  ; 04CD:085A
+  0552C  0000           add      byte ptr [bx + si], al  ; 04CD:085C
+  0552E  0000           add      byte ptr [bx + si], al  ; 04CD:085E
+  05530  b407           mov      ah, 7  ; 04CD:0860
+  05532  d804           fadd     dword ptr [si]  ; 04CD:0862
+  05534  43             inc      bx  ; 04CD:0864
+  05535  0000           add      byte ptr [bx + si], al  ; 04CD:0865
+  05537  00cd           add      ch, cl  ; 04CD:0867
+  05539  ab             stosw    word ptr es:[di], ax  ; 04CD:0869
+  0553A  badc50         mov      dx, 0x50dc  ; 04CD:086A
+  0553D  52             push     dx  ; 04CD:086D
+  0553E  47             inc      di  ; 04CD:086E
+  0553F  55             push     bp  ; 04CD:086F
+  05540  46             inc      si  ; 04CD:0870
+  05541  00cd           add      ch, cl  ; 04CD:0871
+  05543  ab             stosw    word ptr es:[di], ax  ; 04CD:0873
+  05544  badc44         mov      dx, 0x44dc  ; 04CD:0874
+  05547  4d             dec      bp  ; 04CD:0877
+  05548  47             inc      di  ; 04CD:0878
+  05549  55             push     bp  ; 04CD:0879
+  0554A  46             inc      si  ; 04CD:087A
+  0554B  0000           add      byte ptr [bx + si], al  ; 04CD:087B
+  0554D  0000           add      byte ptr [bx + si], al  ; 04CD:087D
+  0554F  cd07           int      7  ; 04CD:087F
+  05551  0000           add      byte ptr [bx + si], al  ; 04CD:0881
+  05553  0000           add      byte ptr [bx + si], al  ; 04CD:0883
+  05555  00444d         add      byte ptr [si + 0x4d], al  ; 04CD:0885
+  05558  53             push     bx  ; 04CD:0888
+  05559  50             push     ax  ; 04CD:0889
+  0555A  45             inc      bp  ; 04CD:088A
+  0555B  4c             dec      sp  ; 04CD:088B
+  0555C  4c             dec      sp  ; 04CD:088C
+  0555D  00cd           add      ch, cl  ; 04CD:088D
+  0555F  ab             stosw    word ptr es:[di], ax  ; 04CD:088F
+  05560  badc44         mov      dx, 0x44dc  ; 04CD:0890
+  05563  4d             dec      bp  ; 04CD:0893
+  05564  43             inc      bx  ; 04CD:0894
+  05565  53             push     bx  ; 04CD:0895
+  05566  52             push     dx  ; 04CD:0896
+  05567  0000           add      byte ptr [bx + si], al  ; 04CD:0897
+  05569  0000           add      byte ptr [bx + si], al  ; 04CD:0899
+  0556B  0031           add      byte ptr [bx + di], dh  ; 04CD:089B
+  0556D  3030           xor      byte ptr [bx + si], dh  ; 04CD:089D
+  0556F  304347         xor      byte ptr [bp + di + 0x47], al  ; 04CD:089F
+  05572  41             inc      cx  ; 04CD:08A2
+  05573  004444         add      byte ptr [si + 0x44], al  ; 04CD:08A3
+  05576  47             inc      di  ; 04CD:08A6
+  05577  41             inc      cx  ; 04CD:08A7
+  05578  45             inc      bp  ; 04CD:08A8
+  05579  47             inc      di  ; 04CD:08A9
+  0557A  41             inc      cx  ; 04CD:08AA
+  0557B  004845         add      byte ptr [bx + si + 0x45], cl  ; 04CD:08AB
+  0557E  52             push     dx  ; 04CD:08AE
+  0557F  43             inc      bx  ; 04CD:08AF
+  05580  50             push     ax  ; 04CD:08B0
+  05581  4c             dec      sp  ; 04CD:08B1
+  05582  41             inc      cx  ; 04CD:08B2
+  05583  4e             dec      si  ; 04CD:08B3
+  05584  54             push     sp  ; 04CD:08B4
+  05585  43             inc      bx  ; 04CD:08B5
+  05586  31365443       xor      word ptr [0x4354], si  ; 04CD:08B6
+  0558A  3400           xor      al, 0  ; 04CD:08BA
+  0558C  56             push     si  ; 04CD:08BC
+  0558D  47             inc      di  ; 04CD:08BD
+  0558E  41             inc      cx  ; 04CD:08BE
+  0558F  004d43         add      byte ptr [di + 0x43], cl  ; 04CD:08BF
+  05592  47             inc      di  ; 04CD:08C2
+  05593  41             inc      cx  ; 04CD:08C3
+  05594  45             inc      bp  ; 04CD:08C4
+  05595  47             inc      di  ; 04CD:08C5
+  05596  41             inc      cx  ; 04CD:08C6
+  05597  004c52         add      byte ptr [si + 0x52], cl  ; 04CD:08C7
+  0559A  45             inc      bp  ; 04CD:08CA
+  0559B  53             push     bx  ; 04CD:08CB
+  0559C  54             push     sp  ; 04CD:08CC
+  0559D  3235           xor      dh, byte ptr [di]  ; 04CD:08CD
+  0559F  3654           push     sp  ; 04CD:08CF
+  055A1  43             inc      bx  ; 04CD:08D1
+  055A2  3430           xor      al, 0x30  ; 04CD:08D2
+  055A4  48             dec      ax  ; 04CD:08D4
+  055A5  0000           add      byte ptr [bx + si], al  ; 04CD:08D5
+  055A7  004300         add      byte ptr [bp + di], al  ; 04CD:08D7
+  055AA  0000           add      byte ptr [bx + si], al  ; 04CD:08DA
+  055AC  4d             dec      bp  ; 04CD:08DC
+  055AD  0000           add      byte ptr [bx + si], al  ; 04CD:08DD
+  055AF  004500         add      byte ptr [di], al  ; 04CD:08DF
+  055B2  0000           add      byte ptr [bx + si], al  ; 04CD:08E2
+  055B4  54             push     sp  ; 04CD:08E4
+  055B5  0000           add      byte ptr [bx + si], al  ; 04CD:08E5
+  055B7  00e1           add      cl, ah  ; 04CD:08E7
+  055B9  31f6           xor      si, si  ; 04CD:08E9
+  055BB  34d9           xor      al, 0xd9  ; 04CD:08EB
+  055BD  31d3           xor      bx, dx  ; 04CD:08ED
+  055BF  34d7           xor      al, 0xd7  ; 04CD:08EF
+  055C1  31d1           xor      cx, dx  ; 04CD:08F1
+  055C3  3443           xor      al, 0x43  ; 04CD:08F3
+  055C5  33fe           xor      di, si  ; 04CD:08F5
+  055C7  36c9           leave      ; 04CD:08F7
+  055C9  336137         xor      sp, word ptr [bx + di + 0x37]  ; 04CD:08F9
+  055CC  c7             db       0xc7  ; 04CD:08FC
+  055CD  335f37         xor      bx, word ptr [bx + 0x37]  ; 04CD:08FD
+  055D0  3231           xor      dh, byte ptr [bx + di]  ; 04CD:0900
+  055D2  8531           test     word ptr [bx + di], si  ; 04CD:0902
+  055D4  0000           add      byte ptr [bx + si], al  ; 04CD:0904
+  055D6  054d36         add      ax, 0x364d  ; 04CD:0906
+  055D9  317878         xor      word ptr [bx + si + 0x78], di  ; 04CD:0909
+  055DC  0000           add      byte ptr [bx + si], al  ; 04CD:090C
+  055DE  0000           add      byte ptr [bx + si], al  ; 04CD:090E
+  055E0  0000           add      byte ptr [bx + si], al  ; 04CD:0910
+  055E2  0000           add      byte ptr [bx + si], al  ; 04CD:0912
+  055E4  0000           add      byte ptr [bx + si], al  ; 04CD:0914
+  055E6  0000           add      byte ptr [bx + si], al  ; 04CD:0916
+  055E8  0000           add      byte ptr [bx + si], al  ; 04CD:0918
+  055EA  0000           add      byte ptr [bx + si], al  ; 04CD:091A
+  055EC  0000           add      byte ptr [bx + si], al  ; 04CD:091C
+  055EE  0000           add      byte ptr [bx + si], al  ; 04CD:091E
+  055F0  0000           add      byte ptr [bx + si], al  ; 04CD:0920
+  055F2  0000           add      byte ptr [bx + si], al  ; 04CD:0922
+  055F4  0000           add      byte ptr [bx + si], al  ; 04CD:0924
+  055F6  0000           add      byte ptr [bx + si], al  ; 04CD:0926
+  055F8  0000           add      byte ptr [bx + si], al  ; 04CD:0928
+  055FA  0000           add      byte ptr [bx + si], al  ; 04CD:092A
+  055FC  0000           add      byte ptr [bx + si], al  ; 04CD:092C
+  055FE  0000           add      byte ptr [bx + si], al  ; 04CD:092E
+  05600  0000           add      byte ptr [bx + si], al  ; 04CD:0930
+  05602  0000           add      byte ptr [bx + si], al  ; 04CD:0932
+  05604  0000           add      byte ptr [bx + si], al  ; 04CD:0934
+  05606  0000           add      byte ptr [bx + si], al  ; 04CD:0936
+  05608  0000           add      byte ptr [bx + si], al  ; 04CD:0938
+  0560A  0000           add      byte ptr [bx + si], al  ; 04CD:093A
+  0560C  0000           add      byte ptr [bx + si], al  ; 04CD:093C
+  0560E  0000           add      byte ptr [bx + si], al  ; 04CD:093E
+  05610  0000           add      byte ptr [bx + si], al  ; 04CD:0940
+  05612  0000           add      byte ptr [bx + si], al  ; 04CD:0942
+  05614  0000           add      byte ptr [bx + si], al  ; 04CD:0944
+  05616  0000           add      byte ptr [bx + si], al  ; 04CD:0946
+  05618  0000           add      byte ptr [bx + si], al  ; 04CD:0948
+  0561A  0000           add      byte ptr [bx + si], al  ; 04CD:094A
+  0561C  0000           add      byte ptr [bx + si], al  ; 04CD:094C
+  0561E  0000           add      byte ptr [bx + si], al  ; 04CD:094E
+  05620  0000           add      byte ptr [bx + si], al  ; 04CD:0950
+  05622  0000           add      byte ptr [bx + si], al  ; 04CD:0952
+  05624  0000           add      byte ptr [bx + si], al  ; 04CD:0954
+  05626  0000           add      byte ptr [bx + si], al  ; 04CD:0956
+  05628  0000           add      byte ptr [bx + si], al  ; 04CD:0958
+  0562A  0000           add      byte ptr [bx + si], al  ; 04CD:095A
+  0562C  0000           add      byte ptr [bx + si], al  ; 04CD:095C
+  0562E  0000           add      byte ptr [bx + si], al  ; 04CD:095E
+  05630  0000           add      byte ptr [bx + si], al  ; 04CD:0960
+  05632  0000           add      byte ptr [bx + si], al  ; 04CD:0962
+  05634  0000           add      byte ptr [bx + si], al  ; 04CD:0964
+  05636  0000           add      byte ptr [bx + si], al  ; 04CD:0966
+  05638  0000           add      byte ptr [bx + si], al  ; 04CD:0968
+  0563A  0000           add      byte ptr [bx + si], al  ; 04CD:096A
+  0563C  0000           add      byte ptr [bx + si], al  ; 04CD:096C
+  0563E  0000           add      byte ptr [bx + si], al  ; 04CD:096E
+  05640  0000           add      byte ptr [bx + si], al  ; 04CD:0970
+  05642  0000           add      byte ptr [bx + si], al  ; 04CD:0972
+  05644  0000           add      byte ptr [bx + si], al  ; 04CD:0974
+  05646  0000           add      byte ptr [bx + si], al  ; 04CD:0976
+  05648  0000           add      byte ptr [bx + si], al  ; 04CD:0978
+  0564A  0000           add      byte ptr [bx + si], al  ; 04CD:097A
+  0564C  0000           add      byte ptr [bx + si], al  ; 04CD:097C
+  0564E  0000           add      byte ptr [bx + si], al  ; 04CD:097E
+  05650  0000           add      byte ptr [bx + si], al  ; 04CD:0980
+  05652  0000           add      byte ptr [bx + si], al  ; 04CD:0982
+  05654  0000           add      byte ptr [bx + si], al  ; 04CD:0984
+  05656  0000           add      byte ptr [bx + si], al  ; 04CD:0986
+  05658  0000           add      byte ptr [bx + si], al  ; 04CD:0988
+  0565A  0000           add      byte ptr [bx + si], al  ; 04CD:098A
+  0565C  0000           add      byte ptr [bx + si], al  ; 04CD:098C
+  0565E  0000           add      byte ptr [bx + si], al  ; 04CD:098E
+  05660  0000           add      byte ptr [bx + si], al  ; 04CD:0990
+  05662  0000           add      byte ptr [bx + si], al  ; 04CD:0992
+  05664  0000           add      byte ptr [bx + si], al  ; 04CD:0994
+  05666  0000           add      byte ptr [bx + si], al  ; 04CD:0996
+  05668  0000           add      byte ptr [bx + si], al  ; 04CD:0998
+  0566A  0000           add      byte ptr [bx + si], al  ; 04CD:099A
+  0566C  0000           add      byte ptr [bx + si], al  ; 04CD:099C
+  0566E  0000           add      byte ptr [bx + si], al  ; 04CD:099E
+  05670  0000           add      byte ptr [bx + si], al  ; 04CD:09A0
+  05672  0000           add      byte ptr [bx + si], al  ; 04CD:09A2
+  05674  0000           add      byte ptr [bx + si], al  ; 04CD:09A4
+  05676  0000           add      byte ptr [bx + si], al  ; 04CD:09A6
+  05678  0000           add      byte ptr [bx + si], al  ; 04CD:09A8
+  0567A  0000           add      byte ptr [bx + si], al  ; 04CD:09AA
+  0567C  0000           add      byte ptr [bx + si], al  ; 04CD:09AC
+  0567E  0000           add      byte ptr [bx + si], al  ; 04CD:09AE
+  05680  0000           add      byte ptr [bx + si], al  ; 04CD:09B0
+  05682  0000           add      byte ptr [bx + si], al  ; 04CD:09B2
+  05684  0000           add      byte ptr [bx + si], al  ; 04CD:09B4
+  05686  0000           add      byte ptr [bx + si], al  ; 04CD:09B6
+  05688  0000           add      byte ptr [bx + si], al  ; 04CD:09B8
+  0568A  0000           add      byte ptr [bx + si], al  ; 04CD:09BA
+  0568C  0000           add      byte ptr [bx + si], al  ; 04CD:09BC
+  0568E  0000           add      byte ptr [bx + si], al  ; 04CD:09BE
+  05690  0000           add      byte ptr [bx + si], al  ; 04CD:09C0
+  05692  0000           add      byte ptr [bx + si], al  ; 04CD:09C2
+  05694  0000           add      byte ptr [bx + si], al  ; 04CD:09C4
+  05696  0000           add      byte ptr [bx + si], al  ; 04CD:09C6
+  05698  0000           add      byte ptr [bx + si], al  ; 04CD:09C8
+  0569A  0000           add      byte ptr [bx + si], al  ; 04CD:09CA
+  0569C  0000           add      byte ptr [bx + si], al  ; 04CD:09CC
+  0569E  0000           add      byte ptr [bx + si], al  ; 04CD:09CE
+  056A0  0000           add      byte ptr [bx + si], al  ; 04CD:09D0
+  056A2  0000           add      byte ptr [bx + si], al  ; 04CD:09D2
+  056A4  0000           add      byte ptr [bx + si], al  ; 04CD:09D4
+  056A6  0000           add      byte ptr [bx + si], al  ; 04CD:09D6
+  056A8  0000           add      byte ptr [bx + si], al  ; 04CD:09D8
+  056AA  0000           add      byte ptr [bx + si], al  ; 04CD:09DA
+  056AC  0000           add      byte ptr [bx + si], al  ; 04CD:09DC
+  056AE  0000           add      byte ptr [bx + si], al  ; 04CD:09DE
+  056B0  0000           add      byte ptr [bx + si], al  ; 04CD:09E0
+  056B2  0000           add      byte ptr [bx + si], al  ; 04CD:09E2
+  056B4  0000           add      byte ptr [bx + si], al  ; 04CD:09E4
+  056B6  0000           add      byte ptr [bx + si], al  ; 04CD:09E6
+  056B8  0000           add      byte ptr [bx + si], al  ; 04CD:09E8
+  056BA  0000           add      byte ptr [bx + si], al  ; 04CD:09EA
+  056BC  0000           add      byte ptr [bx + si], al  ; 04CD:09EC
+  056BE  0000           add      byte ptr [bx + si], al  ; 04CD:09EE
+  056C0  0000           add      byte ptr [bx + si], al  ; 04CD:09F0
+  056C2  0000           add      byte ptr [bx + si], al  ; 04CD:09F2
+  056C4  0000           add      byte ptr [bx + si], al  ; 04CD:09F4
+  056C6  0000           add      byte ptr [bx + si], al  ; 04CD:09F6
+  056C8  0000           add      byte ptr [bx + si], al  ; 04CD:09F8
+  056CA  0000           add      byte ptr [bx + si], al  ; 04CD:09FA
+  056CC  0000           add      byte ptr [bx + si], al  ; 04CD:09FC
+  056CE  0000           add      byte ptr [bx + si], al  ; 04CD:09FE
+  056D0  0000           add      byte ptr [bx + si], al  ; 04CD:0A00
+  056D2  0000           add      byte ptr [bx + si], al  ; 04CD:0A02
+  056D4  0000           add      byte ptr [bx + si], al  ; 04CD:0A04
+  056D6  0000           add      byte ptr [bx + si], al  ; 04CD:0A06
+  056D8  0000           add      byte ptr [bx + si], al  ; 04CD:0A08
+  056DA  0000           add      byte ptr [bx + si], al  ; 04CD:0A0A
+  056DC  0000           add      byte ptr [bx + si], al  ; 04CD:0A0C
+  056DE  0000           add      byte ptr [bx + si], al  ; 04CD:0A0E
+  056E0  0000           add      byte ptr [bx + si], al  ; 04CD:0A10
+  056E2  0000           add      byte ptr [bx + si], al  ; 04CD:0A12
+  056E4  0000           add      byte ptr [bx + si], al  ; 04CD:0A14
+  056E6  0000           add      byte ptr [bx + si], al  ; 04CD:0A16
+  056E8  0000           add      byte ptr [bx + si], al  ; 04CD:0A18
+  056EA  0000           add      byte ptr [bx + si], al  ; 04CD:0A1A
+  056EC  0000           add      byte ptr [bx + si], al  ; 04CD:0A1C
+  056EE  0000           add      byte ptr [bx + si], al  ; 04CD:0A1E
+  056F0  0000           add      byte ptr [bx + si], al  ; 04CD:0A20
+  056F2  0000           add      byte ptr [bx + si], al  ; 04CD:0A22
+  056F4  0000           add      byte ptr [bx + si], al  ; 04CD:0A24
+  056F6  0000           add      byte ptr [bx + si], al  ; 04CD:0A26
+  056F8  0000           add      byte ptr [bx + si], al  ; 04CD:0A28
+  056FA  0000           add      byte ptr [bx + si], al  ; 04CD:0A2A
+  056FC  0000           add      byte ptr [bx + si], al  ; 04CD:0A2C
+  056FE  0000           add      byte ptr [bx + si], al  ; 04CD:0A2E
+  05700  0000           add      byte ptr [bx + si], al  ; 04CD:0A30
+  05702  0000           add      byte ptr [bx + si], al  ; 04CD:0A32
+  05704  0000           add      byte ptr [bx + si], al  ; 04CD:0A34
+  05706  0000           add      byte ptr [bx + si], al  ; 04CD:0A36
+  05708  0000           add      byte ptr [bx + si], al  ; 04CD:0A38
+  0570A  0000           add      byte ptr [bx + si], al  ; 04CD:0A3A
+  0570C  0000           add      byte ptr [bx + si], al  ; 04CD:0A3C
+  0570E  0000           add      byte ptr [bx + si], al  ; 04CD:0A3E
+  05710  0000           add      byte ptr [bx + si], al  ; 04CD:0A40
+  05712  0000           add      byte ptr [bx + si], al  ; 04CD:0A42
+  05714  0000           add      byte ptr [bx + si], al  ; 04CD:0A44
+  05716  0000           add      byte ptr [bx + si], al  ; 04CD:0A46
+  05718  0000           add      byte ptr [bx + si], al  ; 04CD:0A48
+  0571A  0000           add      byte ptr [bx + si], al  ; 04CD:0A4A
+  0571C  0000           add      byte ptr [bx + si], al  ; 04CD:0A4C
+  0571E  0000           add      byte ptr [bx + si], al  ; 04CD:0A4E
+  05720  0000           add      byte ptr [bx + si], al  ; 04CD:0A50
+  05722  0000           add      byte ptr [bx + si], al  ; 04CD:0A52
+  05724  0000           add      byte ptr [bx + si], al  ; 04CD:0A54
+  05726  0000           add      byte ptr [bx + si], al  ; 04CD:0A56
+  05728  0000           add      byte ptr [bx + si], al  ; 04CD:0A58
+  0572A  0000           add      byte ptr [bx + si], al  ; 04CD:0A5A
+  0572C  0000           add      byte ptr [bx + si], al  ; 04CD:0A5C
+  0572E  0000           add      byte ptr [bx + si], al  ; 04CD:0A5E
+  05730  0000           add      byte ptr [bx + si], al  ; 04CD:0A60
+  05732  0000           add      byte ptr [bx + si], al  ; 04CD:0A62
+  05734  0000           add      byte ptr [bx + si], al  ; 04CD:0A64
+  05736  0000           add      byte ptr [bx + si], al  ; 04CD:0A66
+  05738  0000           add      byte ptr [bx + si], al  ; 04CD:0A68
+  0573A  0000           add      byte ptr [bx + si], al  ; 04CD:0A6A
+  0573C  0000           add      byte ptr [bx + si], al  ; 04CD:0A6C
+  0573E  0000           add      byte ptr [bx + si], al  ; 04CD:0A6E
+  05740  0000           add      byte ptr [bx + si], al  ; 04CD:0A70
+  05742  0000           add      byte ptr [bx + si], al  ; 04CD:0A72
+  05744  0000           add      byte ptr [bx + si], al  ; 04CD:0A74
+  05746  0000           add      byte ptr [bx + si], al  ; 04CD:0A76
+  05748  0000           add      byte ptr [bx + si], al  ; 04CD:0A78
+  0574A  0000           add      byte ptr [bx + si], al  ; 04CD:0A7A
+  0574C  0000           add      byte ptr [bx + si], al  ; 04CD:0A7C
+  0574E  0000           add      byte ptr [bx + si], al  ; 04CD:0A7E
+  05750  0000           add      byte ptr [bx + si], al  ; 04CD:0A80
+  05752  0000           add      byte ptr [bx + si], al  ; 04CD:0A82
+  05754  0000           add      byte ptr [bx + si], al  ; 04CD:0A84
+  05756  0000           add      byte ptr [bx + si], al  ; 04CD:0A86
+  05758  0000           add      byte ptr [bx + si], al  ; 04CD:0A88
+  0575A  0000           add      byte ptr [bx + si], al  ; 04CD:0A8A
+  0575C  0000           add      byte ptr [bx + si], al  ; 04CD:0A8C
+  0575E  0000           add      byte ptr [bx + si], al  ; 04CD:0A8E
+  05760  0000           add      byte ptr [bx + si], al  ; 04CD:0A90
+  05762  7208           jb       loc_0576C  ; 04CD:0A92
+  05764  ff             db       0xff  ; 04CD:0A94
+  05765  fe             db       0xfe  ; 04CD:0A95
+  05766  fc             cld        ; 04CD:0A96
+  05767  f8             clc        ; 04CD:0A97
+  05768  f0             db       0xf0  ; 04CD:0A98
+  05769  e0c0           loopne   0x572b  ; 04CD:0A99
+  0576B  800000         add      byte ptr [bx + si], 0  ; 04CD:0A9B
+  0576E  0000           add      byte ptr [bx + si], al  ; 04CD:0A9E
+  05770  0000           add      byte ptr [bx + si], al  ; 04CD:0AA0
+  05772  0000           add      byte ptr [bx + si], al  ; 04CD:0AA2
+  05774  0000           add      byte ptr [bx + si], al  ; 04CD:0AA4
+  05776  0000           add      byte ptr [bx + si], al  ; 04CD:0AA6
+  05778  0000           add      byte ptr [bx + si], al  ; 04CD:0AA8
+  0577A  0000           add      byte ptr [bx + si], al  ; 04CD:0AAA
+  0577C  0000           add      byte ptr [bx + si], al  ; 04CD:0AAC
+  0577E  0000           add      byte ptr [bx + si], al  ; 04CD:0AAE
+  05780  0000           add      byte ptr [bx + si], al  ; 04CD:0AB0
+  05782  0000           add      byte ptr [bx + si], al  ; 04CD:0AB2
+  05784  0000           add      byte ptr [bx + si], al  ; 04CD:0AB4
+  05786  0000           add      byte ptr [bx + si], al  ; 04CD:0AB6
+  05788  0000           add      byte ptr [bx + si], al  ; 04CD:0AB8
+  0578A  0000           add      byte ptr [bx + si], al  ; 04CD:0ABA
+  0578C  0000           add      byte ptr [bx + si], al  ; 04CD:0ABC
+  0578E  0000           add      byte ptr [bx + si], al  ; 04CD:0ABE
+  05790  0000           add      byte ptr [bx + si], al  ; 04CD:0AC0
+  05792  0000           add      byte ptr [bx + si], al  ; 04CD:0AC2
+  05794  0000           add      byte ptr [bx + si], al  ; 04CD:0AC4
+  05796  0000           add      byte ptr [bx + si], al  ; 04CD:0AC6
+  05798  652b30         sub      si, word ptr gs:[bx + si]  ; 04CD:0AC8
+  0579B  3030           xor      byte ptr [bx + si], dh  ; 04CD:0ACB
+  0579D  0000           add      byte ptr [bx + si], al  ; 04CD:0ACD
+  0579F  0000           add      byte ptr [bx + si], al  ; 04CD:0ACF
+  057A1  0000           add      byte ptr [bx + si], al  ; 04CD:0AD1
+  057A3  0000           add      byte ptr [bx + si], al  ; 04CD:0AD3
+  057A5  0000           add      byte ptr [bx + si], al  ; 04CD:0AD5
+  057A7  0000           add      byte ptr [bx + si], al  ; 04CD:0AD7
+  057A9  0000           add      byte ptr [bx + si], al  ; 04CD:0AD9
+  057AB  0000           add      byte ptr [bx + si], al  ; 04CD:0ADB
+  057AD  0000           add      byte ptr [bx + si], al  ; 04CD:0ADD
+  057AF  0000           add      byte ptr [bx + si], al  ; 04CD:0ADF
+  057B1  0000           add      byte ptr [bx + si], al  ; 04CD:0AE1
+  057B3  0000           add      byte ptr [bx + si], al  ; 04CD:0AE3
+  057B5  0000           add      byte ptr [bx + si], al  ; 04CD:0AE5
+  057B7  0000           add      byte ptr [bx + si], al  ; 04CD:0AE7
+  057B9  0000           add      byte ptr [bx + si], al  ; 04CD:0AE9
+  057BB  0000           add      byte ptr [bx + si], al  ; 04CD:0AEB
+  057BD  0000           add      byte ptr [bx + si], al  ; 04CD:0AED
+  057BF  0000           add      byte ptr [bx + si], al  ; 04CD:0AEF
+  057C1  0000           add      byte ptr [bx + si], al  ; 04CD:0AF1
+  057C3  0000           add      byte ptr [bx + si], al  ; 04CD:0AF3
+  057C5  0000           add      byte ptr [bx + si], al  ; 04CD:0AF5
+  057C7  0000           add      byte ptr [bx + si], al  ; 04CD:0AF7
+  057C9  0000           add      byte ptr [bx + si], al  ; 04CD:0AF9
+  057CB  0000           add      byte ptr [bx + si], al  ; 04CD:0AFB
+  057CD  0000           add      byte ptr [bx + si], al  ; 04CD:0AFD
+  057CF  0000           add      byte ptr [bx + si], al  ; 04CD:0AFF
+  057D1  0000           add      byte ptr [bx + si], al  ; 04CD:0B01
+  057D3  0000           add      byte ptr [bx + si], al  ; 04CD:0B03
+  057D5  0000           add      byte ptr [bx + si], al  ; 04CD:0B05
+  057D7  0000           add      byte ptr [bx + si], al  ; 04CD:0B07
+  057D9  0000           add      byte ptr [bx + si], al  ; 04CD:0B09
+  057DB  0000           add      byte ptr [bx + si], al  ; 04CD:0B0B
+  057DD  0000           add      byte ptr [bx + si], al  ; 04CD:0B0D
+  057DF  0000           add      byte ptr [bx + si], al  ; 04CD:0B0F
+  057E1  0000           add      byte ptr [bx + si], al  ; 04CD:0B11
+  057E3  0000           add      byte ptr [bx + si], al  ; 04CD:0B13
+  057E5  0000           add      byte ptr [bx + si], al  ; 04CD:0B15
+  057E7  0000           add      byte ptr [bx + si], al  ; 04CD:0B17
+  057E9  0000           add      byte ptr [bx + si], al  ; 04CD:0B19
+  057EB  0000           add      byte ptr [bx + si], al  ; 04CD:0B1B
+  057ED  0000           add      byte ptr [bx + si], al  ; 04CD:0B1D
+  057EF  0000           add      byte ptr [bx + si], al  ; 04CD:0B1F
+  057F1  0000           add      byte ptr [bx + si], al  ; 04CD:0B21
+  057F3  0000           add      byte ptr [bx + si], al  ; 04CD:0B23
+  057F5  0000           add      byte ptr [bx + si], al  ; 04CD:0B25
+  057F7  0000           add      byte ptr [bx + si], al  ; 04CD:0B27
+  057F9  00d0           add      al, dl  ; 04CD:0B29
+  057FB  42             inc      dx  ; 04CD:0B2B
+  057FC  d042d0         rol      byte ptr [bp + si - 0x30], 1  ; 04CD:0B2C
+  057FF  42             inc      dx  ; 04CD:0B2F
+  05800  d042d0         rol      byte ptr [bp + si - 0x30], 1  ; 04CD:0B30
+  05803  42             inc      dx  ; 04CD:0B33
+  05804  0000           add      byte ptr [bx + si], al  ; 04CD:0B34
+  05806  0000           add      byte ptr [bx + si], al  ; 04CD:0B36
+  05808  0000           add      byte ptr [bx + si], al  ; 04CD:0B38
+  0580A  0020           add      byte ptr [bx + si], ah  ; 04CD:0B3A
+  0580C  2020           and      byte ptr [bx + si], ah  ; 04CD:0B3C
+  0580E  2020           and      byte ptr [bx + si], ah  ; 04CD:0B3E
+  05810  2020           and      byte ptr [bx + si], ah  ; 04CD:0B40
+  05812  2020           and      byte ptr [bx + si], ah  ; 04CD:0B42
+  05814  2828           sub      byte ptr [bx + si], ch  ; 04CD:0B44
+  05816  2828           sub      byte ptr [bx + si], ch  ; 04CD:0B46
+  05818  2820           sub      byte ptr [bx + si], ah  ; 04CD:0B48
+  0581A  2020           and      byte ptr [bx + si], ah  ; 04CD:0B4A
+  0581C  2020           and      byte ptr [bx + si], ah  ; 04CD:0B4C
+  0581E  2020           and      byte ptr [bx + si], ah  ; 04CD:0B4E
+  05820  2020           and      byte ptr [bx + si], ah  ; 04CD:0B50
+  05822  2020           and      byte ptr [bx + si], ah  ; 04CD:0B52
+  05824  2020           and      byte ptr [bx + si], ah  ; 04CD:0B54
+  05826  2020           and      byte ptr [bx + si], ah  ; 04CD:0B56
+  05828  2020           and      byte ptr [bx + si], ah  ; 04CD:0B58
+  0582A  204810         and      byte ptr [bx + si + 0x10], cl  ; 04CD:0B5A
+  0582D  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B5D
+  0582F  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B5F
+  05831  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B61
+  05833  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B63
+  05835  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B65
+  05837  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B67
+  05839  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B69
+  0583B  84848484       test     byte ptr [si - 0x7b7c], al  ; 04CD:0B6B
+  0583F  84848484       test     byte ptr [si - 0x7b7c], al  ; 04CD:0B6F
+  05843  84841010       test     byte ptr [si + 0x1010], al  ; 04CD:0B73
+  05847  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B77
+  05849  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B79
+  0584B  10818181       adc      byte ptr [bx + di - 0x7e7f], al  ; 04CD:0B7B
+  0584F  818181010101   add      word ptr [bx + di + 0x181], 0x101  ; 04CD:0B7F
+  05855  0101           add      word ptr [bx + di], ax  ; 04CD:0B85
+  05857  0101           add      word ptr [bx + di], ax  ; 04CD:0B87
+  05859  0101           add      word ptr [bx + di], ax  ; 04CD:0B89
+  0585B  0101           add      word ptr [bx + di], ax  ; 04CD:0B8B
+  0585D  0101           add      word ptr [bx + di], ax  ; 04CD:0B8D
+  0585F  0101           add      word ptr [bx + di], ax  ; 04CD:0B8F
+  05861  0101           add      word ptr [bx + di], ax  ; 04CD:0B91
+  05863  0101           add      word ptr [bx + di], ax  ; 04CD:0B93
+  05865  0110           add      word ptr [bx + si], dx  ; 04CD:0B95
+  05867  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B97
+  05869  1010           adc      byte ptr [bx + si], dl  ; 04CD:0B99
+  0586B  10828282       adc      byte ptr [bp + si - 0x7d7e], al  ; 04CD:0B9B
+  0586F  8282820202     add      byte ptr [bp + si + 0x282], 2  ; 04CD:0B9F
+  05874  0202           add      al, byte ptr [bp + si]  ; 04CD:0BA4
+  05876  0202           add      al, byte ptr [bp + si]  ; 04CD:0BA6
+  05878  0202           add      al, byte ptr [bp + si]  ; 04CD:0BA8
+  0587A  0202           add      al, byte ptr [bp + si]  ; 04CD:0BAA
+  0587C  0202           add      al, byte ptr [bp + si]  ; 04CD:0BAC
+  0587E  0202           add      al, byte ptr [bp + si]  ; 04CD:0BAE
+  05880  0202           add      al, byte ptr [bp + si]  ; 04CD:0BB0
+  05882  0202           add      al, byte ptr [bp + si]  ; 04CD:0BB2
+  05884  0202           add      al, byte ptr [bp + si]  ; 04CD:0BB4
+  05886  1010           adc      byte ptr [bx + si], dl  ; 04CD:0BB6
+  05888  1010           adc      byte ptr [bx + si], dl  ; 04CD:0BB8
+  0588A  2000           and      byte ptr [bx + si], al  ; 04CD:0BBA
+  0588C  0000           add      byte ptr [bx + si], al  ; 04CD:0BBC
+  0588E  0000           add      byte ptr [bx + si], al  ; 04CD:0BBE
+  05890  0000           add      byte ptr [bx + si], al  ; 04CD:0BC0
+  05892  0000           add      byte ptr [bx + si], al  ; 04CD:0BC2
+  05894  0000           add      byte ptr [bx + si], al  ; 04CD:0BC4
+  05896  0000           add      byte ptr [bx + si], al  ; 04CD:0BC6
+  05898  0000           add      byte ptr [bx + si], al  ; 04CD:0BC8
+  0589A  0000           add      byte ptr [bx + si], al  ; 04CD:0BCA
+  0589C  0000           add      byte ptr [bx + si], al  ; 04CD:0BCC
+  0589E  0000           add      byte ptr [bx + si], al  ; 04CD:0BCE
+  058A0  0000           add      byte ptr [bx + si], al  ; 04CD:0BD0
+  058A2  0000           add      byte ptr [bx + si], al  ; 04CD:0BD2
+  058A4  0000           add      byte ptr [bx + si], al  ; 04CD:0BD4
+  058A6  0000           add      byte ptr [bx + si], al  ; 04CD:0BD6
+  058A8  0000           add      byte ptr [bx + si], al  ; 04CD:0BD8
+  058AA  0000           add      byte ptr [bx + si], al  ; 04CD:0BDA
+  058AC  0000           add      byte ptr [bx + si], al  ; 04CD:0BDC
+  058AE  0000           add      byte ptr [bx + si], al  ; 04CD:0BDE
+  058B0  0000           add      byte ptr [bx + si], al  ; 04CD:0BE0
+  058B2  0000           add      byte ptr [bx + si], al  ; 04CD:0BE2
+  058B4  0000           add      byte ptr [bx + si], al  ; 04CD:0BE4
+  058B6  0000           add      byte ptr [bx + si], al  ; 04CD:0BE6
+  058B8  0000           add      byte ptr [bx + si], al  ; 04CD:0BE8
+  058BA  0000           add      byte ptr [bx + si], al  ; 04CD:0BEA
+  058BC  0000           add      byte ptr [bx + si], al  ; 04CD:0BEC
+  058BE  0000           add      byte ptr [bx + si], al  ; 04CD:0BEE
+  058C0  0000           add      byte ptr [bx + si], al  ; 04CD:0BF0
+  058C2  0000           add      byte ptr [bx + si], al  ; 04CD:0BF2
+  058C4  0000           add      byte ptr [bx + si], al  ; 04CD:0BF4
+  058C6  0000           add      byte ptr [bx + si], al  ; 04CD:0BF6
+  058C8  0000           add      byte ptr [bx + si], al  ; 04CD:0BF8
+  058CA  0000           add      byte ptr [bx + si], al  ; 04CD:0BFA
+  058CC  0000           add      byte ptr [bx + si], al  ; 04CD:0BFC
+  058CE  0000           add      byte ptr [bx + si], al  ; 04CD:0BFE
+  058D0  0000           add      byte ptr [bx + si], al  ; 04CD:0C00
+  058D2  0000           add      byte ptr [bx + si], al  ; 04CD:0C02
+  058D4  0000           add      byte ptr [bx + si], al  ; 04CD:0C04
+  058D6  0000           add      byte ptr [bx + si], al  ; 04CD:0C06
+  058D8  0000           add      byte ptr [bx + si], al  ; 04CD:0C08
+  058DA  0000           add      byte ptr [bx + si], al  ; 04CD:0C0A
+  058DC  0000           add      byte ptr [bx + si], al  ; 04CD:0C0C
+  058DE  0000           add      byte ptr [bx + si], al  ; 04CD:0C0E
+  058E0  0000           add      byte ptr [bx + si], al  ; 04CD:0C10
+  058E2  0000           add      byte ptr [bx + si], al  ; 04CD:0C12
+  058E4  0000           add      byte ptr [bx + si], al  ; 04CD:0C14
+  058E6  0000           add      byte ptr [bx + si], al  ; 04CD:0C16
+  058E8  0000           add      byte ptr [bx + si], al  ; 04CD:0C18
+  058EA  0000           add      byte ptr [bx + si], al  ; 04CD:0C1A
+  058EC  0000           add      byte ptr [bx + si], al  ; 04CD:0C1C
+  058EE  0000           add      byte ptr [bx + si], al  ; 04CD:0C1E
+  058F0  0000           add      byte ptr [bx + si], al  ; 04CD:0C20
+  058F2  0000           add      byte ptr [bx + si], al  ; 04CD:0C22
+  058F4  0000           add      byte ptr [bx + si], al  ; 04CD:0C24
+  058F6  0000           add      byte ptr [bx + si], al  ; 04CD:0C26
+  058F8  0000           add      byte ptr [bx + si], al  ; 04CD:0C28
+  058FA  0000           add      byte ptr [bx + si], al  ; 04CD:0C2A
+  058FC  0000           add      byte ptr [bx + si], al  ; 04CD:0C2C
+  058FE  0000           add      byte ptr [bx + si], al  ; 04CD:0C2E
+  05900  0000           add      byte ptr [bx + si], al  ; 04CD:0C30
+  05902  0000           add      byte ptr [bx + si], al  ; 04CD:0C32
+  05904  0000           add      byte ptr [bx + si], al  ; 04CD:0C34
+  05906  0000           add      byte ptr [bx + si], al  ; 04CD:0C36
+  05908  0000           add      byte ptr [bx + si], al  ; 04CD:0C38
+  0590A  0000           add      byte ptr [bx + si], al  ; 04CD:0C3A
+  0590C  0000           add      byte ptr [bx + si], al  ; 04CD:0C3C
+  0590E  0000           add      byte ptr [bx + si], al  ; 04CD:0C3E
+  05910  0000           add      byte ptr [bx + si], al  ; 04CD:0C40
+  05912  0000           add      byte ptr [bx + si], al  ; 04CD:0C42
+  05914  0000           add      byte ptr [bx + si], al  ; 04CD:0C44
+  05916  0000           add      byte ptr [bx + si], al  ; 04CD:0C46
+  05918  0000           add      byte ptr [bx + si], al  ; 04CD:0C48
+  0591A  0000           add      byte ptr [bx + si], al  ; 04CD:0C4A
+  0591C  0000           add      byte ptr [bx + si], al  ; 04CD:0C4C
+  0591E  0000           add      byte ptr [bx + si], al  ; 04CD:0C4E
+  05920  0000           add      byte ptr [bx + si], al  ; 04CD:0C50
+  05922  0000           add      byte ptr [bx + si], al  ; 04CD:0C52
+  05924  0000           add      byte ptr [bx + si], al  ; 04CD:0C54
+  05926  0000           add      byte ptr [bx + si], al  ; 04CD:0C56
+  05928  0000           add      byte ptr [bx + si], al  ; 04CD:0C58
+  0592A  0000           add      byte ptr [bx + si], al  ; 04CD:0C5A
+  0592C  0000           add      byte ptr [bx + si], al  ; 04CD:0C5C
+  0592E  0000           add      byte ptr [bx + si], al  ; 04CD:0C5E
+  05930  0000           add      byte ptr [bx + si], al  ; 04CD:0C60
+  05932  0000           add      byte ptr [bx + si], al  ; 04CD:0C62
+  05934  0000           add      byte ptr [bx + si], al  ; 04CD:0C64
+  05936  0000           add      byte ptr [bx + si], al  ; 04CD:0C66
+  05938  0000           add      byte ptr [bx + si], al  ; 04CD:0C68
+  0593A  0000           add      byte ptr [bx + si], al  ; 04CD:0C6A
+  0593C  0000           add      byte ptr [bx + si], al  ; 04CD:0C6C
+  0593E  0000           add      byte ptr [bx + si], al  ; 04CD:0C6E
+  05940  0000           add      byte ptr [bx + si], al  ; 04CD:0C70
+  05942  0000           add      byte ptr [bx + si], al  ; 04CD:0C72
+  05944  9b             wait       ; 04CD:0C74
+  05945  2c00           sub      al, 0  ; 04CD:0C75
+  05947  0000           add      byte ptr [bx + si], al  ; 04CD:0C77
+  05949  0000           add      byte ptr [bx + si], al  ; 04CD:0C79
+  0594B  006a2c         add      byte ptr [bp + si + 0x2c], ch  ; 04CD:0C7B
+  0594E  0000           add      byte ptr [bx + si], al  ; 04CD:0C7E
+  05950  7226           jb       loc_05978  ; 04CD:0C80
+  05952  646d           insw     word ptr es:[di], dx  ; 04CD:0C82
+  05954  7064           jo       loc_059BA  ; 04CD:0C84
+  05956  61             popaw      ; 04CD:0C86
+  05957  7363           jae      loc_059BC  ; 04CD:0C87
+  05959  69002e00       imul     ax, word ptr [bx + si], 0x2e  ; 04CD:0C89
+  0595D  0020           add      byte ptr [bx + si], ah  ; 04CD:0C8D
+  0595F  2020           and      byte ptr [bx + si], ah  ; 04CD:0C8F
+  05961  2020           and      byte ptr [bx + si], ah  ; 04CD:0C91
+  05963  2020           and      byte ptr [bx + si], ah  ; 04CD:0C93
+  05965  2020           and      byte ptr [bx + si], ah  ; 04CD:0C95
+  05967  2020           and      byte ptr [bx + si], ah  ; 04CD:0C97
+  05969  2020           and      byte ptr [bx + si], ah  ; 04CD:0C99
+  0596B  2020           and      byte ptr [bx + si], ah  ; 04CD:0C9B
+  0596D  2000           and      byte ptr [bx + si], al  ; 04CD:0C9D
+  0596F  2020           and      byte ptr [bx + si], ah  ; 04CD:0C9F
+  05971  2020           and      byte ptr [bx + si], ah  ; 04CD:0CA1
+  05973  2020           and      byte ptr [bx + si], ah  ; 04CD:0CA3
+  05975  2020           and      byte ptr [bx + si], ah  ; 04CD:0CA5
+  05977  2020           and      byte ptr [bx + si], ah  ; 04CD:0CA7
+  05979  2020           and      byte ptr [bx + si], ah  ; 04CD:0CA9
+  0597B  2020           and      byte ptr [bx + si], ah  ; 04CD:0CAB
+  0597D  2020           and      byte ptr [bx + si], ah  ; 04CD:0CAD
+  0597F  0020           add      byte ptr [bx + si], ah  ; 04CD:0CAF
+  05981  2020           and      byte ptr [bx + si], ah  ; 04CD:0CB1
+  05983  2020           and      byte ptr [bx + si], ah  ; 04CD:0CB3
+  05985  2020           and      byte ptr [bx + si], ah  ; 04CD:0CB5
+  05987  2020           and      byte ptr [bx + si], ah  ; 04CD:0CB7
+  05989  2020           and      byte ptr [bx + si], ah  ; 04CD:0CB9
+  0598B  2020           and      byte ptr [bx + si], ah  ; 04CD:0CBB
+  0598D  2020           and      byte ptr [bx + si], ah  ; 04CD:0CBD
+  0598F  2000           and      byte ptr [bx + si], al  ; 04CD:0CBF
+  05991  2020           and      byte ptr [bx + si], ah  ; 04CD:0CC1
+  05993  2020           and      byte ptr [bx + si], ah  ; 04CD:0CC3
+  05995  2020           and      byte ptr [bx + si], ah  ; 04CD:0CC5
+  05997  2020           and      byte ptr [bx + si], ah  ; 04CD:0CC7
+  05999  2020           and      byte ptr [bx + si], ah  ; 04CD:0CC9
+  0599B  2020           and      byte ptr [bx + si], ah  ; 04CD:0CCB
+  0599D  2020           and      byte ptr [bx + si], ah  ; 04CD:0CCD
+  0599F  2020           and      byte ptr [bx + si], ah  ; 04CD:0CCF
+  059A1  0020           add      byte ptr [bx + si], ah  ; 04CD:0CD1
+  059A3  2020           and      byte ptr [bx + si], ah  ; 04CD:0CD3
+  059A5  2020           and      byte ptr [bx + si], ah  ; 04CD:0CD5
+  059A7  2020           and      byte ptr [bx + si], ah  ; 04CD:0CD7
+  059A9  2020           and      byte ptr [bx + si], ah  ; 04CD:0CD9
+  059AB  2020           and      byte ptr [bx + si], ah  ; 04CD:0CDB
+  059AD  2020           and      byte ptr [bx + si], ah  ; 04CD:0CDD
+  059AF  2020           and      byte ptr [bx + si], ah  ; 04CD:0CDF
+  059B1  2000           and      byte ptr [bx + si], al  ; 04CD:0CE1
+  059B3  2020           and      byte ptr [bx + si], ah  ; 04CD:0CE3
+  059B5  2020           and      byte ptr [bx + si], ah  ; 04CD:0CE5
+  059B7  2020           and      byte ptr [bx + si], ah  ; 04CD:0CE7
+  059B9  2020           and      byte ptr [bx + si], ah  ; 04CD:0CE9
+  059BB  2020           and      byte ptr [bx + si], ah  ; 04CD:0CEB
+  059BD  2020           and      byte ptr [bx + si], ah  ; 04CD:0CED
+  059BF  2020           and      byte ptr [bx + si], ah  ; 04CD:0CEF
+  059C1  2020           and      byte ptr [bx + si], ah  ; 04CD:0CF1
+  059C3  0020           add      byte ptr [bx + si], ah  ; 04CD:0CF3
+  059C5  2020           and      byte ptr [bx + si], ah  ; 04CD:0CF5
+  059C7  2020           and      byte ptr [bx + si], ah  ; 04CD:0CF7
+  059C9  2020           and      byte ptr [bx + si], ah  ; 04CD:0CF9
+  059CB  2020           and      byte ptr [bx + si], ah  ; 04CD:0CFB
+  059CD  2020           and      byte ptr [bx + si], ah  ; 04CD:0CFD
+  059CF  2020           and      byte ptr [bx + si], ah  ; 04CD:0CFF
+  059D1  2020           and      byte ptr [bx + si], ah  ; 04CD:0D01
+  059D3  2000           and      byte ptr [bx + si], al  ; 04CD:0D03
+  059D5  2020           and      byte ptr [bx + si], ah  ; 04CD:0D05
+  059D7  2020           and      byte ptr [bx + si], ah  ; 04CD:0D07
+  059D9  2020           and      byte ptr [bx + si], ah  ; 04CD:0D09
+  059DB  2020           and      byte ptr [bx + si], ah  ; 04CD:0D0B
+  059DD  2020           and      byte ptr [bx + si], ah  ; 04CD:0D0D
+  059DF  2020           and      byte ptr [bx + si], ah  ; 04CD:0D0F
+  059E1  2020           and      byte ptr [bx + si], ah  ; 04CD:0D11
+  059E3  2020           and      byte ptr [bx + si], ah  ; 04CD:0D13
+  059E5  0037           add      byte ptr [bx], dh  ; 04CD:0D15
+  059E7  0038           add      byte ptr [bx + si], bh  ; 04CD:0D17
+  059E9  0039           add      byte ptr [bx + di], bh  ; 04CD:0D19
+  059EB  0034           add      byte ptr [si], dh  ; 04CD:0D1B
+  059ED  0035           add      byte ptr [di], dh  ; 04CD:0D1D
+  059EF  0036002e       add      byte ptr [0x2e00], dh  ; 04CD:0D1F
+  059F3  002b           add      byte ptr [bp + di], ch  ; 04CD:0D23
+  059F5  002d           add      byte ptr [di], ch  ; 04CD:0D25
+  059F7  0031           add      byte ptr [bx + di], dh  ; 04CD:0D27
+  059F9  0032           add      byte ptr [bp + si], dh  ; 04CD:0D29
+  059FB  0033           add      byte ptr [bp + di], dh  ; 04CD:0D2B
+  059FD  0030           add      byte ptr [bx + si], dh  ; 04CD:0D2D
+  059FF  005800         add      byte ptr [bx + si], bl  ; 04CD:0D2F
+  05A02  2f             das        ; 04CD:0D32
+  05A03  0025           add      byte ptr [di], ah  ; 04CD:0D33
+  05A05  003d           add      byte ptr [di], bh  ; 04CD:0D35
+  05A07  004341         add      byte ptr [bp + di + 0x41], al  ; 04CD:0D37
+  05A0A  4c             dec      sp  ; 04CD:0D3A
+  05A0B  43             inc      bx  ; 04CD:0D3B
+  05A0C  55             push     bp  ; 04CD:0D3C
+  05A0D  4c             dec      sp  ; 04CD:0D3D
+  05A0E  41             inc      cx  ; 04CD:0D3E
+  05A0F  54             push     sp  ; 04CD:0D3F
+  05A10  4f             dec      di  ; 04CD:0D40
+  05A11  52             push     dx  ; 04CD:0D41
+  05A12  00444d         add      byte ptr [si + 0x4d], al  ; 04CD:0D42
+  05A15  43             inc      bx  ; 04CD:0D45
+  05A16  4f             dec      di  ; 04CD:0D46
+  05A17  4e             dec      si  ; 04CD:0D47
+  05A18  46             inc      si  ; 04CD:0D48
+  05A19  49             dec      cx  ; 04CD:0D49
+  05A1A  47             inc      di  ; 04CD:0D4A
+  05A1B  004d45         add      byte ptr [di + 0x45], cl  ; 04CD:0D4B
+  05A1E  4d             dec      bp  ; 04CD:0D4E
+  05A1F  4f             dec      di  ; 04CD:0D4F
+  05A20  52             push     dx  ; 04CD:0D50
+  05A21  59             pop      cx  ; 04CD:0D51
+  05A22  004341         add      byte ptr [bp + di + 0x41], al  ; 04CD:0D52
+  05A25  4c             dec      sp  ; 04CD:0D55
+  05A26  43             inc      bx  ; 04CD:0D56
+  05A27  55             push     bp  ; 04CD:0D57
+  05A28  4c             dec      sp  ; 04CD:0D58
+  05A29  41             inc      cx  ; 04CD:0D59
+  05A2A  54             push     sp  ; 04CD:0D5A
+  05A2B  4f             dec      di  ; 04CD:0D5B
+  05A2C  52             push     dx  ; 04CD:0D5C
+  05A2D  00444d         add      byte ptr [si + 0x4d], al  ; 04CD:0D5D
+  05A30  43             inc      bx  ; 04CD:0D60
+  05A31  4f             dec      di  ; 04CD:0D61
+  05A32  4e             dec      si  ; 04CD:0D62
+  05A33  46             inc      si  ; 04CD:0D63
+  05A34  49             dec      cx  ; 04CD:0D64
+  05A35  47             inc      di  ; 04CD:0D65
+  05A36  004d45         add      byte ptr [di + 0x45], cl  ; 04CD:0D66
+  05A39  4d             dec      bp  ; 04CD:0D69
+  05A3A  4f             dec      di  ; 04CD:0D6A
+  05A3B  52             push     dx  ; 04CD:0D6B
+  05A3C  59             pop      cx  ; 04CD:0D6C
+  05A3D  0020           add      byte ptr [bx + si], ah  ; 04CD:0D6D
+  05A3F  2020           and      byte ptr [bx + si], ah  ; 04CD:0D6F
+  05A41  2020           and      byte ptr [bx + si], ah  ; 04CD:0D71
+  05A43  2020           and      byte ptr [bx + si], ah  ; 04CD:0D73
+  05A45  2020           and      byte ptr [bx + si], ah  ; 04CD:0D75
+  05A47  2020           and      byte ptr [bx + si], ah  ; 04CD:0D77
+  05A49  2020           and      byte ptr [bx + si], ah  ; 04CD:0D79
+  05A4B  2020           and      byte ptr [bx + si], ah  ; 04CD:0D7B
+  05A4D  0000           add      byte ptr [bx + si], al  ; 04CD:0D7D
+  05A4F  0000           add      byte ptr [bx + si], al  ; 04CD:0D7F
+  05A51  0000           add      byte ptr [bx + si], al  ; 04CD:0D81
+  05A53  0000           add      byte ptr [bx + si], al  ; 04CD:0D83
+  05A55  0020           add      byte ptr [bx + si], ah  ; 04CD:0D85
+  05A57  2020           and      byte ptr [bx + si], ah  ; 04CD:0D87
+  05A59  2020           and      byte ptr [bx + si], ah  ; 04CD:0D89
+  05A5B  2020           and      byte ptr [bx + si], ah  ; 04CD:0D8B
+  05A5D  2020           and      byte ptr [bx + si], ah  ; 04CD:0D8D
+  05A5F  2020           and      byte ptr [bx + si], ah  ; 04CD:0D8F
+  05A61  2020           and      byte ptr [bx + si], ah  ; 04CD:0D91
+  05A63  2020           and      byte ptr [bx + si], ah  ; 04CD:0D93
+  05A65  0000           add      byte ptr [bx + si], al  ; 04CD:0D95
+  05A67  0000           add      byte ptr [bx + si], al  ; 04CD:0D97
+  05A69  0000           add      byte ptr [bx + si], al  ; 04CD:0D99
+  05A6B  00f0           add      al, dh  ; 04CD:0D9B
+  05A6D  3f             aas        ; 04CD:0D9D
+  05A6E  0000           add      byte ptr [bx + si], al  ; 04CD:0D9E
+  05A70  0000           add      byte ptr [bx + si], al  ; 04CD:0DA0
+  05A72  0000           add      byte ptr [bx + si], al  ; 04CD:0DA2
+  05A74  2440           and      al, 0x40  ; 04CD:0DA4
+  05A76  0000           add      byte ptr [bx + si], al  ; 04CD:0DA6
+  05A78  0000           add      byte ptr [bx + si], al  ; 04CD:0DA8
+  05A7A  0000           add      byte ptr [bx + si], al  ; 04CD:0DAA
+  05A7C  48             dec      ax  ; 04CD:0DAC
+  05A7D  40             inc      ax  ; 04CD:0DAD
+  05A7E  af             scasw    ax, word ptr es:[di]  ; 04CD:0DAE
+  05A7F  96             xchg     si, ax  ; 04CD:0DAF
+  05A80  50             push     ax  ; 04CD:0DB0
+  05A81  2e358d13       xor      ax, 0x138d  ; 04CD:0DB1
+  05A85  5f             pop      di  ; 04CD:0DB5
+  05A86  af             scasw    ax, word ptr es:[di]  ; 04CD:0DB6
+  05A87  96             xchg     si, ax  ; 04CD:0DB7
+  05A88  50             push     ax  ; 04CD:0DB8
+  05A89  2e358d13       xor      ax, 0x138d  ; 04CD:0DB9
+  05A8D  df00           fild     word ptr [bx + si]  ; 04CD:0DBD
+  05A8F  0000           add      byte ptr [bx + si], al  ; 04CD:0DBF
+  05A91  0000           add      byte ptr [bx + si], al  ; 04CD:0DC1
+  05A93  005940         add      byte ptr [bx + di + 0x40], bl  ; 04CD:0DC3
+  05A96  82764968       xor      byte ptr [bp + 0x49], 0x68  ; 04CD:0DC6
+  05A9A  c2253c         ret      0x3c25  ; 04CD:0DCA
+  05A9D  3d8276         cmp      ax, 0x7682  ; 04CD:0DCD
+  05AA0  49             dec      cx  ; 04CD:0DD0
+  05AA1  68c225         push     0x25c2  ; 04CD:0DD1
+  05AA4  3cbd           cmp      al, 0xbd  ; 04CD:0DD4
+  05AA6  2020           and      byte ptr [bx + si], ah  ; 04CD:0DD6
+  05AA8  2020           and      byte ptr [bx + si], ah  ; 04CD:0DD8
+  05AAA  2020           and      byte ptr [bx + si], ah  ; 04CD:0DDA
+  05AAC  2020           and      byte ptr [bx + si], ah  ; 04CD:0DDC
+  05AAE  2020           and      byte ptr [bx + si], ah  ; 04CD:0DDE
+  05AB0  2020           and      byte ptr [bx + si], ah  ; 04CD:0DE0
+  05AB2  2020           and      byte ptr [bx + si], ah  ; 04CD:0DE2
+  05AB4  2020           and      byte ptr [bx + si], ah  ; 04CD:0DE4
+  05AB6  0020           add      byte ptr [bx + si], ah  ; 04CD:0DE6
+  05AB8  2020           and      byte ptr [bx + si], ah  ; 04CD:0DE8
+  05ABA  2020           and      byte ptr [bx + si], ah  ; 04CD:0DEA
+  05ABC  2020           and      byte ptr [bx + si], ah  ; 04CD:0DEC
+  05ABE  2020           and      byte ptr [bx + si], ah  ; 04CD:0DEE
+  05AC0  2020           and      byte ptr [bx + si], ah  ; 04CD:0DF0
+  05AC2  2020           and      byte ptr [bx + si], ah  ; 04CD:0DF2
+  05AC4  2020           and      byte ptr [bx + si], ah  ; 04CD:0DF4
+  05AC6  2000           and      byte ptr [bx + si], al  ; 04CD:0DF6
+  05AC8  0000           add      byte ptr [bx + si], al  ; 04CD:0DF8
+  05ACA  00a2941a       add      byte ptr [bp + si + 0x1a94], ah  ; 04CD:0DFA
+  05ACE  6d             insw     word ptr es:[di], dx  ; 04CD:0DFE
+  05ACF  42             inc      dx  ; 04CD:0DFF
+  05AD0  11ea           adc      dx, bp  ; 04CD:0E00
+  05AD2  2d8199         sub      ax, 0x9981  ; 04CD:0E02
+  05AD5  97             xchg     di, ax  ; 04CD:0E05
+  05AD6  713d           jno      loc_05B15  ; 04CD:0E06
+  05AD8  0000           add      byte ptr [bx + si], al  ; 04CD:0E08
+  05ADA  00a2941a       add      byte ptr [bp + si + 0x1a94], ah  ; 04CD:0E0A
+  05ADE  6d             insw     word ptr es:[di], dx  ; 04CD:0E0E
+  05ADF  c211ea         ret      0xea11  ; 04CD:0E0F
+  05AE2  2d8199         sub      ax, 0x9981  ; 04CD:0E12
+  05AE5  97             xchg     di, ax  ; 04CD:0E15
+  05AE6  71bd           jno      loc_05AA5  ; 04CD:0E16
+  05AE8  41             inc      cx  ; 04CD:0E18
+  05AE9  43             inc      bx  ; 04CD:0E19
+  05AEA  43             inc      bx  ; 04CD:0E1A
+  05AEB  43             inc      bx  ; 04CD:0E1B
+  05AEC  48             dec      ax  ; 04CD:0E1C
+  05AED  41             inc      cx  ; 04CD:0E1D
+  05AEE  49             dec      cx  ; 04CD:0E1E
+  05AEF  4e             dec      si  ; 04CD:0E1F
+  05AF0  004143         add      byte ptr [bx + di + 0x43], al  ; 04CD:0E20
+  05AF3  43             inc      bx  ; 04CD:0E23
+  05AF4  43             inc      bx  ; 04CD:0E24
+  05AF5  48             dec      ax  ; 04CD:0E25
+  05AF6  41             inc      cx  ; 04CD:0E26
+  05AF7  49             dec      cx  ; 04CD:0E27
+  05AF8  4e             dec      si  ; 04CD:0E28
+  05AF9  004143         add      byte ptr [bx + di + 0x43], al  ; 04CD:0E29
+  05AFC  43             inc      bx  ; 04CD:0E2C
+  05AFD  4e             dec      si  ; 04CD:0E2D
+  05AFE  41             inc      cx  ; 04CD:0E2E
+  05AFF  4d             dec      bp  ; 04CD:0E2F
+  05B00  45             inc      bp  ; 04CD:0E30
+  05B01  00444d         add      byte ptr [si + 0x4d], al  ; 04CD:0E31
+  05B04  48             dec      ax  ; 04CD:0E34
+  05B05  45             inc      bp  ; 04CD:0E35
+  05B06  4c             dec      sp  ; 04CD:0E36
+  05B07  50             push     ax  ; 04CD:0E37
+  05B08  00444d         add      byte ptr [si + 0x4d], al  ; 04CD:0E38
+  05B0B  43             inc      bx  ; 04CD:0E3B
+  05B0C  41             inc      cx  ; 04CD:0E3C
+  05B0D  4c             dec      sp  ; 04CD:0E3D
+  05B0E  43             inc      bx  ; 04CD:0E3E
+  05B0F  00444d         add      byte ptr [si + 0x4d], al  ; 04CD:0E3F
+  05B12  43             inc      bx  ; 04CD:0E42
+  05B13  4f             dec      di  ; 04CD:0E43
+  05B14  4e             dec      si  ; 04CD:0E44
+loc_05B15:
+  05B15  46             inc      si  ; 04CD:0E45
+  05B16  49             dec      cx  ; 04CD:0E46
+  05B17  47             inc      di  ; 04CD:0E47
+  05B18  004341         add      byte ptr [bp + di + 0x41], al  ; 04CD:0E48
+  05B1B  4c             dec      sp  ; 04CD:0E4B
+  05B1C  43             inc      bx  ; 04CD:0E4C
+  05B1D  52             push     dx  ; 04CD:0E4D
+  05B1E  45             inc      bp  ; 04CD:0E4E
+  05B1F  53             push     bx  ; 04CD:0E4F
+  05B20  0000           add      byte ptr [bx + si], al  ; 04CD:0E50
+  05B22  0000           add      byte ptr [bx + si], al  ; 04CD:0E52
+  05B24  0000           add      byte ptr [bx + si], al  ; 04CD:0E54
+  05B26  0000           add      byte ptr [bx + si], al  ; 04CD:0E56
+  05B28  0000           add      byte ptr [bx + si], al  ; 04CD:0E58
+  05B2A  3c3c           cmp      al, 0x3c  ; 04CD:0E5A
+  05B2C  4e             dec      si  ; 04CD:0E5C
+  05B2D  4d             dec      bp  ; 04CD:0E5D
+  05B2E  53             push     bx  ; 04CD:0E5E
+  05B2F  47             inc      di  ; 04CD:0E5F
+  05B30  3e3efd         std        ; 04CD:0E60
+  05B33  003a           add      byte ptr [bp + si], bh  ; 04CD:0E63
+  05B35  204d41         and      byte ptr [di + 0x41], cl  ; 04CD:0E65
+  05B38  54             push     sp  ; 04CD:0E68
+  05B39  48             dec      ax  ; 04CD:0E69
+  05B3A  0d0a2d         or       ax, 0x2d0a  ; 04CD:0E6A
+  05B3D  20666c         and      byte ptr [bp + 0x6c], ah  ; 04CD:0E6D
+  05B40  6f             outsw    dx, word ptr [si]  ; 04CD:0E70
+  05B41  61             popaw      ; 04CD:0E71
+  05B42  7469           je       loc_05BAD  ; 04CD:0E72
+  05B44  6e             outsb    dx, byte ptr [si]  ; 04CD:0E74
+  05B45  672d706f       sub      ax, 0x6f70  ; 04CD:0E75
+  05B49  696e742065     imul     bp, word ptr [bp + 0x74], 0x6520  ; 04CD:0E79
+  05B4E  7272           jb       loc_05BC2  ; 04CD:0E7E
+  05B50  6f             outsw    dx, word ptr [si]  ; 04CD:0E80
+  05B51  723a           jb       loc_05B8D  ; 04CD:0E81
+  05B53  2000           and      byte ptr [bx + si], al  ; 04CD:0E83
+  05B55  6500696e       add      byte ptr gs:[bx + di + 0x6e], ch  ; 04CD:0E85
+  05B59  7661           jbe      loc_05BBC  ; 04CD:0E89
+  05B5B  6c             insb     byte ptr es:[di], dx  ; 04CD:0E8B
+  05B5C  69640d0a00     imul     sp, word ptr [si + 0xd], 0xa  ; 04CD:0E8C
+  05B61  6700646976     add      byte ptr [ecx + ebp*2 + 0x76], ah  ; 04CD:0E91
+  05B66  6964652062     imul     sp, word ptr [si + 0x65], 0x6220  ; 04CD:0E96
+  05B6B  7920           jns      loc_05B8D  ; 04CD:0E9B
+  05B6D  300d           xor      byte ptr [di], cl  ; 04CD:0E9D
+  05B6F  0a00           or       al, byte ptr [bx + si]  ; 04CD:0E9F
+  05B71  68006f         push     0x6f00  ; 04CD:0EA1
+  05B74  7665           jbe      loc_05BDB  ; 04CD:0EA4
+  05B76  7266           jb       loc_05BDE  ; 04CD:0EA6
+  05B78  6c             insb     byte ptr es:[di], dx  ; 04CD:0EA8
+  05B79  6f             outsw    dx, word ptr [si]  ; 04CD:0EA9
+  05B7A  770d           ja       loc_05B89  ; 04CD:0EAA
+  05B7C  0a00           or       al, byte ptr [bx + si]  ; 04CD:0EAC
+  05B7E  6e             outsb    dx, byte ptr [si]  ; 04CD:0EAE
+  05B7F  007374         add      byte ptr [bp + di + 0x74], dh  ; 04CD:0EAF
+  05B82  61             popaw      ; 04CD:0EB2
+  05B83  636b20         arpl     word ptr [bp + di + 0x20], bp  ; 04CD:0EB3
+  05B86  6f             outsw    dx, word ptr [si]  ; 04CD:0EB6
+  05B87  7665           jbe      loc_05BEE  ; 04CD:0EB7
+loc_05B89:
+  05B89  7266           jb       loc_05BF1  ; 04CD:0EB9
+  05B8B  6c             insb     byte ptr es:[di], dx  ; 04CD:0EBB
+  05B8C  6f             outsw    dx, word ptr [si]  ; 04CD:0EBC
+loc_05B8D:
+  05B8D  770d           ja       loc_05B9C  ; 04CD:0EBD
+  05B8F  0a00           or       al, byte ptr [bx + si]  ; 04CD:0EBF
+  05B91  7000           jo       loc_05B93  ; 04CD:0EC1
+loc_05B93:
+  05B93  657870         js       loc_05C06  ; 04CD:0EC3
+  05B96  6c             insb     byte ptr es:[di], dx  ; 04CD:0EC6
+  05B97  696369746c     imul     sp, word ptr [bp + di + 0x69], 0x6c74  ; 04CD:0EC7
+loc_05B9C:
+  05B9C  7920           jns      loc_05BBE  ; 04CD:0ECC
+  05B9E  67656e         outsb    dx, byte ptr gs:[esi]  ; 04CD:0ECE
+  05BA1  657261         jb       loc_05C05  ; 04CD:0ED1
+  05BA4  7465           je       loc_05C0B  ; 04CD:0ED4
+  05BA6  640d0a00       or       ax, 0xa  ; 04CD:0ED6
+  05BAA  0000           add      byte ptr [bx + si], al  ; 04CD:0EDA
+  05BAC  52             push     dx  ; 04CD:0EDC
+loc_05BAD:
+  05BAD  363030         xor      byte ptr ss:[bx + si], dh  ; 04CD:0EDD
+  05BB0  300d           xor      byte ptr [di], cl  ; 04CD:0EE0
+  05BB2  0a2d           or       ch, byte ptr [di]  ; 04CD:0EE2
+  05BB4  207374         and      byte ptr [bp + di + 0x74], dh  ; 04CD:0EE4
+  05BB7  61             popaw      ; 04CD:0EE7
+  05BB8  636b20         arpl     word ptr [bp + di + 0x20], bp  ; 04CD:0EE8
+  05BBB  6f             outsw    dx, word ptr [si]  ; 04CD:0EEB
+loc_05BBC:
+  05BBC  7665           jbe      loc_05C23  ; 04CD:0EEC
+loc_05BBE:
+  05BBE  7266           jb       loc_05C26  ; 04CD:0EEE
+  05BC0  6c             insb     byte ptr es:[di], dx  ; 04CD:0EF0
+  05BC1  6f             outsw    dx, word ptr [si]  ; 04CD:0EF1
+loc_05BC2:
+  05BC2  770d           ja       loc_05BD1  ; 04CD:0EF2
+  05BC4  0a00           or       al, byte ptr [bx + si]  ; 04CD:0EF4
+  05BC6  0300           add      ax, word ptr [bx + si]  ; 04CD:0EF6
+  05BC8  52             push     dx  ; 04CD:0EF8
+  05BC9  363030         xor      byte ptr ss:[bx + si], dh  ; 04CD:0EF9
+  05BCC  330d           xor      cx, word ptr [di]  ; 04CD:0EFC
+  05BCE  0a2d           or       ch, byte ptr [di]  ; 04CD:0EFE
+  05BD0  20696e         and      byte ptr [bx + di + 0x6e], ch  ; 04CD:0F00
+  05BD3  7465           je       loc_05C3A  ; 04CD:0F03
+  05BD5  67657220       jb       loc_05BF9  ; 04CD:0F05
+  05BD9  646976696465   imul     si, word ptr fs:[bp + 0x69], 0x6564  ; 04CD:0F09
+  05BDF  206279         and      byte ptr [bp + si + 0x79], ah  ; 04CD:0F0F
+  05BE2  2030           and      byte ptr [bx + si], dh  ; 04CD:0F12
+  05BE4  0d0a00         or       ax, 0xa  ; 04CD:0F14
+  05BE7  0900           or       word ptr [bx + si], ax  ; 04CD:0F17
+  05BE9  52             push     dx  ; 04CD:0F19
+  05BEA  363030         xor      byte ptr ss:[bx + si], dh  ; 04CD:0F1A
+  05BED  390d           cmp      word ptr [di], cx  ; 04CD:0F1D
+  05BEF  0a2d           or       ch, byte ptr [di]  ; 04CD:0F1F
+loc_05BF1:
+  05BF1  206e6f         and      byte ptr [bp + 0x6f], ch  ; 04CD:0F21
+  05BF4  7420           je       loc_05C16  ; 04CD:0F24
+  05BF6  656e           outsb    dx, byte ptr gs:[si]  ; 04CD:0F26
+  05BF8  6f             outsw    dx, word ptr [si]  ; 04CD:0F28
+loc_05BF9:
+  05BF9  7567           jne      loc_05C62  ; 04CD:0F29
+  05BFB  682073         push     0x7320  ; 04CD:0F2B
+  05BFE  7061           jo       loc_05C61  ; 04CD:0F2E
+  05C00  636520         arpl     word ptr [di + 0x20], sp  ; 04CD:0F30
+  05C03  666f           outsd    dx, dword ptr [si]  ; 04CD:0F33
+loc_05C05:
+  05C05  7220           jb       loc_05C27  ; 04CD:0F35
+  05C07  656e           outsb    dx, byte ptr gs:[si]  ; 04CD:0F37
+  05C09  7669           jbe      loc_05C74  ; 04CD:0F39
+loc_05C0B:
+  05C0B  726f           jb       loc_05C7C  ; 04CD:0F3B
+  05C0D  6e             outsb    dx, byte ptr [si]  ; 04CD:0F3D
+  05C0E  6d             insw     word ptr es:[di], dx  ; 04CD:0F3E
+  05C0F  656e           outsb    dx, byte ptr gs:[si]  ; 04CD:0F3F
+  05C11  740d           je       loc_05C20  ; 04CD:0F41
+  05C13  0a00           or       al, byte ptr [bx + si]  ; 04CD:0F43
+  05C15  fc             cld        ; 04CD:0F45
+loc_05C16:
+  05C16  000d           add      byte ptr [di], cl  ; 04CD:0F46
+  05C18  0a00           or       al, byte ptr [bx + si]  ; 04CD:0F48
+  05C1A  ff00           inc      word ptr [bx + si]  ; 04CD:0F4A
+  05C1C  7275           jb       loc_05C93  ; 04CD:0F4C
+  05C1E  6e             outsb    dx, byte ptr [si]  ; 04CD:0F4E
+  05C1F  2d7469         sub      ax, 0x6974  ; 04CD:0F4F
+  05C22  6d             insw     word ptr es:[di], dx  ; 04CD:0F52
+loc_05C23:
+  05C23  65206572       and      byte ptr gs:[di + 0x72], ah  ; 04CD:0F53
+loc_05C27:
+  05C27  726f           jb       loc_05C98  ; 04CD:0F57
+  05C29  7220           jb       loc_05C4B  ; 04CD:0F59
+  05C2B  0002           add      byte ptr [bp + si], al  ; 04CD:0F5B
+  05C2D  005236         add      byte ptr [bp + si + 0x36], dl  ; 04CD:0F5D
+  05C30  3030           xor      byte ptr [bx + si], dh  ; 04CD:0F60
+  05C32  320d           xor      cl, byte ptr [di]  ; 04CD:0F62
+  05C34  0a2d           or       ch, byte ptr [di]  ; 04CD:0F64
+  05C36  20666c         and      byte ptr [bp + 0x6c], ah  ; 04CD:0F66
+  05C39  6f             outsw    dx, word ptr [si]  ; 04CD:0F69
+loc_05C3A:
+  05C3A  61             popaw      ; 04CD:0F6A
+  05C3B  7469           je       loc_05CA6  ; 04CD:0F6B
+  05C3D  6e             outsb    dx, byte ptr [si]  ; 04CD:0F6D
+  05C3E  6720706f       and      byte ptr [eax + 0x6f], dh  ; 04CD:0F6E
+  05C42  696e74206e     imul     bp, word ptr [bp + 0x74], 0x6e20  ; 04CD:0F72
+  05C47  6f             outsw    dx, word ptr [si]  ; 04CD:0F77
+  05C48  7420           je       loc_05C6A  ; 04CD:0F78
+  05C4A  6c             insb     byte ptr es:[di], dx  ; 04CD:0F7A
+loc_05C4B:
+  05C4B  6f             outsw    dx, word ptr [si]  ; 04CD:0F7B
+  05C4C  61             popaw      ; 04CD:0F7C
+  05C4D  6465640d0a00   or       ax, 0xa  ; 04CD:0F7D
+  05C53  0100           add      word ptr [bx + si], ax  ; 04CD:0F83
+  05C55  52             push     dx  ; 04CD:0F85
+  05C56  363030         xor      byte ptr ss:[bx + si], dh  ; 04CD:0F86
+  05C59  310d           xor      word ptr [di], cx  ; 04CD:0F89
+  05C5B  0a2d           or       ch, byte ptr [di]  ; 04CD:0F8B
+  05C5D  206e75         and      byte ptr [bp + 0x75], ch  ; 04CD:0F8D
+  05C60  6c             insb     byte ptr es:[di], dx  ; 04CD:0F90
+loc_05C61:
+  05C61  6c             insb     byte ptr es:[di], dx  ; 04CD:0F91
+loc_05C62:
+  05C62  20706f         and      byte ptr [bx + si + 0x6f], dh  ; 04CD:0F92
+  05C65  696e746572     imul     bp, word ptr [bp + 0x74], 0x7265  ; 04CD:0F95
+loc_05C6A:
+  05C6A  206173         and      byte ptr [bx + di + 0x73], ah  ; 04CD:0F9A
+  05C6D  7369           jae      loc_05CD8  ; 04CD:0F9D
+  05C6F  676e           outsb    dx, byte ptr [esi]  ; 04CD:0F9F
+  05C71  6d             insw     word ptr es:[di], dx  ; 04CD:0FA1
+  05C72  656e           outsb    dx, byte ptr gs:[si]  ; 04CD:0FA2
+loc_05C74:
+  05C74  740d           je       loc_05C83  ; 04CD:0FA4
+  05C76  0a00           or       al, byte ptr [bx + si]  ; 04CD:0FA6
+  05C78  ff             db       0xff  ; 04CD:0FA8
+  05C79  ff             db       0xff  ; 04CD:0FA9
+  05C7A  ff             db       0xff  ; 04CD:0FAA

@@ -16,7 +16,8 @@
 | DeskMate version history documented | :white_check_mark: | See research/docs/ |
 | DeskMate 3.05 binaries acquired | :white_check_mark: | archive.org ISO + WinWorld 3.5"/5.25" disk images; 148 files extracted |
 | DOSBox config for original | :white_check_mark: | dosbox/configs/deskmate-tandy.conf (Tandy mode, 8086, 4000 cycles) |
-| File format documentation | :white_check_mark: | 16 formats documented from binary analysis; see research/docs/file-formats.md and research/docs/deskmate-sdk-research.md |
+| File format documentation | :white_check_mark: | 20 formats documented (.SND/.SNG/.PNT/.FIG/.WKS/.FIL/.RES/.CFG/.R89/.MOD/.FF1/.RFD/.HLP/.TUT/.PCL/.CLN/.ADR/.LBL/.ACC/.CLP + .PNT/.SNG noted as acquisition targets); see research/docs/file-formats.md |
+| Desk accessory documentation | :white_check_mark: | All 18 ACC modules profiled with function counts, imports, INT patterns, and RE priority; see research/docs/desk-accessories.md |
 | SDK / compiler identified | :white_check_mark: | Microsoft C 5.x (1987 runtime); DM89 extended header format decoded; INT E0h API service classes mapped |
 | Hardware register documentation | :white_check_mark: | TGA/TGA2, SN76496, PSSJ DAC, PC speaker, keyboard, mouse; see research/references/hardware-registers.md |
 
@@ -41,7 +42,7 @@
 | INSTALL.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 210 functions, 5 segments, 13 relocs |
 | DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); 74 functions (41 named); CRT chain → _main; config I/O to DMCSR.CFG |
 | INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | 828-byte chain loader; validates DM89 sig then EXEC's DESK.EXE |
-| *.RES (51 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 1056 functions, 59351 insns total; 48 MZ+DM89 + 3 plain MZ; DMFONT.RES largest (179 funcs); see disassembly/raw/res/ |
+| *.RES (52 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 1056 functions, 59351 insns total; 48 MZ+DM89 + 3 plain MZ + 1 compressed data (TUTKBD.RES); DMFONT.RES largest (179 funcs); see disassembly/raw/res/ |
 | *.ACC (18 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 2141 functions total; DMHELP.ACC largest (223 funcs); 11 import dmguf; see disassembly/raw/acc/ |
 
 ## Stage 3: Annotation
@@ -64,8 +65,11 @@
 | FORMSET.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 419 functions named (96.4% coverage); form designer/editor for FILER databases; form layout with field placement, labels, boxes, lines; field binding to database columns; visual form editing; imports dmguf+dmform+dmdb via DM89 far-call dispatch; DMDB thunk table (40+ entries); 6 segments, 25 relocations; no direct HW I/O; see disassembly/annotated/formset.asm |
 | PLAY.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 114 functions named (25 app + 30 DMGUF + 9 PRGUF + 6 resource + 25 CRT); tutorial lesson catalog (15 entries); dmplay/unpack resource interaction; no direct HW I/O; see disassembly/annotated/play.asm |
 | MAILMRGE.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 168 functions named (45 app + 11 host + 22 DM + CRT); merge field substitution, header/footer, date formatting, printer control; 21 INT E0h + 17 INT 21h calls; no direct HW I/O; see disassembly/annotated/mailmrge.asm |
+| INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | All instructions annotated; 316-byte chain loader; validates DM89 signature in DESK.EXE; INT 21h/4Bh overlay load; patches MOLDAPP.MOD→INSTALL in environment; stack switch + far return trampoline; see disassembly/annotated/install.asm |
+| INSTALL.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 210 functions named; DeskMate installer module; hard disk detection, file copy engine, DMCSR.CFG config writer; DMGUF/PRGUF import thunks; INT E0h stack-switch wrapper; 5 segments, 13 relocations; see disassembly/annotated/install-pdm.asm |
 | DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 74 functions named (18 app + 56 CRT); DMCSR.CFG format mapped; no direct HW I/O — selects .RES driver for DESK.EXE; see disassembly/annotated/dmvid.asm |
-| *.RES (51 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 51 RES modules annotated; key modules: PRGUF (core PDM API thunk library), DMFONT (font rendering, 179 funcs), DMFORM (form engine), DMDBRD/DMDBUPD/DMDBBLD (database read/update/build), ALARM/ALRMINIT (alarm TSR), SPELL/SPL (spell checker + dictionary trie), PROTOCOL (XMODEM/YMODEM file transfer), DMPLAY (tutorial playback), DMSSM (sound manager), DMEMM (EMS memory), D87 (8087 detection), DMUNPACK (decompression); 16 video drivers (Tandy/CGA/EGA/VGA/Hercules/MCGA/Tandy1000 enhanced+standard pairs) with full I/O port and framebuffer documentation; 11 printer drivers; see disassembly/annotated/res/ |
+| *.RES (52 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 52 RES modules annotated (51 executable + 1 compressed data TUTKBD.RES); key modules: PRGUF (core PDM API thunk library), DMFONT (font rendering, 179 funcs), DMFORM (form engine), DMDBRD/DMDBUPD/DMDBBLD (database read/update/build), ALARM/ALRMINIT (alarm TSR), SPELL/SPL (spell checker + dictionary trie), PROTOCOL (XMODEM/YMODEM file transfer), DMPLAY (tutorial playback), DMSSM (sound manager), DMEMM (EMS memory), D87 (8087 detection), DMUNPACK (decompression); 16 video drivers (Tandy/CGA/EGA/VGA/Hercules/MCGA/Tandy1000 enhanced+standard pairs) with full I/O port and framebuffer documentation; 11 printer drivers; see disassembly/annotated/res/ |
+| *.ACC (18 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 18 ACC desk accessories annotated; DMHELP (223 funcs, help system), DMACCESS (81 funcs, accessibility dispatcher), DMALARM (145 funcs, alarm TSR), DMSERV (191 funcs, service utility), DMSPELL (153 funcs, spell checker), DMCLIP (124 funcs, clipboard), DMPHONE (192 funcs, phone dialer), DMSETUP (193 funcs, configuration), DMNOTEPD (notepad), DMTODO (to-do list), DMDRWPRT (draw print), 6 printer driver ACCs; see disassembly/annotated/acc/ |
 
 ## Stage 4: C Transpilation
 
