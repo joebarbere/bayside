@@ -1,0 +1,29 @@
+# Build output
+build/
+
+# DOSBox runtime files
+dosbox/*.log
+dosbox/*.cap
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Ghidra project files (large, local-only)
+disassembly/*.rep
+disassembly/*.lock
+disassembly/*.lock~
+
+# OpenWatcom temp files
+*.obj
+*.map
+*.err
+*.lst
+*.lnk
