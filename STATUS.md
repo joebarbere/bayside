@@ -51,19 +51,19 @@
 | Module | Functions Labeled | Data Structures | Hardware I/O | Notes |
 |--------|------------------|-----------------|--------------|-------|
 | DESK.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 118 functions named; INT E0h dispatch handler at seg_03F5:0000; PDM/RES module loader chain; 32-slot resource table (11 bytes/entry); INT 09h/13h/21h/24h hooks; memory management; EMS support; keyboard translation tables; 5 global variable regions mapped; see disassembly/annotated/desk.asm |
-| DESKTOP.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| TEXT.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| DESKTOP.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 521 functions named (300+ app + 60 PRGUF + 25 DMGUF + 100+ CRT); 18 subsystems mapped; PRGUF thunk table (60+ entries); DMGUF thunk table (25 entries); view state machine (files/tree/menus); icon grid layout engine; file manager with sort/search; menu definition CRUD; disk format/copy via FORMAT.COM+DISKCOPY.COM; DESKTOP.CFG config I/O; no direct HW I/O -- uses DM API via INT E0h; see disassembly/annotated/desktop.asm |
+| TEXT.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 408 functions named; document buffer format with inline control codes (0x01=picture, 0x03=indent, 0x10-0x13=bold/underline); 50+ PRGUF stubs mapped; text editing, formatting, print, spell check (DMSPELL), thesaurus (DMTHES), mail merge field insertion; no direct HW I/O -- uses DM API via INT E0h; see disassembly/annotated/text.asm |
 | WRKSHEET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| FILER.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| FILER.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 318 functions named; flat-file database with .FIL format; field definitions (up to 22 fields), record management, sort/search/filter, calculated/index fields; DMFORM (form rendering) + DMDB (database engine) imports via DM89 far-call dispatch; DMGUF thunks for config I/O; no direct HW I/O; see disassembly/annotated/filer.asm |
 | DRAW.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | ADDRESS.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
-| TELECOM.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| TELECOM.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 269 functions named; terminal emulator with phone book (20 entries), serial comm via PRGUF, file transfer via PROTOCOL.RES, charset translation via TRANSLAT.RES; baud 300-9600, 7/8 data bits, N/E/O parity; capture-to-file; 14 INT E0h + 21 INT 21h calls; no direct UART I/O -- delegates to resources; see disassembly/annotated/telecom.asm |
 | PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | HANGMAN.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 200 functions named (100+ app + CRT); player struct (21 bytes), BSS map, packed word list format, profanity filter (55 fragments); no direct HW I/O -- uses DM API via INT E0h; see disassembly/annotated/hangman.asm |
 | FORMSET.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
 | PLAY.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 114 functions named (25 app + 30 DMGUF + 9 PRGUF + 6 resource + 25 CRT); tutorial lesson catalog (15 entries); dmplay/unpack resource interaction; no direct HW I/O; see disassembly/annotated/play.asm |
-| MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_large_square: | |
+| MAILMRGE.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 168 functions named (45 app + 11 host + 22 DM + CRT); merge field substitution, header/footer, date formatting, printer control; 21 INT E0h + 17 INT 21h calls; no direct HW I/O; see disassembly/annotated/mailmrge.asm |
 | DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | All 74 functions named (18 app + 56 CRT); DMCSR.CFG format mapped; no direct HW I/O — selects .RES driver for DESK.EXE; see disassembly/annotated/dmvid.asm |
 | *.RES | :white_large_square: | :white_large_square: | :white_large_square: | |
 
