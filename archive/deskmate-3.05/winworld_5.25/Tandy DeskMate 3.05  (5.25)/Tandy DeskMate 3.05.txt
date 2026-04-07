@@ -1,0 +1,29 @@
+Tandy DeskMate 3.05
+Released in 1990 by Tandy Corporation
+For IBM PC Compatibles running DOS
+5.25" 360K disk media
+
+Tandy DeskMate is an integrated office environment and desktop
+shell, that includes word processing, spreadsheet, database,
+telecommunications, calendar, and a drawing program.
+
+DeskMate 3.05
+-------------
+
+There are 9 image files, and you need them all.  Write each image
+onto a diskette (360k or larger).  Label the disks as follows:
+
+    dm305dk1     Disk 1: Startup Disk, Install
+    dm305dk2     Disk 2: Desktop, Text
+    dm305dk3     Disk 3: PC-Link, Telecom, Worksheet
+    dm305dk4     Disk 4: Address Book, Calendar
+    dm305dk5     Disk 5: Filer, Form Setup
+    dm305dk6     Disk 6: Printer Drivers
+    dm305dk7     Disk 7: Dictionary, Hangman
+    dm305dk8     Disk 8: Draw
+    dm305dk9     Disk 9: Fonts
+
+Boot DOS (or open a command prompt), insert Disk 1, and type:
+
+    install     To install DeskMate on your hard drive
+    desk        To run DeskMate from floppy disks

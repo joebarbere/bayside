@@ -1,0 +1,9 @@
+Tandy DeskMate 3.05
+Released in 1990 by Tandy Corporation
+For IBM PC Compatibles running DOS
+3.5" 720K disk media
+
+Tandy DeskMate is an integrated office environment and desktop
+shell, that includes word processing, spreadsheet, database,
+telecommunications, calendar, and a drawing program.
+
