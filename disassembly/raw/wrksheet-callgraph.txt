@@ -1,0 +1,476 @@
+Call Graph and Summary: WRKSHEET.PDM
+============================================================
+
+File: WRKSHEET.PDM
+Size: 59590 bytes
+Segments: 6 (0000, 0CC5, 0CCF, 0CD3, 0E0C, 0EAC)
+Relocations: 15
+Total functions: 416
+Entry point: 0CC5:0000 (CRT startup -> _main)
+Imports: (none)
+DM flags: 0x0101
+
+INT E0h services (DeskMate API): 2
+  AH=02h
+  AH=07h
+
+INT 21h services (DOS API): 9
+  AH=25h  Set interrupt vector
+  AH=30h  Get DOS version
+  AH=35h  Get interrupt vector
+  AH=3Eh  Close file
+  AH=40h  Write file
+  AH=44h  IOCTL
+  AH=48h  Allocate memory
+  AH=4Ah  Resize memory block
+  AH=4Ch  Exit process
+
+All INT calls:
+  INT 20h: 1 call(s)
+  INT 21h: 14 call(s)
+  INT 3Bh: 1 call(s)
+  INT 9Eh: 1 call(s)
+  INT CDh: 1 call(s)
+  INT E0h: 14 call(s)
+
+Largest functions (top 20):
+  sub_0CE9E            at 0x0CE9E  size=6184 bytes
+  sub_0823A            at 0x0823A  size=1620 bytes
+  sub_02CD6            at 0x02CD6  size=1480 bytes
+  sub_06B22            at 0x06B22  size=1244 bytes
+  sub_0285A            at 0x0285A  size=1148 bytes
+  sub_0331F            at 0x0331F  size=945 bytes
+  sub_049F0            at 0x049F0  size=918 bytes
+  sub_00512            at 0x00512  size=892 bytes
+  sub_07ED8            at 0x07ED8  size=814 bytes
+  sub_03855            at 0x03855  size=742 bytes
+  sub_03B3B            at 0x03B3B  size=735 bytes
+  sub_0473C            at 0x0473C  size=692 bytes
+  sub_020A4            at 0x020A4  size=671 bytes
+  sub_07C72            at 0x07C72  size=614 bytes
+  start                at 0x0CC50  size=590 bytes
+  sub_03E7B            at 0x03E7B  size=586 bytes
+  sub_012C2            at 0x012C2  size=582 bytes
+  sub_095F2            at 0x095F2  size=559 bytes
+  sub_065D2            at 0x065D2  size=546 bytes
+  sub_01E64            at 0x01E64  size=544 bytes
+
+All functions (416):
+Address    Name                   Size     Calls Made
+---------- ---------------------- -------- ------------------------------
+0x00010  sub_00010              133      sub_FFFF9457, sub_FFFF911A, sub_FFFF927C, sub_FFFF945E, sub_FFFF911A, sub_FFFF95A7, sub_FFFF9493, sub_FFFF9547, sub_FFFF958F, sub_FFFF9571 (+2 more)
+0x00095  sub_00095              288      sub_00010, sub_002AA, sub_FFFFC2D4, sub_02CD6, sub_FFFF9589, sub_FFFF9577, sub_FFFF8C47, sub_FFFF888E, sub_FFFF8DD0, sub_FFFF9589 (+13 more)
+0x001B5  sub_001B5              245      
+0x002AA  sub_002AA              189      sub_07887, sub_01508, sub_FFFF9385, sub_05E1D, sub_FFFF9423, sub_FFFFC4E2, sub_001B5
+0x00367  sub_00367              427      sub_076F4, sub_FFFF9577, sub_FFFF941D, sub_01508, sub_FFFF9571, sub_FFFF9423, sub_0175A, sub_FFFF948D, sub_FFFF93B5, sub_FFFF9493 (+14 more)
+0x00512  sub_00512              892      sub_FFFF948D, sub_076F4, sub_FFFF93AF, sub_0285A, sub_FFFF9493, sub_05DE9, sub_0088E, sub_076F4, sub_FFFF948D, sub_FFFF93AF (+59 more)
+0x0088E  sub_0088E              167      sub_060B7, sub_002AA, sub_FFFF9571, sub_FFFF9589, sub_FFFF8DD0, sub_08206, sub_FFFF948D
+0x00935  sub_00935              446      sub_076F4, sub_07528, sub_07528, sub_05C9B, sub_FFFF948D, sub_FFFF93A9, sub_FFFF9493, sub_05DE9, sub_FFFF94B1, sub_079F7 (+10 more)
+0x00AF3  sub_00AF3              17       sub_0285A, sub_00B04
+0x00B04  sub_00B04              226      sub_0784A, sub_079F7, sub_025E2, sub_05A53, sub_0618C, sub_04351, sub_076F4
+0x00BE6  sub_00BE6              265      sub_076F4, sub_05BE8, sub_07528, sub_FFFF9559
+0x00CEF  sub_00CEF              268      sub_076F4, sub_063A3, sub_05DE9, sub_FFFFC49A, sub_FFFFC4E2, sub_07528, sub_05C9B, sub_FFFFC49A, sub_05DB4, sub_0618C (+2 more)
+0x00DFB  sub_00DFB              259      sub_076F4, sub_05C26, sub_05C9B, sub_079F7, sub_FFFFC49A, sub_042C6, sub_07AD9, sub_01E64, sub_05DB4, sub_0618C (+2 more)
+0x00EFE  sub_00EFE              222      sub_076F4, sub_05C26, sub_05C9B, sub_079F7, sub_042C6, sub_07AD9, sub_01E64, sub_0618C, sub_079F7
+0x00FDC  sub_00FDC              222      sub_076F4, sub_0618C, sub_079F7, sub_04252, sub_07AD9, sub_FFFFC49A, sub_01E64, sub_05DB4, sub_079F7, sub_061E6
+0x010BA  sub_010BA              180      sub_076F4, sub_079F7, sub_04252, sub_07AD9, sub_01E64, sub_0618C, sub_079F7
+0x0116E  sub_0116E              136      sub_0784A, sub_076F4, sub_07995, sub_06481, sub_05DE9, sub_07BE1, sub_079F7
+0x011F6  sub_011F6              204      sub_076F4, sub_FFFFC4E2, sub_07995, sub_07556, sub_FFFFC2D4, sub_062A7, sub_07ED8, sub_08D34, sub_05DE9
+0x012C2  sub_012C2              582      sub_07995, sub_0784A, sub_076F4, sub_07432, sub_FFFF9505, sub_FFFF954D, sub_073BA, sub_065D2, sub_07BA3, sub_FFFFC2D4 (+15 more)
+0x01508  sub_01508              110      sub_076F4, sub_0948D, sub_093AF, sub_09493, sub_0285A, sub_05DE9, sub_094B1, sub_092BE, sub_0945E, sub_0911A
+0x01576  sub_01576              106      
+0x015E0  sub_015E0              325      sub_076F4, sub_FFFFC2D4, sub_04F36, sub_04F03, sub_FFFF9A82, sub_FFFF9C1F, sub_01576, sub_05DE9, sub_079F7
+0x01725  sub_01725              53       sub_094F9, sub_094FF, sub_09553
+0x0175A  sub_0175A              56       sub_094B1, sub_08206, sub_08DD0, sub_061E6, sub_0623D, sub_09583, sub_09589, sub_01725
+0x01792  sub_01792              156      sub_07528, sub_07528, sub_09559
+0x0182E  sub_0182E              305      sub_09379, sub_0937F, sub_09367, sub_001B5, sub_09373, sub_0937F, sub_0937F, sub_09589, sub_FFFFC2D4, sub_0195F
+0x0195F  sub_0195F              256      sub_01B0E, sub_01B48, sub_01B7A, sub_01BF2, sub_07ED8, sub_05C9B, sub_01A5F, sub_09367
+0x01A5F  sub_01A5F              175      sub_09373, sub_0937F
+0x01B0E  sub_01B0E              58       sub_FFFFC322
+0x01B48  sub_01B48              50       sub_07556
+0x01B7A  sub_01B7A              120      sub_07556, sub_FFFFC306
+0x01BF2  sub_01BF2              422      sub_07528, sub_0563B, sub_05762, sub_0544C, sub_05848, sub_05A53, sub_FFFFC322, sub_01A5F, sub_FFFFC306, sub_FFFFC49A (+1 more)
+0x01D98  sub_01D98              204      
+0x01E64  sub_01E64              544      sub_FFFFC2D4, sub_04FF9, sub_01D98, sub_020A4, sub_FFFFC306, sub_FFFFC306, sub_0555B, sub_0555B, sub_0556F, sub_054D8 (+4 more)
+0x02084  sub_02084              32       sub_FFFFC306, sub_FFFFC49A
+0x020A4  sub_020A4              671      sub_02084, sub_02084, sub_02084, sub_02084
+0x02343  sub_02343              116      sub_09505, sub_0951D, sub_FFFFC38E, sub_0951D, sub_0951D, sub_FFFFC38E, sub_0951D, sub_0954D
+0x023B7  sub_023B7              123      sub_020A4, sub_01D98
+0x02432  sub_02432              200      sub_024FA, sub_076F4, sub_08CD8, sub_076F4, sub_024FA, sub_073D1, sub_0784A, sub_02585, sub_06990
+0x024FA  sub_024FA              139      
+0x02585  sub_02585              93       sub_024FA
+0x025E2  sub_025E2              110      
+0x02650  sub_02650              119      sub_FFFFC306
+0x026C7  sub_026C7              282      sub_FFFFC306, sub_FFFFC306
+0x027E1  sub_027E1              77       sub_0936D, sub_09379, sub_09379
+0x0282E  sub_0282E              44       
+0x0285A  sub_0285A              1148     sub_076F4, sub_05BE8, sub_0784A, sub_025E2, sub_079F7, sub_FFFFC49A, sub_0563B, sub_05762, sub_053FA, sub_0282E (+15 more)
+0x02CD6  sub_02CD6              1480     sub_FFFFC2D4, sub_076F4, sub_0282E, sub_0948D, sub_0938B, sub_09493, sub_0182E, sub_05C9B, sub_05DE9, sub_FFFFC2D4 (+18 more)
+0x0329E  sub_0329E              129      sub_FFFFC34E, sub_09A82, sub_09C1F
+0x0331F  sub_0331F              945      sub_076F4, sub_0948D, sub_093A3, sub_09493, sub_05DE9, sub_027E1, sub_09373, sub_09373, sub_0937F, sub_09367 (+26 more)
+0x036D0  sub_036D0              150      sub_09373, sub_0937F
+0x03766  sub_03766              35       
+0x03789  sub_03789              123      sub_025E2, sub_05C9B
+0x03804  sub_03804              81       
+0x03855  sub_03855              742      sub_0784A, sub_07528, sub_05C9B, sub_076F4, sub_03804, sub_0544C, sub_05848, sub_0784A, sub_07528, sub_FFFFC306 (+17 more)
+0x03B3B  sub_03B3B              735      sub_07528, sub_FFFFC42E, sub_07528, sub_07528, sub_07528, sub_07528, sub_07528, sub_07528, sub_07528
+0x03E1A  sub_03E1A              97       sub_08C47
+0x03E7B  sub_03E7B              586      sub_09423, sub_094AB, sub_094B7, sub_0948D, sub_094BD, sub_09493, sub_040C5, sub_094AB, sub_09499, sub_0941D (+27 more)
+0x040C5  sub_040C5              397      sub_094ED, sub_09535, sub_0952F, sub_08C93, sub_07528, sub_0953B, sub_08C47, sub_09541, sub_07528, sub_094ED (+4 more)
+0x04252  sub_04252              116      sub_05A53
+0x042C6  sub_042C6              139      sub_07528, sub_05A53
+0x04351  sub_04351              533      sub_07528, sub_FFFFC42E, sub_FFFFC42E, sub_FFFFC42E, sub_0C42E, sub_07528, sub_07528, sub_08FC6, sub_03B3B, sub_094B7 (+2 more)
+0x04566  sub_04566              89       sub_0C42E, sub_0C34E, sub_09A82, sub_09C1F
+0x045BF  sub_045BF              381      sub_02343, sub_07556, sub_0C2D4, sub_062A7, sub_04566, sub_09A82, sub_09EAD, sub_09C1F, sub_09A82, sub_09A82 (+12 more)
+0x0473C  sub_0473C              692      sub_09A82, sub_09C1F, sub_079F7, sub_09A82, sub_09A82, sub_09EEA, sub_09A82, sub_09B09, sub_09EDB, sub_09A82 (+10 more)
+0x049F0  sub_049F0              918      sub_09A82, sub_09A82, sub_09EEA, sub_09A82, sub_09A82, sub_09EEA, sub_09A82, sub_09A82, sub_09EEA, sub_09A82 (+88 more)
+0x04D86  sub_04D86              381      sub_0473C, sub_0C24E, sub_05C9B, sub_09A82, sub_09C1F, sub_05297, sub_0C24E, sub_09A82, sub_09C1F, sub_04D86 (+3 more)
+0x04F03  sub_04F03              51       sub_04D86, sub_09A82, sub_09C1F
+0x04F36  sub_04F36              97       sub_04FD8, sub_04F97, sub_05284, sub_05163, sub_05042, sub_052A5, sub_05306, sub_050A1, sub_0512F, sub_0512F (+2 more)
+0x04F97  sub_04F97              65       sub_095F2
+0x04FD8  sub_04FD8              33       
+0x04FF9  sub_04FF9              39       
+0x05020  sub_05020              34       
+0x05042  sub_05042              95       sub_05236, sub_05020, sub_0514D, sub_05020, sub_0514D, sub_05020, sub_05020
+0x050A1  sub_050A1              142      sub_05020, sub_05020
+0x0512F  sub_0512F              30       sub_051DA
+0x0514D  sub_0514D              22       
+0x05163  sub_05163              97       sub_095F2
+0x051C4  sub_051C4              22       
+0x051DA  sub_051DA              78       sub_051C4, sub_0514D, sub_05020, sub_05020, sub_051C4
+0x05228  sub_05228              14       
+0x05236  sub_05236              23       sub_0524D, sub_05228
+0x0524D  sub_0524D              55       
+0x05284  sub_05284              19       
+0x05297  sub_05297              14       sub_0514D
+0x052A5  sub_052A5              97       sub_05020
+0x05306  sub_05306              81       sub_05020, sub_05020
+0x05357  sub_05357              163      
+0x053FA  sub_053FA              46       sub_0C49A
+0x05428  sub_05428              36       sub_0C49A
+0x0544C  sub_0544C              140      
+0x054D8  sub_054D8              131      sub_0563B, sub_0563B, sub_05762
+0x0555B  sub_0555B              20       
+0x0556F  sub_0556F              204      sub_0C306, sub_0544C, sub_0C49A, sub_0563B, sub_0556F, sub_05AC7
+0x0563B  sub_0563B              295      sub_0C306, sub_0544C
+0x05762  sub_05762              230      sub_0C49A, sub_0C49A
+0x05848  sub_05848              523      sub_0563B, sub_05762, sub_0C49A, sub_0544C, sub_0C49A, sub_0C49A
+0x05A53  sub_05A53              116      sub_0556F, sub_0C49A
+0x05AC7  sub_05AC7              129      sub_0C306, sub_0C49A
+0x05B48  sub_05B48              160      
+0x05BE8  sub_05BE8              62       sub_079F7
+0x05C26  sub_05C26              117      sub_079F7, sub_079F7
+0x05C9B  sub_05C9B              122      sub_095F2, sub_0948D, sub_095A1, sub_09493
+0x05D15  sub_05D15              89       sub_025E2
+0x05D6E  sub_05D6E              70       sub_079F7
+0x05DB4  sub_05DB4              53       sub_08C47, sub_08C93, sub_08DD0
+0x05DE9  sub_05DE9              52       sub_09553, sub_079F7
+0x05E1D  sub_05E1D              147      
+0x05EB0  sub_05EB0              519      sub_09511, sub_09505, sub_0951D, sub_0954D, sub_060FF, sub_07995, sub_03804, sub_05D6E, sub_095B3, sub_095AD (+12 more)
+0x060B7  sub_060B7              72       sub_0950B, sub_09505, sub_0951D, sub_0950B
+0x060FF  sub_060FF              141      sub_0C89E, sub_0C7FA, sub_0C3AA, sub_09505, sub_0C294, sub_0951D, sub_09517, sub_073BA
+0x0618C  sub_0618C              90       sub_07528, sub_07528, sub_09553
+0x061E6  sub_061E6              87       sub_07528, sub_09553
+0x0623D  sub_0623D              73       sub_09511, sub_09505, sub_0951D, sub_0954D, sub_09511, sub_073BA
+0x06286  sub_06286              33       
+0x062A7  sub_062A7              252      sub_0C2D4, sub_06286, sub_09595, sub_0948D, sub_0959B, sub_09493, sub_05C9B, sub_094A5, sub_0C306
+0x063A3  sub_063A3              222      sub_0C38E, sub_06286, sub_09595, sub_0948D, sub_0959B, sub_09493, sub_094A5, sub_0C34A, sub_05C9B
+0x06481  sub_06481              337      sub_0C38E, sub_06286, sub_09595, sub_0948D, sub_0959B, sub_09493, sub_094A5, sub_05C9B
+0x065D2  sub_065D2              546      sub_0C2D4, sub_094E7, sub_094ED, sub_09595, sub_094E7, sub_094E1, sub_06286, sub_0948D, sub_0959B, sub_09493 (+10 more)
+0x067F4  sub_067F4              239      sub_06286, sub_09595, sub_0948D, sub_0959B, sub_09493, sub_094A5, sub_0C34A, sub_0C34A, sub_05C9B
+0x068E3  sub_068E3              173      sub_06286, sub_09595, sub_0948D, sub_0959B, sub_09493, sub_094A5
+0x06990  sub_06990              402      sub_0784A, sub_06B22, sub_0888E, sub_0823A, sub_076F4, sub_06B22, sub_0888E, sub_073D1, sub_061E6
+0x06B22  sub_06B22              1244     sub_08C93, sub_07298, sub_07528, sub_0953B, sub_094F3, sub_08C47, sub_07298, sub_09541, sub_094F3, sub_07298 (+24 more)
+0x06FFE  sub_06FFE              86       sub_0544C, sub_0C458
+0x07054  sub_07054              176      sub_076F4, sub_068E3, sub_05DE9, sub_0C34E, sub_07104, sub_06FFE, sub_08CD8, sub_05C9B, sub_05DE9
+0x07104  sub_07104              271      sub_0544C, sub_09A82, sub_09A82, sub_09EEA
+0x07213  sub_07213              118      sub_076F4, sub_067F4, sub_07B77, sub_05DE9, sub_08CD8, sub_05DE9
+0x07289  sub_07289              15       sub_07054
+0x07298  sub_07298              148      sub_07528, sub_094ED
+0x0732C  sub_0732C              142      sub_0556F, sub_0C49A
+0x073BA  sub_073BA              23       sub_09505
+0x073D1  sub_073D1              97       sub_07528, sub_07528, sub_073BA
+0x07432  sub_07432              45       sub_09559
+0x0745F  sub_0745F              143      sub_0C2D4
+0x074EE  sub_074EE              58       sub_04566, sub_07556
+0x07528  sub_07528              46       
+0x07556  sub_07556              414      sub_09A82, sub_09C1F, sub_09A82, sub_09A82, sub_09EEA, sub_09A82, sub_09A82, sub_09EEA, sub_0C2D4, sub_09A82 (+28 more)
+0x076F4  sub_076F4              342      sub_07528, sub_07528, sub_09559, sub_08C47, sub_08206, sub_08DD0, sub_073D1
+0x0784A  sub_0784A              61       sub_07432
+0x07887  sub_07887              162      sub_0C24E, sub_05C9B, sub_0C24E, sub_0C23C, sub_0C24E
+0x07929  sub_07929              108      
+0x07995  sub_07995              98       sub_0544C
+0x079F7  sub_079F7              226      sub_0544C, [indirect:word ptr [bp + 0xc]]
+0x07AD9  sub_07AD9              85       sub_076F4, sub_079F7
+0x07B2E  sub_07B2E              73       
+0x07B77  sub_07B77              44       
+0x07BA3  sub_07BA3              62       sub_0C2D4, sub_04F36
+0x07BE1  sub_07BE1              145      sub_03804, sub_07995, sub_07ED8
+0x07C72  sub_07C72              614      sub_0C4E2, sub_0950B, sub_09553, sub_09559, sub_0948D, sub_09499, sub_09493, sub_09529, sub_0949F, sub_09517 (+7 more)
+0x07ED8  sub_07ED8              814      sub_07995, sub_0C306, sub_0555B, sub_0555B, sub_0556F, sub_054D8, sub_0C49A, sub_04566, sub_0C306, sub_0C306 (+14 more)
+0x08206  sub_08206              52       sub_09553, sub_079F7
+0x0823A  sub_0823A              1620     sub_07298, sub_07528, sub_07528, sub_09559, sub_09559, sub_07528, sub_07528, sub_09559, sub_07528, sub_09559 (+25 more)
+0x0888E  sub_0888E              295      sub_079F7, sub_09553, sub_079F7, sub_08DD0
+0x089B5  sub_089B5              150      sub_04351, sub_073D1, sub_08A4B
+0x08A4B  sub_08A4B              342      sub_074EE, sub_0C2D4, sub_0C306, sub_0C2D4, sub_07556, sub_08FF9, sub_09553, sub_09517, sub_08FC6
+0x08BA1  sub_08BA1              166      sub_09523, sub_09517, sub_09517, sub_08FC6, sub_09523
+0x08C47  sub_08C47              76       sub_08C93
+0x08C93  sub_08C93              69       sub_08C47
+0x08CD8  sub_08CD8              92       sub_07B77, sub_08C47, sub_08206, sub_08DD0, sub_073D1
+0x08D34  sub_08D34              156      sub_07995, sub_03804, sub_09505, sub_08A4B, sub_09553
+0x08DD0  sub_08DD0              502      sub_09505, sub_0954D, sub_09517, sub_09511, sub_09517, sub_09517, sub_09511, sub_09517, sub_07528, sub_09505 (+6 more)
+0x08FC6  sub_08FC6              51       sub_08FF9
+0x08FF9  sub_08FF9              78       sub_091B2, sub_0C018, sub_10095, sub_0911A, sub_09056, sub_0BFD0, sub_0C1D1, sub_09047
+0x09047  sub_09047              15       sub_0BFD0, sub_0C1D1, [indirect:word ptr [0xb46]]
+0x09056  sub_09056              196      sub_0919E, sub_0918F
+0x0911A  sub_0911A              23       sub_0918F, sub_0918F
+0x09131  sub_09131              69       sub_0918F, sub_0919E, sub_0BFF6, sub_09176
+0x09176  sub_09176              25       
+0x0918F  sub_0918F              15       [indirect:cx]
+0x0919E  sub_0919E              20       
+0x091B2  sub_091B2              268      sub_0C1FA
+0x092BE  sub_092BE              169      
+0x09367  sub_09367              6        
+0x0936D  sub_0936D              6        
+0x09373  sub_09373              6        
+0x09379  sub_09379              6        
+0x0937F  sub_0937F              12       
+0x0938B  sub_0938B              12       
+0x09397  sub_09397              6        
+0x0939D  sub_0939D              6        
+0x093A3  sub_093A3              12       
+0x093AF  sub_093AF              6        
+0x093B5  sub_093B5              94       sub_0989E
+0x09413  sub_09413              10       
+0x0941D  sub_0941D              6        
+0x09423  sub_09423              6        
+0x09429  sub_09429              6        
+0x0942F  sub_0942F              25       
+0x09448  sub_09448              22       sub_0942F, sub_09892
+0x0945E  sub_0945E              7        sub_09898, sub_09448
+0x09465  sub_09465              40       
+0x0948D  sub_0948D              6        
+0x09493  sub_09493              6        
+0x09499  sub_09499              6        
+0x0949F  sub_0949F              6        
+0x094A5  sub_094A5              6        
+0x094AB  sub_094AB              6        
+0x094B1  sub_094B1              6        
+0x094B7  sub_094B7              6        
+0x094BD  sub_094BD              6        
+0x094C3  sub_094C3              6        
+0x094C9  sub_094C9              6        
+0x094CF  sub_094CF              6        
+0x094D5  sub_094D5              6        
+0x094DB  sub_094DB              6        
+0x094E1  sub_094E1              6        
+0x094E7  sub_094E7              6        
+0x094ED  sub_094ED              6        
+0x094F3  sub_094F3              6        
+0x094F9  sub_094F9              6        
+0x094FF  sub_094FF              6        
+0x09505  sub_09505              6        
+0x0950B  sub_0950B              6        
+0x09511  sub_09511              6        
+0x09517  sub_09517              6        
+0x0951D  sub_0951D              6        
+0x09523  sub_09523              6        
+0x09529  sub_09529              6        
+0x0952F  sub_0952F              6        
+0x09535  sub_09535              6        
+0x0953B  sub_0953B              6        
+0x09541  sub_09541              6        
+0x09547  sub_09547              6        
+0x0954D  sub_0954D              6        
+0x09553  sub_09553              6        
+0x09559  sub_09559              42       
+0x09583  sub_09583              6        
+0x09589  sub_09589              12       
+0x09595  sub_09595              6        
+0x0959B  sub_0959B              6        
+0x095A1  sub_095A1              12       
+0x095AD  sub_095AD              6        
+0x095B3  sub_095B3              63       sub_09868, sub_093B5, sub_093B5
+0x095F2  sub_095F2              559      sub_098A4, sub_098AA, sub_09868, sub_0983D, sub_09874, sub_09821, sub_09821, sub_0983D, sub_0983D, sub_0986E (+22 more)
+0x09821  sub_09821              28       sub_09821
+0x0983D  sub_0983D              12       
+0x09849  sub_09849              17       
+0x0985A  sub_0985A              14       
+0x09868  sub_09868              6        
+0x0986E  sub_0986E              6        
+0x09874  sub_09874              6        
+0x0987A  sub_0987A              6        
+0x09880  sub_09880              6        
+0x09886  sub_09886              1        
+0x09887  sub_09887              5        
+0x0988C  sub_0988C              6        
+0x09892  sub_09892              6        
+0x09898  sub_09898              6        
+0x0989E  sub_0989E              6        
+0x098A4  sub_098A4              6        
+0x098AA  sub_098AA              269      sub_099B7
+0x099B7  sub_099B7              42       
+0x099E1  sub_099E1              161      
+0x09A82  sub_09A82              128      
+0x09B02  sub_09B02              7        
+0x09B09  sub_09B09              200      sub_0A709, sub_0AA80
+0x09BD1  sub_09BD1              78       sub_0A1DE
+0x09C1F  sub_09C1F              157      sub_0A14F, sub_0A380, sub_0A34B
+0x09CBC  sub_09CBC              55       sub_09CF3, [indirect:ax], [indirect:dx]
+0x09CF3  sub_09CF3              60       
+0x09D2F  sub_09D2F              262      sub_0A121, sub_0A121, sub_0A121, sub_0A121, sub_0A121, sub_0A121, [indirect:word ptr [bx + 0xd62]], sub_0A15E, sub_0A137
+0x09E35  sub_09E35              24       sub_0A137
+0x09E4D  sub_09E4D              24       sub_0A137
+0x09E65  sub_09E65              24       sub_0A137
+0x09E7D  sub_09E7D              24       sub_0A137
+0x09E95  sub_09E95              24       sub_0A137
+0x09EAD  sub_09EAD              46       sub_0A14F
+0x09EDB  sub_09EDB              15       
+0x09EEA  sub_09EEA              5        
+0x09EEF  sub_09EEF              182      [indirect:word ptr [bx + 0xd62]], sub_0A14F, sub_0A14F, [indirect:word ptr [bx + 0xd5e]], [indirect:word ptr [bx + 0xd62]]
+0x09FA5  sub_09FA5              24       sub_0A14F
+0x09FBD  sub_09FBD              33       
+0x09FDE  sub_09FDE              9        
+0x09FE7  sub_09FE7              18       
+0x09FF9  sub_09FF9              9        
+0x0A002  sub_0A002              9        
+0x0A00B  sub_0A00B              9        
+0x0A014  sub_0A014              9        
+0x0A01D  sub_0A01D              27       
+0x0A038  sub_0A038              18       
+0x0A04A  sub_0A04A              173      sub_0A447, sub_0A929, sub_0BFD0, sub_0C510, sub_0C1D1, sub_0C1D1, sub_0911A
+0x0A0F7  sub_0A0F7              42       
+0x0A121  sub_0A121              22       
+0x0A137  sub_0A137              24       
+0x0A14F  sub_0A14F              15       
+0x0A15E  sub_0A15E              128      
+0x0A1DE  sub_0A1DE              180      
+0x0A292  sub_0A292              8        
+0x0A29A  sub_0A29A              58       sub_0A302, sub_0A2F8, sub_0A307
+0x0A2D4  sub_0A2D4              23       sub_0A2FD, sub_0A380, sub_0A327
+0x0A2EB  sub_0A2EB              13       sub_0A34B, sub_0A32C
+0x0A2F8  sub_0A2F8              5        sub_0A327
+0x0A2FD  sub_0A2FD              5        sub_0A32C
+0x0A302  sub_0A302              5        sub_0A380
+0x0A307  sub_0A307              32       sub_0A34B
+0x0A327  sub_0A327              5        sub_0A380
+0x0A32C  sub_0A32C              31       sub_0A34B
+0x0A34B  sub_0A34B              53       
+0x0A380  sub_0A380              125      
+0x0A3FD  sub_0A3FD              74       sub_0A468, sub_0A53A, sub_0A4AF, sub_0A53A
+0x0A447  sub_0A447              33       sub_0A468, sub_0A4AF
+0x0A468  sub_0A468              71       
+0x0A4AF  sub_0A4AF              139      
+0x0A53A  sub_0A53A              161      
+0x0A5DB  sub_0A5DB              302      
+0x0A709  sub_0A709              46       
+0x0A737  sub_0A737              345      sub_0A894, sub_0A890
+0x0A890  sub_0A890              4        
+0x0A894  sub_0A894              149      sub_0A737, sub_0A709, sub_0A737
+0x0A929  sub_0A929              35       
+0x0A94C  sub_0A94C              308      
+0x0AA80  sub_0AA80              86       
+0x0AAD6  sub_0AAD6              126      
+0x0AB54  sub_0AB54              99       sub_0AD0A
+0x0ABB7  sub_0ABB7              207      sub_0AC86, sub_0AC86, sub_0AC86, sub_0AC86
+0x0AC86  sub_0AC86              132      
+0x0AD0A  sub_0AD0A              479      sub_0AAD6, sub_0AA80, sub_0AAD6
+0x0AEE9  sub_0AEE9              24       
+0x0AF01  sub_0AF01              184      [indirect:dx], sub_0BA70
+0x0AFB9  sub_0AFB9              40       sub_0C510, sub_0C510, sub_0C1D1
+0x0AFE1  sub_0AFE1              212      sub_0ABB7, sub_0A94C, sub_0B0B5, sub_0AB54
+0x0B0B5  sub_0B0B5              407      sub_0A5DB, sub_0BAE8, sub_0A29A, sub_0BB07, sub_0AB54, sub_0BB1A, sub_0AB54, sub_0A929, sub_0BAA1, sub_0BBEE (+11 more)
+0x0B24C  sub_0B24C              261      sub_0B0B5, sub_0AB54, sub_0AB54, sub_0A94C, sub_0A94C, sub_0BC97, sub_0AB54, sub_0A2D4, sub_0BC54, sub_0A94C (+9 more)
+0x0B351  sub_0B351              70       sub_0BB07, sub_0B3B0, sub_0BAE8, sub_0BB1A, sub_0BAFE, sub_0B397, sub_0BB15, sub_0B351, sub_0ABB7
+0x0B397  sub_0B397              25       sub_0BACB
+0x0B3B0  sub_0B3B0              128      sub_0BACB, sub_0BAE8, sub_0AB54, sub_0A929, sub_0A94C, sub_0A3FD, sub_0BB71, sub_0A929, sub_0BBF7, sub_0BBEE (+1 more)
+0x0B430  sub_0B430              306      sub_0BACB, sub_0ABB7, sub_0A5DB, sub_0BAE4, sub_0AB54, sub_0A929, sub_0BA83, sub_0BAF3, sub_0BA83, sub_0ABB7 (+12 more)
+0x0B562  sub_0B562              86       
+0x0B5B8  sub_0B5B8              84       
+0x0B60C  sub_0B60C              34       sub_09A82, sub_09A82, sub_09EEF
+0x0B62E  sub_0B62E              67       sub_0C34E, sub_0C34E, sub_09A82, sub_09BD1
+0x0B671  sub_0B671              306      sub_0BA02, sub_0BA2A, sub_0C3B4, sub_0C2D4
+0x0B7A3  sub_0B7A3              41       sub_0B671
+0x0B7CC  sub_0B7CC              269      sub_0BA2A, sub_0C3B4, sub_0BA02, sub_0BA02, sub_0BA02, sub_0C4E2
+0x0B8D9  sub_0B8D9              38       sub_0B7CC
+0x0B8FF  sub_0B8FF              182      sub_0BA2A, sub_0C3B4, sub_0B7A3, sub_0B8D9
+0x0B9B5  sub_0B9B5              77       sub_0B671, sub_0B7CC, sub_0B8FF
+0x0BA02  sub_0BA02              40       sub_0C306, sub_0C49A
+0x0BA2A  sub_0BA2A              70       sub_0BD46
+0x0BA70  sub_0BA70              19       
+0x0BA83  sub_0BA83              20       
+0x0BA97  sub_0BA97              10       
+0x0BAA1  sub_0BAA1              10       
+0x0BAAB  sub_0BAAB              16       
+0x0BABB  sub_0BABB              16       
+0x0BACB  sub_0BACB              25       
+0x0BAE4  sub_0BAE4              4        
+0x0BAE8  sub_0BAE8              11       
+0x0BAF3  sub_0BAF3              11       
+0x0BAFE  sub_0BAFE              5        
+0x0BB03  sub_0BB03              4        
+0x0BB07  sub_0BB07              14       
+0x0BB15  sub_0BB15              5        
+0x0BB1A  sub_0BB1A              18       
+0x0BB2C  sub_0BB2C              69       sub_0AB54, sub_0A94C
+0x0BB71  sub_0BB71              54       
+0x0BBA7  sub_0BBA7              54       sub_0AB54, sub_0BB2C, sub_0BACB, sub_0BB2C
+0x0BBDD  sub_0BBDD              17       sub_0BBA7, sub_0ABB7
+0x0BBEE  sub_0BBEE              9        sub_0BBDD
+0x0BBF7  sub_0BBF7              28       sub_0BAF3, sub_0AB54, sub_0BAAB, sub_0BAE8, sub_0AB54
+0x0BC13  sub_0BC13              17       sub_0BAE8, sub_0AB54, sub_0A2D4, sub_0BC5A
+0x0BC24  sub_0BC24              48       sub_0BBA7, sub_0BAF3, sub_0AB54, sub_0A929, sub_0ABB7
+0x0BC54  sub_0BC54              6        sub_0BAE8
+0x0BC5A  sub_0BC5A              15       sub_0A29A, sub_0BBF7
+0x0BC69  sub_0BC69              46       sub_0BACB, sub_0BABB, sub_0BC69
+0x0BC97  sub_0BC97              42       sub_0A5DB, sub_0A5DB
+0x0BCC1  sub_0BCC1              41       
+0x0BCEA  sub_0BCEA              92       
+0x0BD46  sub_0BD46              256      sub_0BCEA, sub_0BFAC, sub_0BCC1, sub_0BE46
+0x0BE46  sub_0BE46              358      
+0x0BFAC  sub_0BFAC              36       sub_0BE46
+0x0BFD0  sub_0BFD0              38       sub_0C1D1, [indirect:word ptr [0x1278]], sub_0C1D1
+0x0BFF6  sub_0BFF6              34       sub_0BFD0, sub_0C1D1
+0x0C018  sub_0C018              398      
+0x0C1A6  sub_0C1A6              43       
+0x0C1D1  sub_0C1D1              41       sub_0C1A6
+0x0C1FA  sub_0C1FA              66       
+0x0C23C  sub_0C23C              18       
+0x0C24E  sub_0C24E              70       sub_0C662, sub_0C523
+0x0C294  sub_0C294              64       
+0x0C2D4  sub_0C2D4              50       
+0x0C306  sub_0C306              68       
+0x0C34A  sub_0C34A              4        
+0x0C34E  sub_0C34E              64       sub_0C306, sub_0C8F9
+0x0C38E  sub_0C38E              28       
+0x0C3AA  sub_0C3AA              10       
+0x0C3B4  sub_0C3B4              122      sub_0C2D4
+0x0C42E  sub_0C42E              42       
+0x0C458  sub_0C458              66       
+0x0C49A  sub_0C49A              72       
+0x0C4E2  sub_0C4E2              46       
+0x0C510  sub_0C510              19       
+0x0C523  sub_0C523              227      sub_0C640, sub_0C640, sub_0C606
+0x0C606  sub_0C606              58       sub_0C640
+0x0C640  sub_0C640              34       sub_0C662
+0x0C662  sub_0C662              212      sub_0C736
+0x0C736  sub_0C736              110      sub_0C7A4, sub_0C7A4
+0x0C7A4  sub_0C7A4              86       
+0x0C7FA  sub_0C7FA              164      sub_0C89E
+0x0C89E  sub_0C89E              52       
+0x0C8D2  sub_0C8D2              39       sub_0C90C
+0x0C8F9  sub_0C8F9              19       sub_0C90C
+0x0C90C  sub_0C90C              124      sub_0C988, sub_0CAC7, sub_0CB5C, sub_0CB5C
+0x0C988  sub_0C988              232      sub_0CB4C, sub_0CA92, sub_0CBAD, sub_0CB4C, sub_0CA70, sub_0BFAC, sub_0CBD9
+0x0CA70  sub_0CA70              34       sub_0CB5C
+0x0CA92  sub_0CA92              53       sub_0CB73, sub_0CB2D, sub_0CB73
+0x0CAC7  sub_0CAC7              102      sub_0CB2D, sub_0CB43
+0x0CB2D  sub_0CB2D              22       sub_0CB43, sub_0CB43
+0x0CB43  sub_0CB43              9        
+0x0CB4C  sub_0CB4C              16       sub_0CBAD
+0x0CB5C  sub_0CB5C              23       sub_0CBAD
+0x0CB73  sub_0CB73              58       sub_0CBAD
+0x0CBAD  sub_0CBAD              44       
+0x0CBD9  sub_0CBD9              119      
+0x0CC50  start                  590      [indirect:word ptr [bx + si]], [indirect:word ptr [bx + di]], [indirect:word ptr [bp + si]], [indirect:word ptr [si]], [indirect:word ptr [di]], [indirect:word ptr [bx]], sub_0CE9E
+0x0CE9E  sub_0CE9E              6184     sub_08BA1, sub_09887, sub_09413

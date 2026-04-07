@@ -1,0 +1,910 @@
+==============================================================================
+DMVID.EXE - DeskMate 3.05 Video Configuration Utility
+Call Graph and Function Analysis
+==============================================================================
+
+------------------------------------------------------------------------------
+IDENTIFIED FUNCTIONS SUMMARY
+------------------------------------------------------------------------------
+
+CRT Runtime Functions:
+  1008  __cintDIV_init
+  110E  _exit
+  1125  __exit
+  138A  __setenvp
+  13F0  __flush
+  141B  __write
+  1444  __flsbuf
+  16A2  __dosretax
+  1F32  __fmtout
+  232C  __fassign
+  2E8C  __brk
+
+Application Functions (named):
+  0010  _main  refs: "Video configuration has NOT been updated."
+  00CB  dmvid_buildConfigPath  refs: "DMCSR.CFG"
+  0130  dmvid_interactiveMenu  refs: "For further information refer to file DMVID.DOC."
+  022A  dmvid_detectAdapter
+  0283  dmvid_selectByChar
+  0299  dmvid_selectByName
+  02DE  dmvid_applySelection
+  02EC  dmvid_writeConfig
+  036D  dmvid_readConfigSection  refs: "DMRESCFG"
+  03E1  dmvid_promptForDisk  refs: "Enter PATH-NAME where the file could be found."
+  04A7  dmvid_readConfigValue
+  04E8  dmvid_updateConfigKey  refs: "csr_config"
+  0772  dmvid_openConfigFile
+  07D8  dmvid_showCurrentVideo
+  07F6  dmvid_readCurrentDriver
+  0898  dmvid_parseDriverName
+  08FC  dmvid_searchConfigKey
+
+Unidentified Functions:
+  05B4  sub_05B4  -- INT 21h: AH=30h (get_dos_version), AH=4Ah (resize_memory)
+  0F00  sub_0F00  -- (52 insns)
+  0F5C  sub_0F5C  -- (81 insns)
+  1472  sub_1472  -- (103 insns)
+  1566  sub_1566  -- (64 insns)
+  1614  sub_1614  -- (64 insns)
+  170A  sub_170A  -- str: "MS Run-Time Library - Copyright (c) 1987, Microsof..."
+  1A9A  sub_1A9A  -- (91 insns)
+  1B88  sub_1B88  -- (151 insns)
+  1D1A  sub_1D1A  -- (131 insns)
+  1E58  sub_1E58  -- (17 insns)
+  1E7C  sub_1E7C  -- (48 insns)
+  1EDE  sub_1EDE  -- (38 insns)
+  21F6  sub_21F6  -- (117 insns)
+  241A  sub_241A  -- (52 insns)
+  24BC  sub_24BC  -- (31 insns)
+  24FE  sub_24FE  -- (40 insns)
+  255C  sub_255C  -- (44 insns)
+  25C4  sub_25C4  -- (102 insns)
+  26CC  sub_26CC  -- (56 insns)
+  274C  sub_274C  -- str: "+- #"
+  2776  sub_2776  -- (28 insns)
+  2A50  sub_2A50  -- (9 insns)
+  2A62  sub_2A62  -- (33 insns)
+  2AA8  sub_2AA8  -- (56 insns)
+  2B1A  sub_2B1A  -- (21 insns)
+  2B4A  sub_2B4A  -- (160 insns)
+  2CC0  sub_2CC0  -- (23 insns)
+  2CF4  sub_2CF4  -- (84 insns)
+  2FE4  sub_2FE4  -- (26 insns)
+  3016  sub_3016  -- (48 insns)
+  33A0  sub_33A0  -- (9 insns)
+
+------------------------------------------------------------------------------
+CRT STARTUP CHAIN
+------------------------------------------------------------------------------
+
+Entry point: 0000:060A -> __astart
+
+__astart call sequence:
+  0632: call 11BA  ; __NMSG_WRITE
+  0638: call 141B  ; __write
+  067F: call 104A  ; __cintDIV
+  0684: call 138A  ; __setenvp
+  0687: call 11FC  ; __setargv
+  0698: call 0010  ; _main
+  069C: call 110E  ; _exit
+  06AF: call 11BA  ; __NMSG_WRITE
+  06B2: call 141B  ; __write
+  06DF: call 16A2  ; __dosretax
+  06FB: call 1444  ; __flsbuf
+  0706: call 27B2  ; _close
+  071E: call 0AD2  ; _strcpy
+  073A: call 0A92  ; _strcat
+  074F: call 2AA8  ; sub_2AA8
+  0759: call 2DA6  ; _unlink
+
+------------------------------------------------------------------------------
+DOS API USAGE (INT 21h)
+------------------------------------------------------------------------------
+
+  060C: INT 21h, AH=30h  get_dos_version                 in sub_05B4
+  063E: INT 21h, AH=??  unknown                         in sub_05B4
+  0667: INT 21h, AH=4Ah  resize_memory                   in sub_05B4
+  0B70: INT 21h, AH=??  unknown                         in _strlen
+  104C: INT 21h, AH=30h  get_dos_version                 in __cintDIV_init
+  1054: INT 21h, AH=??  unknown                         in __cintDIV_init
+  1066: INT 21h, AH=??  unknown                         in __cintDIV_init
+  10EA: INT 21h, AH=??  unknown                         in __cintDIV_init
+  115B: INT 21h, AH=3Eh  close_file                      in __exit
+  1168: INT 21h, AH=4Ch  exit_program                    in __exit
+  117F: INT 21h, AH=??  unknown                         in __exit
+  1193: INT 21h, AH=25h  set_interrupt_vector            in __exit
+  143B: INT 21h, AH=40h  write_file                      in __write
+  27C6: INT 21h, AH=3Eh  close_file                      in _close
+  27FA: INT 21h, AH=??  unknown                         in _lseek
+  281E: INT 21h, AH=??  unknown                         in _lseek
+  2831: INT 21h, AH=??  unknown                         in _lseek
+  2840: INT 21h, AH=42h  seek_file                       in _lseek
+  2875: INT 21h, AH=3Fh  read_file                       in _read
+  28D4: INT 21h, AH=??  unknown                         in _read
+  28E1: INT 21h, AH=3Fh  read_file                       in _read
+  28F2: INT 21h, AH=3Fh  read_file                       in _read
+  2908: INT 21h, AH=??  unknown                         in _read
+  294C: INT 21h, AH=??  unknown                         in _read
+  29DC: INT 21h, AH=40h  write_file                      in _read
+  2A2D: INT 21h, AH=40h  write_file                      in _read
+  2CC9: INT 21h, AH=??  unknown                         in sub_2CC0
+  2DAE: INT 21h, AH=41h  delete_file                     in _unlink
+  2F76: INT 21h, AH=4Ah  resize_memory                   in __brk
+  30B0: INT 21h, AH=3Dh  open_file                       in _open
+  30D3: INT 21h, AH=3Eh  close_file                      in _open
+  30E1: INT 21h, AH=??  unknown                         in _open
+  3106: INT 21h, AH=40h  write_file                      in _open
+  310D: INT 21h, AH=3Eh  close_file                      in _open
+  3115: INT 21h, AH=??  unknown                         in _open
+  3133: INT 21h, AH=??  unknown                         in _open
+  313C: INT 21h, AH=3Fh  read_file                       in _open
+  314F: INT 21h, AH=??  unknown                         in _open
+  3155: INT 21h, AH=40h  write_file                      in _open
+  315E: INT 21h, AH=??  unknown                         in _open
+  3185: INT 21h, AH=3Ch  create_file                     in _open
+  319C: INT 21h, AH=3Eh  close_file                      in _open
+  31AB: INT 21h, AH=3Dh  open_file                       in _open
+  31C6: INT 21h, AH=??  unknown                         in _open
+  31D6: INT 21h, AH=??  unknown                         in _open
+  31F5: INT 21h, AH=3Eh  close_file                      in _open
+  33AC: INT 21h, AH=??  unknown                         in sub_33A0
+  33CB: INT 21h, AH=??  unknown                         in _sbrk
+  34FF: INT 21h, AH=48h  allocate_memory                 in _sbrk
+  355A: INT 21h, AH=4Ah  resize_memory                   in _sbrk
+
+------------------------------------------------------------------------------
+BIOS VIDEO API USAGE (INT 10h)
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+OTHER INTERRUPT USAGE
+------------------------------------------------------------------------------
+
+  0612: INT 20h  in sub_05B4
+
+------------------------------------------------------------------------------
+FULL CALL GRAPH (function level)
+------------------------------------------------------------------------------
+
+_main (0010):
+    -> dmvid_buildConfigPath (00CB)
+    -> dmvid_interactiveMenu (0130)
+    -> dmvid_selectByChar (0283)
+    -> dmvid_selectByName (0299)
+    -> dmvid_applySelection (02DE)
+    -> _printf (079C)
+    -> _strlen (0B04)
+    -> _strupr (0B20)
+    -> _strnicmp (0EDE)
+
+dmvid_buildConfigPath (00CB):
+    -> _strcat (0A92)
+    -> _strcpy (0AD2)
+    -> _strlen (0B04)
+    -> _strupr (0B20)
+    -> _strnicmp (0EDE)
+
+dmvid_interactiveMenu (0130):
+    -> dmvid_detectAdapter (022A)
+    -> dmvid_readConfigSection (036D)
+    -> _printf (079C)
+    -> sub_0B5E (0B5E)
+
+dmvid_detectAdapter (022A):
+    -> dmvid_readConfigValue (04A7)
+    -> dmvid_updateConfigKey (04E8)
+    -> sub_06BE (06BE)
+    -> dmvid_openConfigFile (0772)
+
+dmvid_selectByName (0299):
+    -> _strlen (0B04)
+    -> _strcmp (0E86)
+
+dmvid_applySelection (02DE):
+    -> dmvid_writeConfig (02EC)
+
+dmvid_writeConfig (02EC):
+    -> dmvid_readConfigSection (036D)
+    -> dmvid_promptForDisk (03E1)
+    -> dmvid_readConfigValue (04A7)
+    -> dmvid_updateConfigKey (04E8)
+    -> sub_06BE (06BE)
+    -> dmvid_openConfigFile (0772)
+
+dmvid_readConfigSection (036D):
+    -> _strcpy (0AD2)
+    -> _strupr (0B20)
+    -> sub_0F00 (0F00)
+    -> sub_0F5C (0F5C)
+
+dmvid_promptForDisk (03E1):
+    -> _printf (079C)
+    -> dmvid_showCurrentVideo (07D8)
+    -> _strcat (0A92)
+    -> _strlen (0B04)
+    -> sub_0B5E (0B5E)
+
+dmvid_readConfigValue (04A7):
+    -> dmvid_readCurrentDriver (07F6)
+
+dmvid_updateConfigKey (04E8):
+    -> dmvid_readCurrentDriver (07F6)
+    -> dmvid_searchConfigKey (08FC)
+    -> sub_0B76 (0B76)
+    -> _strcmp (0E86)
+
+sub_05B4 (05B4):
+    -> _main (0010)
+    -> dmvid_searchConfigKey (08FC)
+    -> _strcat (0A92)
+    -> _strcpy (0AD2)
+    -> _strncat (0E54)
+    -> __cintDIV (104A)
+    -> _exit (110E)
+    -> __NMSG_WRITE (11BA)
+    -> __setargv (11FC)
+    -> __setenvp (138A)
+    -> __write (141B)
+    -> __flsbuf (1444)
+    -> __dosretax (16A2)
+    -> _close (27B2)
+    -> sub_2AA8 (2AA8)
+    -> _unlink (2DA6)
+
+dmvid_openConfigFile (0772):
+    -> sub_1472 (1472)
+    -> sub_2776 (2776)
+
+_printf (079C):
+    -> sub_1566 (1566)
+    -> sub_1614 (1614)
+    -> __fmtout (1F32)
+
+dmvid_showCurrentVideo (07D8):
+    -> sub_170A (170A)
+
+dmvid_readCurrentDriver (07F6):
+    -> dmvid_parseDriverName (0898)
+    -> _read (284C)
+
+dmvid_parseDriverName (0898):
+    -> sub_2A62 (2A62)
+
+dmvid_searchConfigKey (08FC):
+    -> _lseek (27D2)
+    -> sub_2928 (2928)
+    -> sub_2A62 (2A62)
+    -> sub_2B1A (2B1A)
+
+_strlen (0B04):
+    -> dmvid_parseDriverName (0898)
+    -> __dosretax (16A2)
+    -> _lseek (27D2)
+    -> _read (284C)
+    -> sub_2B4A (2B4A)
+    -> sub_2DB4 (2DB4)
+    -> sub_2E58 (2E58)
+    -> __brk (2E8C)
+
+_strncat (0E54):
+    -> __dosretax (16A2)
+    -> _lseek (27D2)
+    -> sub_2B3E (2B3E)
+
+sub_0F5C (0F5C):
+    -> _strcat (0A92)
+    -> _strcpy (0AD2)
+    -> _strlen (0B04)
+    -> __cintDIV_init (1008)
+    -> sub_2AC4 (2AC4)
+    -> sub_2CC0 (2CC0)
+    -> sub_2CE0 (2CE0)
+
+__cintDIV_init (1008):
+    -> sub_1197 (1197)
+    -> sub_11A6 (11A6)
+
+_exit (110E):
+    -> sub_1197 (1197)
+
+__exit (1125):
+    -> sub_116A (116A)
+    -> sub_1197 (1197)
+    -> sub_11A6 (11A6)
+    -> __NMSG_WRITE (11BA)
+    -> sub_11DA (11DA)
+    -> __write (141B)
+
+__setenvp (138A):
+    -> sub_2F4E (2F4E)
+
+__write (141B):
+    -> __flush (13F0)
+
+__flsbuf (1444):
+    -> sub_2A50 (2A50)
+
+sub_1472 (1472):
+    -> _open (307E)
+
+sub_1614 (1614):
+    -> __dosretax (16A2)
+    -> sub_2B1A (2B1A)
+
+__dosretax (16A2):
+    -> sub_2928 (2928)
+
+sub_170A (170A):
+    -> dmvid_readCurrentDriver (07F6)
+    -> sub_1A9A (1A9A)
+    -> sub_1B88 (1B88)
+    -> sub_1D1A (1D1A)
+    -> sub_1E7C (1E7C)
+    -> sub_1EDE (1EDE)
+    -> sub_2F38 (2F38)
+    -> sub_3016 (3016)
+    -> sub_33FA (33FA)
+
+sub_1A9A (1A9A):
+    -> sub_1EBA (1EBA)
+    -> sub_1EDE (1EDE)
+    -> sub_1F14 (1F14)
+    -> sub_3016 (3016)
+
+sub_1B88 (1B88):
+    -> sub_1EBA (1EBA)
+    -> sub_1EDE (1EDE)
+    -> sub_1F14 (1F14)
+    -> sub_3016 (3016)
+    -> sub_3488 (3488)
+
+sub_1D1A (1D1A):
+    -> sub_1E58 (1E58)
+    -> sub_1EBA (1EBA)
+    -> sub_1EDE (1EDE)
+    -> sub_1F14 (1F14)
+    -> sub_3016 (3016)
+
+sub_1E58 (1E58):
+    -> sub_1F14 (1F14)
+
+sub_1E7C (1E7C):
+    -> dmvid_readCurrentDriver (07F6)
+    -> sub_1EBA (1EBA)
+    -> sub_3016 (3016)
+
+sub_1EDE (1EDE):
+    -> sub_1EBA (1EBA)
+    -> sub_3016 (3016)
+
+__fmtout (1F32):
+    -> sub_21F6 (21F6)
+    -> __fassign (232C)
+    -> sub_241A (241A)
+    -> sub_24BC (24BC)
+    -> sub_255C (255C)
+    -> sub_26CC (26CC)
+    -> sub_274C (274C)
+    -> sub_2F38 (2F38)
+
+sub_21F6 (21F6):
+    -> _strlen (0B04)
+    -> sub_25C4 (25C4)
+    -> sub_3396 (3396)
+
+__fassign (232C):
+    -> sub_24FE (24FE)
+    -> sub_255C (255C)
+
+sub_241A (241A):
+    -> sub_25C4 (25C4)
+
+sub_24BC (24BC):
+    -> dmvid_searchConfigKey (08FC)
+
+sub_24FE (24FE):
+    -> dmvid_searchConfigKey (08FC)
+
+sub_255C (255C):
+    -> dmvid_searchConfigKey (08FC)
+
+sub_25C4 (25C4):
+    -> _strlen (0B04)
+    -> sub_24BC (24BC)
+    -> sub_24FE (24FE)
+    -> sub_255C (255C)
+    -> sub_268A (268A)
+    -> sub_26A2 (26A2)
+
+_read (284C):
+    -> sub_29CE (29CE)
+    -> sub_3222 (3222)
+
+sub_2A62 (2A62):
+    -> sub_3237 (3237)
+    -> sub_3376 (3376)
+
+sub_2AA8 (2AA8):
+    -> _strlen (0B04)
+    -> _strupr (0B20)
+
+sub_2B4A (2B4A):
+    -> _lseek (27D2)
+
+sub_2CC0 (2CC0):
+    -> sub_2CF4 (2CF4)
+
+sub_2CF4 (2CF4):
+    -> _strcpy (0AD2)
+    -> _strlen (0B04)
+    -> sub_2A62 (2A62)
+    -> sub_33A0 (33A0)
+    -> _sbrk (33B2)
+
+_unlink (2DA6):
+    -> sub_2E58 (2E58)
+
+__brk (2E8C):
+    -> sub_2E58 (2E58)
+    -> sub_2FB6 (2FB6)
+
+sub_2FE4 (2FE4):
+    -> __dosretax (16A2)
+
+sub_3016 (3016):
+    -> dmvid_parseDriverName (0898)
+
+_open (307E):
+    -> sub_3211 (3211)
+    -> sub_331A (331A)
+    -> sub_3354 (3354)
+    -> sub_3376 (3376)
+    -> sub_34A8 (34A8)
+
+_sbrk (33B2):
+    -> sub_2FB0 (2FB0)
+    -> sub_3516 (3516)
+    -> sub_356C (356C)
+
+------------------------------------------------------------------------------
+REVERSE CALL GRAPH (callee <- callers)
+------------------------------------------------------------------------------
+
+_main (0010):
+    <- sub_05B4 (05B4)
+
+dmvid_buildConfigPath (00CB):
+    <- _main (0010)
+
+dmvid_interactiveMenu (0130):
+    <- _main (0010)
+
+dmvid_detectAdapter (022A):
+    <- dmvid_interactiveMenu (0130)
+
+dmvid_selectByChar (0283):
+    <- _main (0010)
+
+dmvid_selectByName (0299):
+    <- _main (0010)
+
+dmvid_applySelection (02DE):
+    <- _main (0010)
+
+dmvid_writeConfig (02EC):
+    <- dmvid_applySelection (02DE)
+
+dmvid_readConfigSection (036D):
+    <- dmvid_interactiveMenu (0130)
+    <- dmvid_writeConfig (02EC)
+
+dmvid_promptForDisk (03E1):
+    <- dmvid_writeConfig (02EC)
+
+dmvid_readConfigValue (04A7):
+    <- dmvid_detectAdapter (022A)
+    <- dmvid_writeConfig (02EC)
+
+dmvid_updateConfigKey (04E8):
+    <- dmvid_detectAdapter (022A)
+    <- dmvid_writeConfig (02EC)
+
+sub_06BE (06BE):
+    <- dmvid_detectAdapter (022A)
+    <- dmvid_writeConfig (02EC)
+
+dmvid_openConfigFile (0772):
+    <- dmvid_detectAdapter (022A)
+    <- dmvid_writeConfig (02EC)
+
+_printf (079C):
+    <- _main (0010)
+    <- dmvid_interactiveMenu (0130)
+    <- dmvid_promptForDisk (03E1)
+
+dmvid_showCurrentVideo (07D8):
+    <- dmvid_promptForDisk (03E1)
+
+dmvid_readCurrentDriver (07F6):
+    <- dmvid_readConfigValue (04A7)
+    <- dmvid_updateConfigKey (04E8)
+    <- sub_170A (170A)
+    <- sub_1E7C (1E7C)
+
+dmvid_parseDriverName (0898):
+    <- dmvid_readCurrentDriver (07F6)
+    <- _strlen (0B04)
+    <- sub_3016 (3016)
+
+dmvid_searchConfigKey (08FC):
+    <- dmvid_updateConfigKey (04E8)
+    <- sub_05B4 (05B4)
+    <- sub_24BC (24BC)
+    <- sub_24FE (24FE)
+    <- sub_255C (255C)
+
+_strcat (0A92):
+    <- dmvid_buildConfigPath (00CB)
+    <- dmvid_promptForDisk (03E1)
+    <- sub_05B4 (05B4)
+    <- sub_0F5C (0F5C)
+
+_strcpy (0AD2):
+    <- dmvid_buildConfigPath (00CB)
+    <- dmvid_readConfigSection (036D)
+    <- sub_05B4 (05B4)
+    <- sub_0F5C (0F5C)
+    <- sub_2CF4 (2CF4)
+
+_strlen (0B04):
+    <- _main (0010)
+    <- dmvid_buildConfigPath (00CB)
+    <- dmvid_selectByName (0299)
+    <- dmvid_promptForDisk (03E1)
+    <- sub_0F5C (0F5C)
+    <- sub_21F6 (21F6)
+    <- sub_25C4 (25C4)
+    <- sub_2AA8 (2AA8)
+    <- sub_2CF4 (2CF4)
+
+_strupr (0B20):
+    <- _main (0010)
+    <- dmvid_buildConfigPath (00CB)
+    <- dmvid_readConfigSection (036D)
+    <- sub_2AA8 (2AA8)
+
+sub_0B5E (0B5E):
+    <- dmvid_interactiveMenu (0130)
+    <- dmvid_promptForDisk (03E1)
+
+sub_0B76 (0B76):
+    <- dmvid_updateConfigKey (04E8)
+
+_strncat (0E54):
+    <- sub_05B4 (05B4)
+
+_strcmp (0E86):
+    <- dmvid_selectByName (0299)
+    <- dmvid_updateConfigKey (04E8)
+
+_strnicmp (0EDE):
+    <- _main (0010)
+    <- dmvid_buildConfigPath (00CB)
+
+sub_0F00 (0F00):
+    <- dmvid_readConfigSection (036D)
+
+sub_0F5C (0F5C):
+    <- dmvid_readConfigSection (036D)
+
+__cintDIV_init (1008):
+    <- sub_0F5C (0F5C)
+
+__cintDIV (104A):
+    <- sub_05B4 (05B4)
+
+_exit (110E):
+    <- sub_05B4 (05B4)
+
+sub_116A (116A):
+    <- __exit (1125)
+
+sub_1197 (1197):
+    <- __cintDIV_init (1008)
+    <- _exit (110E)
+    <- __exit (1125)
+
+sub_11A6 (11A6):
+    <- __cintDIV_init (1008)
+    <- __exit (1125)
+
+__NMSG_WRITE (11BA):
+    <- sub_05B4 (05B4)
+    <- __exit (1125)
+
+sub_11DA (11DA):
+    <- __exit (1125)
+
+__setargv (11FC):
+    <- sub_05B4 (05B4)
+
+__setenvp (138A):
+    <- sub_05B4 (05B4)
+
+__flush (13F0):
+    <- __write (141B)
+
+__write (141B):
+    <- sub_05B4 (05B4)
+    <- __exit (1125)
+
+__flsbuf (1444):
+    <- sub_05B4 (05B4)
+
+sub_1472 (1472):
+    <- dmvid_openConfigFile (0772)
+
+sub_1566 (1566):
+    <- _printf (079C)
+
+sub_1614 (1614):
+    <- _printf (079C)
+
+__dosretax (16A2):
+    <- sub_05B4 (05B4)
+    <- _strlen (0B04)
+    <- _strncat (0E54)
+    <- sub_1614 (1614)
+    <- sub_2FE4 (2FE4)
+
+sub_170A (170A):
+    <- dmvid_showCurrentVideo (07D8)
+
+sub_1A9A (1A9A):
+    <- sub_170A (170A)
+
+sub_1B88 (1B88):
+    <- sub_170A (170A)
+
+sub_1D1A (1D1A):
+    <- sub_170A (170A)
+
+sub_1E58 (1E58):
+    <- sub_1D1A (1D1A)
+
+sub_1E7C (1E7C):
+    <- sub_170A (170A)
+
+sub_1EBA (1EBA):
+    <- sub_1A9A (1A9A)
+    <- sub_1B88 (1B88)
+    <- sub_1D1A (1D1A)
+    <- sub_1E7C (1E7C)
+    <- sub_1EDE (1EDE)
+
+sub_1EDE (1EDE):
+    <- sub_170A (170A)
+    <- sub_1A9A (1A9A)
+    <- sub_1B88 (1B88)
+    <- sub_1D1A (1D1A)
+
+sub_1F14 (1F14):
+    <- sub_1A9A (1A9A)
+    <- sub_1B88 (1B88)
+    <- sub_1D1A (1D1A)
+    <- sub_1E58 (1E58)
+
+__fmtout (1F32):
+    <- _printf (079C)
+
+sub_21F6 (21F6):
+    <- __fmtout (1F32)
+
+__fassign (232C):
+    <- __fmtout (1F32)
+
+sub_241A (241A):
+    <- __fmtout (1F32)
+
+sub_24BC (24BC):
+    <- __fmtout (1F32)
+    <- sub_25C4 (25C4)
+
+sub_24FE (24FE):
+    <- __fassign (232C)
+    <- sub_25C4 (25C4)
+
+sub_255C (255C):
+    <- __fmtout (1F32)
+    <- __fassign (232C)
+    <- sub_25C4 (25C4)
+
+sub_25C4 (25C4):
+    <- sub_21F6 (21F6)
+    <- sub_241A (241A)
+
+sub_268A (268A):
+    <- sub_25C4 (25C4)
+
+sub_26A2 (26A2):
+    <- sub_25C4 (25C4)
+
+sub_26CC (26CC):
+    <- __fmtout (1F32)
+
+sub_274C (274C):
+    <- __fmtout (1F32)
+
+sub_2776 (2776):
+    <- dmvid_openConfigFile (0772)
+
+_close (27B2):
+    <- sub_05B4 (05B4)
+
+_lseek (27D2):
+    <- dmvid_searchConfigKey (08FC)
+    <- _strlen (0B04)
+    <- _strncat (0E54)
+    <- sub_2B4A (2B4A)
+
+_read (284C):
+    <- dmvid_readCurrentDriver (07F6)
+    <- _strlen (0B04)
+
+sub_2928 (2928):
+    <- dmvid_searchConfigKey (08FC)
+    <- __dosretax (16A2)
+
+sub_29CE (29CE):
+    <- _read (284C)
+
+sub_2A50 (2A50):
+    <- __flsbuf (1444)
+
+sub_2A62 (2A62):
+    <- dmvid_parseDriverName (0898)
+    <- dmvid_searchConfigKey (08FC)
+    <- sub_2CF4 (2CF4)
+
+sub_2AA8 (2AA8):
+    <- sub_05B4 (05B4)
+
+sub_2AC4 (2AC4):
+    <- sub_0F5C (0F5C)
+
+sub_2B1A (2B1A):
+    <- dmvid_searchConfigKey (08FC)
+    <- sub_1614 (1614)
+
+sub_2B3E (2B3E):
+    <- _strncat (0E54)
+
+sub_2B4A (2B4A):
+    <- _strlen (0B04)
+
+sub_2CC0 (2CC0):
+    <- sub_0F5C (0F5C)
+
+sub_2CE0 (2CE0):
+    <- sub_0F5C (0F5C)
+
+sub_2CF4 (2CF4):
+    <- sub_2CC0 (2CC0)
+
+_unlink (2DA6):
+    <- sub_05B4 (05B4)
+
+sub_2DB4 (2DB4):
+    <- _strlen (0B04)
+
+sub_2E58 (2E58):
+    <- _strlen (0B04)
+    <- _unlink (2DA6)
+    <- __brk (2E8C)
+
+__brk (2E8C):
+    <- _strlen (0B04)
+
+sub_2F38 (2F38):
+    <- sub_170A (170A)
+    <- __fmtout (1F32)
+
+sub_2F4E (2F4E):
+    <- __setenvp (138A)
+
+sub_2FB0 (2FB0):
+    <- _sbrk (33B2)
+
+sub_2FB6 (2FB6):
+    <- __brk (2E8C)
+
+sub_3016 (3016):
+    <- sub_170A (170A)
+    <- sub_1A9A (1A9A)
+    <- sub_1B88 (1B88)
+    <- sub_1D1A (1D1A)
+    <- sub_1E7C (1E7C)
+    <- sub_1EDE (1EDE)
+
+_open (307E):
+    <- sub_1472 (1472)
+
+sub_3211 (3211):
+    <- _open (307E)
+
+sub_3222 (3222):
+    <- _read (284C)
+
+sub_3237 (3237):
+    <- sub_2A62 (2A62)
+
+sub_331A (331A):
+    <- _open (307E)
+
+sub_3354 (3354):
+    <- _open (307E)
+
+sub_3376 (3376):
+    <- sub_2A62 (2A62)
+    <- _open (307E)
+
+sub_3396 (3396):
+    <- sub_21F6 (21F6)
+
+sub_33A0 (33A0):
+    <- sub_2CF4 (2CF4)
+
+_sbrk (33B2):
+    <- sub_2CF4 (2CF4)
+
+sub_33FA (33FA):
+    <- sub_170A (170A)
+
+sub_3488 (3488):
+    <- sub_1B88 (1B88)
+
+sub_34A8 (34A8):
+    <- _open (307E)
+
+sub_3516 (3516):
+    <- _sbrk (33B2)
+
+sub_356C (356C):
+    <- _sbrk (33B2)
+
+------------------------------------------------------------------------------
+VIDEO MODE TABLE (from string analysis)
+------------------------------------------------------------------------------
+
+  AUTO   - Automatic detection
+  VGA    - Video Graphics Array, 640x480 16 colors
+  EGA    - Enhanced Graphics Adapter, 640x350 16 colors
+  MCGA   - Multi Color Graphics Array, 640x480 2 colors
+  CGA    - Color Graphics Adapter, 640x200 2 colors
+  HERC   - Hercules, 720x348 monochrome
+  1000   - Tandy 1000, 640x200 4 colors
+  TC16   - Tandy Color, 640x200 16 colors
+
+------------------------------------------------------------------------------
+PROGRAM FLOW SUMMARY
+------------------------------------------------------------------------------
+
+DMVID.EXE is the DeskMate video driver configuration utility.
+It performs the following operations:
+
+1. CRT startup (__astart -> __setenvp -> __setargv -> _main)
+2. Parse command line for /AUTO switch
+3. Locate DMCSR.CFG configuration file
+4. Read current video driver setting from DMCSR.CFG
+5. If /AUTO: auto-detect video adapter and update config
+6. If interactive: display menu of video options (1-9)
+7. Get user selection via keyboard input
+8. Update DMCSR.CFG with selected video driver name
+9. Display result message and exit
+
+Configuration file: DMCSR.CFG
+Config sections searched: [DMRESCFG], [DMCONFIG]
+Config key: csr_config
+Driver name format: DMVS<mode>.RES (e.g., DMVSVGA.RES)
+

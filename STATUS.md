@@ -24,22 +24,22 @@
 
 | Binary | Disassembled | Call Graph | Compiler ID | Notes |
 |--------|-------------|------------|-------------|-------|
-| DESK.EXE | :white_large_square: | :white_large_square: | :white_check_mark: | Hand-written ASM; DM89 header; 5 segments, 33 relocs; version 05.00 build 900919 |
-| DESKTOP.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmguf |
-| TEXT.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| WRKSHEET.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| FILER.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmguf+dmform+dmdb |
-| DRAW.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| CALENDAR.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| ADDRESS.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmguf+dmform+dmdb |
-| TELECOM.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| HANGMAN.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; contains profanity filter |
-| PC_LINK.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x (1988); MZ+DM89; DM89 CS:IP overrides broken MZ entry |
-| FORMSET.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| PLAY.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; imports dmplay; smallest PDM (12KB) |
-| MAILMRGE.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| INSTALL.PDM | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 |
-| DMVID.EXE | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); standalone DOS program |
+| DESK.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | Hand-written ASM; DM89 header; 118 functions, 3218 insns, 6 segments, 33 relocs; 48 unique INT calls; version 05.00 build 900919 |
+| DESKTOP.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 521 functions, 23206 insns, 78% coverage; 19 INT E0h + 35 INT 21h calls |
+| TEXT.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 408 functions, 23650 insns, 81% coverage; 23 INT E0h + 15 INT 21h calls |
+| WRKSHEET.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 416 functions, 6 segments, 15 relocs |
+| FILER.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 318 functions, 6 segments, 25 relocs; imports dmguf+dmform+dmdb |
+| DRAW.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 554 functions, 9 segments, 32 relocs; uses INT 33h (mouse) + INT 34h-3Dh (8087 FP) |
+| CALENDAR.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 486 functions, 6 segments, 25 relocs |
+| ADDRESS.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 316 functions, 6 segments, 35 relocs; imports dmguf+dmdb |
+| TELECOM.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 269 functions, 5 segments, 13 relocs |
+| HANGMAN.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 200 functions, 7501 insns; 18 INT E0h + 14 INT 21h calls; word game with embedded packed word list; profanity filter via SPELL resource; loads PRGUF+DMGUF+DMCSR+SPELL |
+| PC_LINK.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x (1988); MZ+DM89; 538 functions, 5 segments, 18 DOS API services; DM89 CS:IP overrides broken MZ entry |
+| FORMSET.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 419 functions, 6 segments, 25 relocs; imports dmguf+dmform+dmdb |
+| PLAY.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 114 functions, 5295 insns; 40 INT E0h + 6 INT 21h calls; "Teach Me!" tutorial player (not music); imports dmguf+dmplay+unpack; 15 built-in .TUT lesson catalog |
+| MAILMRGE.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 168 functions, 6 segments, 19 relocs |
+| INSTALL.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 210 functions, 5 segments, 13 relocs |
+| DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); 74 functions (41 named); CRT chain → _main; config I/O to DMCSR.CFG |
 | INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | 828-byte chain loader; validates DM89 sig then EXEC's DESK.EXE |
 | *.RES | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 (except ALRMINIT/D87/DMUNPACK: plain MZ legacy) |
 | *.ACC | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; typically import dmguf |
