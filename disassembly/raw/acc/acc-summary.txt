@@ -1,0 +1,394 @@
+DeskMate 3.05 ACC (Desk Accessory) Disassembly Summary
+======================================================================
+
+Total ACC files processed: 18
+Total combined size: 228,590 bytes
+Total functions identified: 2141
+
+Overview Table
+----------------------------------------------------------------------
+File                Size  Segs  Reloc  Funcs Entry        Imports
+---------------- ------- ----- ------ ------ ------------ --------------------
+DMACCESS.ACC        7487     5     13     81 016A:000C    dmguf
+DMALARM.ACC        14909     5     23    145 02B4:000E    (none)
+DMCLIP.ACC         10507     5     14    124 01EC:0002    (none)
+DMDRWPRT.ACC        1638     4      7     18 003B:0002    (none)
+DMHELP.ACC         31836     4      7    223 0693:000A    (none)
+DMNOTEPD.ACC       14295     5     13    116 01B2:000C    dmguf
+DMPD1.ACC           6713     5     13     79 0109:0002    dmguf
+DMPD2.ACC           6685     5     13     79 0109:0002    dmguf
+DMPDASCI.ACC        8035     5     13     83 011B:000E    dmguf
+DMPDIBMM.ACC        9251     5     13     84 0130:000C    dmguf
+DMPDLASR.ACC        6969     5     13     80 010E:0006    dmguf
+DMPDS.ACC           9559     5     13     85 013E:0004    dmguf
+DMPHONE.ACC        20585     6     29    192 040B:0004    dmguf
+DMPRTSEL.ACC       13643     5     14    130 027A:0006    PRGUF
+DMSERV.ACC         24187     6     15    191 04CD:000E    (none)
+DMSETUP.ACC        28695     5     17    193 0574:0008    DMGUF
+DMSPELL.ACC         7510     4      7    153 014F:0001    (none)
+DMTODO.ACC          6086     5     13     85 0120:0008    (none)
+
+INT Call Summary
+----------------------------------------------------------------------
+File              INT 05h  INT 07h  INT 11h  INT 13h  INT 20h  INT 21h  INT 28h  INT 5Ch  INT ABh  INT E0h  INT E2h  INT E9h
+----------------------------------------------------------------------------------------------------------------------------
+DMACCESS.ACC            -        -        -        -        1       13        -        -        -       12        -        -
+DMALARM.ACC             -        -        -        -        1       21        1        1        -       19        5        3
+DMCLIP.ACC              -        -        -        -        1       15        -        -        -       14        -        -
+DMDRWPRT.ACC            -        -        -        -        -        2        -        -        2        9        -        -
+DMHELP.ACC              -        -        -        -        -        6        -        -        -       23        -        -
+DMNOTEPD.ACC            -        -        -        -        1       11        -        -        -       16        -        -
+DMPD1.ACC               -        -        -        -        1       13        -        -        1       16        -        -
+DMPD2.ACC               -        -        -        -        1       13        -        -        1       16        -        -
+DMPDASCI.ACC            -        -        -        -        1       13        -        -        -       16        -        -
+DMPDIBMM.ACC            1        -        -        -        1       13        -        -        1       16        -        -
+DMPDLASR.ACC            1        -        -        -        1       13        -        -        -       16        -        -
+DMPDS.ACC               -        -        -        -        1       13        -        -        -       16        -        -
+DMPHONE.ACC             -        -        -        -        1       22        1        1        -       26        5        -
+DMPRTSEL.ACC            -        -        1        2        1       17        -        -        -       16        -        -
+DMSERV.ACC              -        1        -        -        1       13        -        -        -       14        -        -
+DMSETUP.ACC             -        -        -        -        1       15        -        -        -       15        5        -
+DMSPELL.ACC             -        -        -        -        -        5        -        -        1       13        -        -
+DMTODO.ACC              -        -        -        -        1       13        -        -        -       14        -        -
+
+Per-File Analysis
+======================================================================
+
+--- DMACCESS.ACC ---
+  Description: Main accessory manager -- dispatches and loads other .ACC modules
+  Size: 7,487 bytes
+  Functions: 81
+  Imports: dmguf
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=02h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    ";C_FILE_INFO"
+    "DMSPELL"
+    "DMHELP"
+    "run-time error "
+
+--- DMALARM.ACC ---
+  Description: Alarm/notification system -- schedules and displays timed alerts
+  Size: 14,909 bytes
+  Functions: 145
+  Imports: (none)
+  DM flags: 0x000E
+  INT E0h (DeskMate API) services: AH=02h, AH=06h
+  INT 21h (DOS API) services: AH=0Eh, AH=19h, AH=25h, AH=2Ah (GetDate), AH=2Ch (GetTime), AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "ALARM"
+    "ALARM.CFG"
+    "FILE LIST"
+    "Alarm"
+    "Alarm/Calendar Alarms"
+    "Use Digital Sound Alarm"
+    "Quick Alarm Time:"
+    "Sound File Name:"
+
+--- DMCLIP.ACC ---
+  Description: Clipboard manager -- cut/copy/paste support across DeskMate apps
+  Size: 10,507 bytes
+  Functions: 124
+  Imports: (none)
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=02h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=36h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=48h (Alloc), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "CLIPBORD.DAT"
+    "DMCLIP"
+    "SAVE CLIPBOARD"
+    "Error"
+    "Warning"
+    "The file CLIPBORD.DAT contains invalid data."
+    "Duplicate clip item name."
+    "The selected entry is too large for the current clipboard."
+
+--- DMDRWPRT.ACC ---
+  Description: Draw print support -- printing backend for DRAW.PDM vector output
+  Size: 1,638 bytes
+  Functions: 18
+  Imports: (none)
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=02h
+  INT 21h (DOS API) services: AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "DRWPRTFILE"
+
+--- DMHELP.ACC ---
+  Description: Help system -- context-sensitive help viewer for all DeskMate apps
+  Size: 31,836 bytes
+  Functions: 223
+  Imports: (none)
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=35h, AH=48h (Alloc), AH=4Ch (Exit)
+  Notable strings:
+    "Looking for Help ..."
+    ".HLP"
+    "The alarm accessory has been run and alarms are turned on."
+    "The Autoproof option of the Spell Checker is on. "
+    "Unable to display Help.  A network error has occurred."
+    "Help requires DeskMate version 03.03 or later."
+    "Help"
+    "Try copying your help file to another directory."
+
+--- DMNOTEPD.ACC ---
+  Description: Notepad accessory -- simple text editor/note-taking popup
+  Size: 14,295 bytes
+  Functions: 116
+  Imports: dmguf
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "File Not Found"
+    "Create File"
+    "Do you want to create file DMCORKBD on drive"
+    "Disk Drive Error"
+    "Drive error accessing file.  Swap disks and retry?"
+    ";C_FILE_INFO"
+    "DMSPELL"
+    "A:\DESKTOP.CFG"
+
+--- DMPD1.ACC ---
+  Description: Printer driver 1 -- device driver for dot-matrix printers
+  Size: 6,713 bytes
+  Functions: 79
+  Imports: dmguf
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "PAGE SETUP"
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "DMPD.CFG Not Updated"
+    "File Not Found"
+    "File Needed"
+
+--- DMPD2.ACC ---
+  Description: Printer driver 2 -- additional dot-matrix printer support
+  Size: 6,685 bytes
+  Functions: 79
+  Imports: dmguf
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "PAGE SETUP"
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "DMPD.CFG Not Updated"
+    "File Not Found"
+    "File Needed"
+
+--- DMPDASCI.ACC ---
+  Description: ASCII printer driver -- plain text/generic printer output
+  Size: 8,035 bytes
+  Functions: 83
+  Imports: dmguf
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "PAGE SETUP"
+    "Printer treats a carriage return (CR) as:"
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "DMPD.CFG Not Updated"
+    "File Not Found"
+
+--- DMPDIBMM.ACC ---
+  Description: IBM matrix printer driver -- IBM Proprinter/compatible support
+  Size: 9,251 bytes
+  Functions: 84
+  Imports: dmguf
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "PAGE SETUP"
+    "Default Printer Font"
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "DMPD.CFG Not Updated"
+    "File Not Found"
+
+--- DMPDLASR.ACC ---
+  Description: Laser printer driver -- HP LaserJet/compatible PCL output
+  Size: 6,969 bytes
+  Functions: 80
+  Imports: dmguf
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "PAGE SETUP"
+    "Default Printer Font"
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "DMPD.CFG Not Updated"
+    "File Not Found"
+
+--- DMPDS.ACC ---
+  Description: Printer driver services -- shared printing infrastructure
+  Size: 9,559 bytes
+  Functions: 85
+  Imports: dmguf
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "PAGE SETUP"
+    "Default Printer Font"
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "DMPD.CFG Not Updated"
+    "File Not Found"
+
+--- DMPHONE.ACC ---
+  Description: Phone dialer -- modem-based telephone dialer accessory
+  Size: 20,585 bytes
+  Functions: 192
+  Imports: dmguf
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=0Eh, AH=19h, AH=25h, AH=2Ah (GetDate), AH=2Ch (GetTime), AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=48h (Alloc), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "Phone List"
+    "Work phone"
+    "Home phone"
+    " Phone List "
+    "Phone:"
+    "Error accessing the network."
+    "Cannot open the Address Book data file."
+    "Cannot open the Shared Address Book data file."
+
+--- DMPRTSEL.ACC ---
+  Description: Printer selector -- UI for choosing and configuring printers
+  Size: 13,643 bytes
+  Functions: 130
+  Imports: PRGUF
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "DMSETUP"
+    "DMPRTSEL.CFG"
+    "DMPD.CFG"
+    "INSTALL.CFG"
+    "Printers"
+    "No printer"
+    "Printer Ports"
+    "Get a new list of printers"
+
+--- DMSERV.ACC ---
+  Description: Service/utility module -- background services and system utilities
+  Size: 24,187 bytes
+  Functions: 191
+  Imports: (none)
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "Page Setup"
+    "Error"
+    "          ERROR"
+    "         Error "
+    ";C_FILE_INFO"
+    "DMSPELL"
+    "DMHELP"
+    "- floating-point error: "
+
+--- DMSETUP.ACC ---
+  Description: Setup/preferences -- DeskMate configuration and preferences UI
+  Size: 28,695 bytes
+  Functions: 193
+  Imports: DMGUF
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=00h, AH=02h, AH=06h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "DMPRTSEL.CFG"
+    "Printer..."
+    "Setup"
+    "Error"
+    "Setup Communications"
+    "Modems"
+    "Dial Timeout"
+    "Modem"
+
+--- DMSPELL.ACC ---
+  Description: Spell checker -- dictionary-based spelling verification
+  Size: 7,510 bytes
+  Functions: 153
+  Imports: (none)
+  DM flags: 0x0000
+  INT E0h (DeskMate API) services: AH=02h, AH=07h
+  INT 21h (DOS API) services: AH=30h, AH=3Eh (Close), AH=45h, AH=4Ch (Exit), AH=68h
+  Notable strings:
+    "Spell Checker"
+    "File"
+    "DeskMate Spell Checker"
+    "Spelling correct."
+    "All words are correctly spelled."
+    "DMHELP"
+    "SPELL"
+
+--- DMTODO.ACC ---
+  Description: To-do list -- task/reminder tracking accessory
+  Size: 6,086 bytes
+  Functions: 85
+  Imports: (none)
+  DM flags: 0x0101
+  INT E0h (DeskMate API) services: AH=02h, AH=07h
+  INT 21h (DOS API) services: AH=25h, AH=30h, AH=35h, AH=3Eh (Close), AH=40h (Write), AH=44h (IOCTL), AH=4Ah (Realloc), AH=4Ch (Exit)
+  Notable strings:
+    "DMHELP"
+    ";C_FILE_INFO"
+    "DMSPELL"
+    "A:\DESKTOP.CFG"
+    "DESKTOP.CFG"
+    "run-time error "
+
+
+Reverse Engineering Priority Analysis
+======================================================================
+
+HIGH PRIORITY (core DeskMate infrastructure):
+  DMACCESS.ACC  -- Accessory manager, needed to understand ACC loading
+  DMHELP.ACC    -- Help system, largest ACC, used by all apps
+  DMCLIP.ACC    -- Clipboard, essential for inter-app data exchange
+  DMPDS.ACC     -- Printer driver services, shared printing infrastructure
+  DMSERV.ACC    -- Background services, likely system-wide utilities
+
+MEDIUM PRIORITY (user-facing accessories):
+  DMNOTEPD.ACC  -- Notepad, good standalone RE target (self-contained UI)
+  DMPHONE.ACC   -- Phone dialer, exercises modem/serial port code
+  DMSETUP.ACC   -- Setup, reveals configuration storage format
+  DMALARM.ACC   -- Alarm, shows timer/interrupt handling
+  DMTODO.ACC    -- To-do list, small and self-contained
+  DMSPELL.ACC   -- Spell checker, reveals dictionary file format
+  DMPRTSEL.ACC  -- Printer selector UI
+
+LOW PRIORITY (device-specific drivers):
+  DMPD1.ACC     -- Printer driver 1 (specific hardware)
+  DMPD2.ACC     -- Printer driver 2 (specific hardware)
+  DMPDASCI.ACC  -- ASCII printer (simple output)
+  DMPDIBMM.ACC  -- IBM matrix printer (specific hardware)
+  DMPDLASR.ACC  -- Laser printer (specific hardware)
+  DMDRWPRT.ACC  -- Draw print (tiny, 1.6KB, very specialized)
+

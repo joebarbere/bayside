@@ -1,0 +1,141 @@
+Call Graph and Summary: DMPDASCI.ACC
+============================================================
+
+File: DMPDASCI.ACC
+Size: 8035 bytes
+Segments: 5 (0000, 011B, 0126, 012A, 01EA)
+Relocations: 13
+Total functions: 83
+Entry point: 011B:000E
+Imports: dmguf
+DM flags: 0x0000
+
+INT E0h services (DeskMate API): 4
+  AH=00h
+  AH=02h
+  AH=06h
+  AH=07h
+
+INT 21h services (DOS API): 8
+  AH=25h  Set interrupt vector
+  AH=30h  Get DOS version
+  AH=35h  Get interrupt vector
+  AH=3Eh  Close file
+  AH=40h  Write file
+  AH=44h  IOCTL
+  AH=4Ah  Resize memory block
+  AH=4Ch  Exit process
+
+All INT calls:
+  INT 20h: 1 call(s)
+  INT 21h: 13 call(s)
+  INT E0h: 16 call(s)
+
+Largest functions (top 20):
+  start                at 0x011BE  size=2981 bytes
+  sub_00596            at 0x00596  size=526 bytes
+  sub_00E32            at 0x00E32  size=398 bytes
+  sub_00010            at 0x00010  size=280 bytes
+  sub_00A16            at 0x00A16  size=273 bytes
+  sub_00CB3            at 0x00CB3  size=269 bytes
+  sub_00816            at 0x00816  size=196 bytes
+  sub_00307            at 0x00307  size=167 bytes
+  sub_00262            at 0x00262  size=165 bytes
+  sub_00128            at 0x00128  size=152 bytes
+  sub_00436            at 0x00436  size=131 bytes
+  sub_01142            at 0x01142  size=124 bytes
+  sub_00972            at 0x00972  size=104 bytes
+  sub_00B51            at 0x00B51  size=104 bytes
+  sub_00534            at 0x00534  size=98 bytes
+  sub_007B8            at 0x007B8  size=79 bytes
+  sub_001D3            at 0x001D3  size=71 bytes
+  sub_008F1            at 0x008F1  size=69 bytes
+  sub_01014            at 0x01014  size=66 bytes
+  sub_01056            at 0x01056  size=64 bytes
+
+All functions (83):
+Address    Name                   Size     Calls Made
+---------- ---------------------- -------- ------------------------------
+0x00010  sub_00010              280      sub_0021A, sub_00307, sub_00128, sub_00C4D, sub_00C53, sub_003D6, sub_00253, sub_00262, sub_00C7D, sub_00C77 (+6 more)
+0x00128  sub_00128              152      
+0x001C0  sub_001C0              19       
+0x001D3  sub_001D3              71       
+0x0021A  sub_0021A              44       sub_004C4, sub_00516, sub_00BF9, sub_009DA, sub_00C00, sub_008DA, sub_00C5F, sub_00C2F, sub_00C71
+0x00246  sub_00246              13       sub_00C6B, sub_00A16, sub_00C00, sub_004F6
+0x00253  sub_00253              15       sub_00B51
+0x00262  sub_00262              165      sub_01142, sub_01142, sub_01096, sub_01056, sub_01056, sub_01056, sub_01056, sub_00C59
+0x00307  sub_00307              167      sub_00C47, sub_00534, sub_00B2D, sub_00436
+0x003AE  sub_003AE              40       sub_00C35
+0x003D6  sub_003D6              63       sub_00596, sub_00C59, sub_004B9, sub_007A4, sub_00B51
+0x00415  sub_00415              33       sub_00C41, sub_00C65
+0x00436  sub_00436              131      sub_00B2D
+0x004B9  sub_004B9              11       sub_00B45
+0x004C4  sub_004C4              50       sub_00BB9, sub_00BBF
+0x004F6  sub_004F6              18       
+0x00508  sub_00508              14       
+0x00516  sub_00516              30       sub_00508
+0x00534  sub_00534              98       sub_00BC5, sub_00B3F, sub_01096, sub_010C8, sub_01056, sub_01056
+0x00596  sub_00596              526      sub_01096, sub_010E4, sub_01056, sub_00B4B, sub_00BCB, sub_00C59, sub_01096, sub_010E4, sub_01056, sub_00C59 (+21 more)
+0x007A4  sub_007A4              20       sub_00B2D
+0x007B8  sub_007B8              79       sub_00972, sub_00E32, sub_00010, sub_008DA, sub_00816, sub_00DEA, sub_00FEB, sub_00807
+0x00807  sub_00807              15       sub_00DEA, sub_00FEB, [indirect:word ptr [0x794]]
+0x00816  sub_00816              196      sub_0095E, sub_0094F
+0x008DA  sub_008DA              23       sub_0094F, sub_0094F
+0x008F1  sub_008F1              69       sub_0094F, sub_0095E, sub_00E10, sub_00936
+0x00936  sub_00936              25       
+0x0094F  sub_0094F              15       [indirect:cx]
+0x0095E  sub_0095E              20       
+0x00972  sub_00972              104      sub_01014
+0x009DA  sub_009DA              60       
+0x00A16  sub_00A16              273      
+0x00B27  sub_00B27              6        
+0x00B2D  sub_00B2D              6        
+0x00B33  sub_00B33              6        
+0x00B39  sub_00B39              6        
+0x00B3F  sub_00B3F              6        
+0x00B45  sub_00B45              6        
+0x00B4B  sub_00B4B              6        
+0x00B51  sub_00B51              104      sub_00CB3
+0x00BB9  sub_00BB9              6        
+0x00BBF  sub_00BBF              6        
+0x00BC5  sub_00BC5              6        
+0x00BCB  sub_00BCB              6        
+0x00BD1  sub_00BD1              25       
+0x00BEA  sub_00BEA              15       
+0x00BF9  sub_00BF9              7        sub_00BD1, sub_00CA7
+0x00C00  sub_00C00              7        sub_00CAD, sub_00BEA
+0x00C07  sub_00C07              40       
+0x00C2F  sub_00C2F              6        
+0x00C35  sub_00C35              6        
+0x00C3B  sub_00C3B              6        
+0x00C41  sub_00C41              6        
+0x00C47  sub_00C47              6        
+0x00C4D  sub_00C4D              6        
+0x00C53  sub_00C53              6        
+0x00C59  sub_00C59              6        
+0x00C5F  sub_00C5F              6        
+0x00C65  sub_00C65              6        
+0x00C6B  sub_00C6B              6        
+0x00C71  sub_00C71              6        
+0x00C77  sub_00C77              6        
+0x00C7D  sub_00C7D              6        
+0x00C83  sub_00C83              6        
+0x00C89  sub_00C89              14       
+0x00C97  sub_00C97              16       
+0x00CA7  sub_00CA7              6        
+0x00CAD  sub_00CAD              6        
+0x00CB3  sub_00CB3              269      sub_00DC0
+0x00DC0  sub_00DC0              42       
+0x00DEA  sub_00DEA              38       sub_00FEB, [indirect:word ptr [0x8b2]], sub_00FEB
+0x00E10  sub_00E10              34       sub_00DEA, sub_00FEB
+0x00E32  sub_00E32              398      
+0x00FC0  sub_00FC0              43       
+0x00FEB  sub_00FEB              41       sub_00FC0
+0x01014  sub_01014              66       
+0x01056  sub_01056              64       
+0x01096  sub_01096              50       
+0x010C8  sub_010C8              28       
+0x010E4  sub_010E4              54       
+0x0111A  sub_0111A              40       
+0x01142  sub_01142              124      
+0x011BE  start                  2981     

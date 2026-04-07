@@ -1,0 +1,65 @@
+Call Graph and Summary: DMDRWPRT.ACC
+============================================================
+
+File: DMDRWPRT.ACC
+Size: 1638 bytes
+Segments: 4 (0000, 003B, 0047, 00C7)
+Relocations: 7
+Total functions: 18
+Entry point: 003B:0002
+Imports: (none)
+DM flags: 0x0000
+
+INT E0h services (DeskMate API): 1
+  AH=02h
+
+INT 21h services (DOS API): 2
+  AH=4Ah  Resize memory block
+  AH=4Ch  Exit process
+
+All INT calls:
+  INT 21h: 2 call(s)
+  INT ABh: 2 call(s)
+  INT E0h: 9 call(s)
+
+Largest functions (top 20):
+  sub_0027B            at 0x0027B  size=269 bytes
+  start                at 0x003B2  size=180 bytes
+  sub_00144            at 0x00144  size=169 bytes
+  sub_00102            at 0x00102  size=66 bytes
+  sub_00388            at 0x00388  size=42 bytes
+  sub_0022F            at 0x0022F  size=40 bytes
+  sub_001F9            at 0x001F9  size=25 bytes
+  sub_00212            at 0x00212  size=15 bytes
+  sub_00221            at 0x00221  size=7 bytes
+  sub_00228            at 0x00228  size=7 bytes
+  sub_001ED            at 0x001ED  size=6 bytes
+  sub_001F3            at 0x001F3  size=6 bytes
+  sub_00257            at 0x00257  size=6 bytes
+  sub_0025D            at 0x0025D  size=6 bytes
+  sub_00263            at 0x00263  size=6 bytes
+  sub_00269            at 0x00269  size=6 bytes
+  sub_0026F            at 0x0026F  size=6 bytes
+  sub_00275            at 0x00275  size=6 bytes
+
+All functions (18):
+Address    Name                   Size     Calls Made
+---------- ---------------------- -------- ------------------------------
+0x00102  sub_00102              66       
+0x00144  sub_00144              169      
+0x001ED  sub_001ED              6        
+0x001F3  sub_001F3              6        
+0x001F9  sub_001F9              25       
+0x00212  sub_00212              15       
+0x00221  sub_00221              7        sub_001F9, sub_0026F
+0x00228  sub_00228              7        sub_00275, sub_00212
+0x0022F  sub_0022F              40       
+0x00257  sub_00257              6        
+0x0025D  sub_0025D              6        
+0x00263  sub_00263              6        
+0x00269  sub_00269              6        
+0x0026F  sub_0026F              6        
+0x00275  sub_00275              6        
+0x0027B  sub_0027B              269      sub_00388
+0x00388  sub_00388              42       
+0x003B2  start                  180      

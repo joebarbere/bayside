@@ -16,9 +16,9 @@
 | DeskMate version history documented | :white_check_mark: | See research/docs/ |
 | DeskMate 3.05 binaries acquired | :white_check_mark: | archive.org ISO + WinWorld 3.5"/5.25" disk images; 148 files extracted |
 | DOSBox config for original | :white_check_mark: | dosbox/configs/deskmate-tandy.conf (Tandy mode, 8086, 4000 cycles) |
-| File format documentation | :yellow_circle: | .PDM (confirmed MZ+DM89 header), .WKS, .FIL, .CFG partially documented; .SND, .FIG, .SNG headers known from community; see research/docs/deskmate-sdk-research.md |
+| File format documentation | :white_check_mark: | 16 formats documented from binary analysis; see research/docs/file-formats.md and research/docs/deskmate-sdk-research.md |
 | SDK / compiler identified | :white_check_mark: | Microsoft C 5.x (1987 runtime); DM89 extended header format decoded; INT E0h API service classes mapped |
-| Hardware register documentation | :white_large_square: | TGA, SN76496, DAC |
+| Hardware register documentation | :white_check_mark: | TGA/TGA2, SN76496, PSSJ DAC, PC speaker, keyboard, mouse; see research/references/hardware-registers.md |
 
 ## Stage 2: Binary Analysis
 
@@ -41,8 +41,8 @@
 | INSTALL.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 210 functions, 5 segments, 13 relocs |
 | DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); 74 functions (41 named); CRT chain → _main; config I/O to DMCSR.CFG |
 | INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | 828-byte chain loader; validates DM89 sig then EXEC's DESK.EXE |
-| *.RES | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89 (except ALRMINIT/D87/DMUNPACK: plain MZ legacy) |
-| *.ACC | :white_large_square: | :white_large_square: | :white_check_mark: | MSC 5.x; MZ+DM89; typically import dmguf |
+| *.RES (51 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 1056 functions, 59351 insns total; 48 MZ+DM89 + 3 plain MZ; DMFONT.RES largest (179 funcs); see disassembly/raw/res/ |
+| *.ACC (18 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 2141 functions total; DMHELP.ACC largest (223 funcs); 11 import dmguf; see disassembly/raw/acc/ |
 
 ## Stage 3: Annotation
 

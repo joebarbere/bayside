@@ -1,0 +1,397 @@
+================================================================================
+DeskMate 3.05 -- .RES File Disassembly Summary
+Generated: 2026-04-06 23:50:37
+Total files processed: 51
+================================================================================
+
+OVERALL STATISTICS
+----------------------------------------
+  Total .RES files:    51
+  MZ+DM89 executables: 48
+  Plain MZ executables:3
+  Data files (skipped):0
+  Errors:              0
+  Total size:          618,517 bytes
+  Total functions:     1056
+  Total instructions:  59351
+
+MASTER TABLE
+------------------------------------------------------------------------------------------------------------------------
+File                 Size Format  Segs Relocs  Funcs  Insns   Strs        Entry  Key INTs
+------------------------------------------------------------------------------------------------------------------------
+ALARM.RES          11,427   DM89     5     29     81   4250     27    023D:000A  INT 10h/AH=0Ehx1, INT 16hx1, INT 16h/AH=01hx1, INT 20h/AH=30hx1, INT 21hx1, INT 21h/AH=1Ahx1 (+22)
+ALRMINIT.RES        9,985     MZ     5     21     67   2625     47    01C8:0000  INT 20h/AH=30hx1, INT 21h/AH=25hx2, INT 21h/AH=2Ahx2, INT 21h/AH=2Chx1, INT 21h/AH=30hx2, INT 21h/AH=31hx1 (+10)
+AUTOLOAD.RES        4,244   DM89     3      8     49   1118     22    0000:0027  INT 11hx1, INT 15h/AH=70hx3, INT 21h/AH=25hx2, INT 21h/AH=30hx1, INT 21h/AH=31hx1, INT 21h/AH=35hx1 (+7)
+D87.RES               818     MZ     3      3      0    133      0    0000:0000  INT 21h/AH=31hx1, INT 21h/AH=4Chx1, INT E0h/AH=01hx1, INT E0h/AH=02hx3, INT E0h/AH=06hx2
+DICTARY.RES         1,586   DM89     3      8      7    114     16    0000:0026  INT 21h/AH=4Chx1, INT E0h/AH=01hx1, INT E0h/AH=02hx5
+DMDBBLD.RES        11,858   DM89     4      4    104   4257      2    02BB:000C  INT 21h/AH=31hx1, INT 21h/AH=3Chx1, INT 21h/AH=51hx1, INT E0h/AH=01hx1, INT E0h/AH=06hx1
+DMDBRD.RES         21,955   DM89     5     21    129   7537     54    04C2:018C  INT 20h/AH=30hx1, INT 21h/AH=0Dhx2, INT 21h/AH=19hx1, INT 21h/AH=25hx3, INT 21h/AH=30hx2, INT 21h/AH=31hx1 (+19)
+DMDBUPD.RES        13,740   DM89     4      4    102   5060      4    0331:0006  INT 21h/AH=31hx1, INT 21h/AH=36hx1, INT 21h/AH=3Ehx1, INT 21h/AH=40hx1, INT 21h/AH=45hx1, INT 21h/AH=51hx1 (+3)
+DMEFORM.RES        11,889   DM89     5      7      0     94    110    02BA:0086  INT 21h/AH=31hx1, INT ABh/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx2
+DMEMM.RES           2,582   DM89     4      6      1    183     13    0000:0000  INT 21h/AH=31hx2, INT 21h/AH=35hx2, INT 21h/AH=50hx2, INT 21h/AH=51hx1, INT 2Fh/AH=43hx2, INT 67h/AH=40hx1 (+11)
+DMFONT.RES         39,633   DM89     6     28    179  14068     52    08C6:0002  INT 20h/AH=30hx1, INT 21h/AH=1Ahx2, INT 21h/AH=25hx2, INT 21h/AH=2Fhx2, INT 21h/AH=30hx2, INT 21h/AH=35hx1 (+12)
+DMFORM.RES          9,853   DM89     4      5      0     53     91    0240:005B  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1
+DMMDJ.RES           1,540   DM89     3      6      0     24      6    0030:00CC  INT 21h/AH=31hx1, INT 21h/AH=4Chx1, INT E0h/AH=01hx1, INT E0h/AH=06hx1
+DMMDP.RES           1,493   DM89     3      6      0     30      9    002B:00DA  INT 15h/AH=C2hx1, INT 21h/AH=31hx1, INT 21h/AH=4Chx1, INT E0h/AH=01hx1, INT E0h/AH=06hx1
+DMMDS.RES           2,113   DM89     3      7      0     18     15    004B:0164  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=06hx1
+DMPD1.RES          17,692   DM89     5     12      4    150    283    0000:161B  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx2, INT E0h/AH=06hx1
+DMPD2.RES          17,692   DM89     5     12      4    150    281    0000:161B  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx2, INT E0h/AH=06hx1
+DMPDASCI.RES        6,848   DM89     5     15      4    144     77    0000:01C7  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx2, INT E0h/AH=06hx1
+DMPDIBMM.RES       18,886   DM89     5     12      4    150    311    0000:15A9  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx2, INT E0h/AH=06hx1
+DMPDLASR.RES       19,228   DM89     5     11      4    150    227    0000:180C  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx2, INT E0h/AH=06hx1
+DMPDS.RES          29,455   DM89     5     12      4    150    274    0000:3BD2  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx2, INT E0h/AH=06hx1
+DMPE1.RES           5,138   DM89     3      4      0     62    120    0117:0052  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1
+DMPE2.RES           5,138   DM89     3      4      0     62    120    0117:0052  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1
+DMPEIBMM.RES        3,090   DM89     3      4      0     61     28    0097:0055  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1
+DMPELASR.RES        5,330   DM89     3      4      0     61    123    0123:0055  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1
+DMPES.RES           3,186   DM89     3      4      0     62     29    009D:0052  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1
+DMPLAY.RES         42,188   DM89     6     21     16    564    262    0585:002F  INT 21h/AH=2Chx2, INT 21h/AH=31hx1, INT 21h/AH=48hx3, INT 21h/AH=49hx1, INT 21h/AH=50hx2, INT 21h/AH=51hx1 (+5)
+DMSSM.RES           6,032   DM89     5     17     12    122     53    0122:0010  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=06hx1
+DMTHES.RES          1,704   DM89     4     11      1     42     17    0000:002B  INT 21h/AH=31hx1, INT E0h/AH=01hx1
+DMUNPACK.RES        3,172     MZ     5      4      0     96     17    0080:0028  INT 21h/AH=31hx1, INT E0h/AH=01hx1
+DMVE1000.RES        5,314   DM89     4      5      3    243     45    0113:00A2  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVECGA.RES         5,378   DM89     4      5      3    245     47    0117:00A1  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx2, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVEEGA.RES         5,330   DM89     4      5      3    245     40    0114:00A1  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVEHERC.RES        5,378   DM89     4      5      3    247     47    0117:00A2  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx2, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVEMCGA.RES        5,250   DM89     3      5      3    245     44    010F:00A2  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVET.RES           5,314   DM89     4      5      3    242     40    0113:009F  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVETC16.RES        5,474   DM89     4      5      3    243     49    011D:00A2  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVEVGA.RES         5,426   DM89     4      5      3    245     41    011A:00A1  INT 21h/AH=31hx1, INT 21h/AH=51hx1, INT ABhx1, INT E0h/AH=01hx1, INT E0h/AH=02hx1, INT E0h/AH=06hx1 (+1)
+DMVS1000.RES       21,922   DM89     7     18      0     80    273    04F3:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVSCGA.RES        23,746   DM89     7     18      0     80    357    0560:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVSEGA.RES        24,082   DM89     7     18      0     80    301    057A:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVSHERC.RES       25,682   DM89     7     18      0     80    398    05DF:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVSMCGA.RES       22,754   DM89     7     18      0     80    285    0527:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVST.RES          24,322   DM89     7     18      0     80    376    0589:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVSTC16.RES       23,138   DM89     7     18      0     80    288    053F:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+DMVSVGA.RES        23,922   DM89     7     18      0     80    298    0570:0032  INT 21h/AH=31hx1, INT E0h/AH=01hx1, INT E0h/AH=4Dhx2
+PRGUF.RES           7,064   DM89     6     14     46   1571     34    0155:000C  INT 11hx1, INT 11h/AH=FFhx1, INT 21h/AH=0Dhx1, INT 21h/AH=0Ehx4, INT 21h/AH=19hx3, INT 21h/AH=25hx1 (+21)
+PROTOCOL.RES       11,522   DM89     4     20     81   2804     41    0000:0010  INT 1Ahx1, INT 1Ah/AH=01hx1, INT 20h/AH=30hx1, INT 21h/AH=25hx5, INT 21h/AH=2Ahx2, INT 21h/AH=2Chx1 (+10)
+SPELL.RES           8,866   DM89     5     17     32    735     63    018A:0006  INT 15h/AH=70hx9, INT 21h/AH=2Chx2, INT 21h/AH=31hx1, INT 21h/AH=50hx3, INT 21h/AH=51hx2, INT E0hx2 (+2)
+SPL.RES            27,552   DM89     8     16     94   9942     40    040A:0011  INT 21h/AH=02hx1, INT 21h/AH=09hx1, INT 21h/AH=31hx1, INT 21h/AH=3Fhx1, INT 21h/AH=42hx1, INT 21h/AH=48hx2 (+5)
+TRANSLAT.RES        1,586   DM89     3      7      7    114     16    0000:0026  INT 21h/AH=4Chx1, INT E0h/AH=01hx1, INT E0h/AH=02hx5
+
+================================================================================
+BREAKDOWN BY CATEGORY
+================================================================================
+
+--- Video Drivers (DMVE) ---
+    Files: 8, Total size: 42,864 bytes, Functions: 24, Instructions: 1955
+    DMVE1000.RES          5,314 bytes  DM89    3 funcs    243 insns  [OK]
+    DMVECGA.RES           5,378 bytes  DM89    3 funcs    245 insns  [OK]
+    DMVEEGA.RES           5,330 bytes  DM89    3 funcs    245 insns  [OK]
+    DMVEHERC.RES          5,378 bytes  DM89    3 funcs    247 insns  [OK]
+    DMVEMCGA.RES          5,250 bytes  DM89    3 funcs    245 insns  [OK]
+    DMVET.RES             5,314 bytes  DM89    3 funcs    242 insns  [OK]
+    DMVETC16.RES          5,474 bytes  DM89    3 funcs    243 insns  [OK]
+    DMVEVGA.RES           5,426 bytes  DM89    3 funcs    245 insns  [OK]
+    INT usage:
+      INT 21h/AH=31h: 8x  TSR (keep process)
+      INT 21h/AH=51h: 8x  Get PSP
+      INT ABh: 10x
+      INT E0h/AH=01h: 8x
+      INT E0h/AH=02h: 8x
+      INT E0h/AH=06h: 8x
+      INT E0h/AH=4Dh: 16x
+
+--- Video Support (DMVS) ---
+    Files: 8, Total size: 189,568 bytes, Functions: 0, Instructions: 640
+    DMVS1000.RES         21,922 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVSCGA.RES          23,746 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVSEGA.RES          24,082 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVSHERC.RES         25,682 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVSMCGA.RES         22,754 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVST.RES            24,322 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVSTC16.RES         23,138 bytes  DM89    0 funcs     80 insns  [OK]
+    DMVSVGA.RES          23,922 bytes  DM89    0 funcs     80 insns  [OK]
+    INT usage:
+      INT 21h/AH=31h: 8x  TSR (keep process)
+      INT E0h/AH=01h: 8x
+      INT E0h/AH=4Dh: 16x
+
+--- Font ---
+    Files: 1, Total size: 39,633 bytes, Functions: 179, Instructions: 14068
+    DMFONT.RES           39,633 bytes  DM89  179 funcs  14068 insns  [OK]
+    INT usage:
+      INT 20h/AH=30h: 1x
+      INT 21h/AH=1Ah: 2x  Set DTA
+      INT 21h/AH=25h: 2x  Set interrupt vector
+      INT 21h/AH=2Fh: 2x  Get DTA
+      INT 21h/AH=30h: 2x  Get DOS version
+      INT 21h/AH=35h: 1x  Get interrupt vector
+      INT 21h/AH=3Eh: 1x  Close file
+      INT 21h/AH=40h: 1x  Write file
+      INT 21h/AH=44h: 1x  IOCTL
+      INT 21h/AH=48h: 4x  Allocate memory
+      INT 21h/AH=49h: 2x  Free memory
+      INT 21h/AH=4Ah: 3x  Resize memory block
+      INT 21h/AH=4Ch: 2x  Exit with return code
+      INT 21h/AH=4Eh: 1x  Find first file
+      INT 21h/AH=4Fh: 1x  Find next file
+      INT 21h/AH=58h: 4x
+      INT E0h/AH=00h: 1x
+      INT E0h/AH=06h: 5x
+
+--- Printer Drivers ---
+    Files: 6, Total size: 109,801 bytes, Functions: 24, Instructions: 894
+    DMPD1.RES            17,692 bytes  DM89    4 funcs    150 insns  [OK]
+    DMPD2.RES            17,692 bytes  DM89    4 funcs    150 insns  [OK]
+    DMPDASCI.RES          6,848 bytes  DM89    4 funcs    144 insns  [OK]
+    DMPDIBMM.RES         18,886 bytes  DM89    4 funcs    150 insns  [OK]
+    DMPDLASR.RES         19,228 bytes  DM89    4 funcs    150 insns  [OK]
+    DMPDS.RES            29,455 bytes  DM89    4 funcs    150 insns  [OK]
+    INT usage:
+      INT 21h/AH=31h: 6x  TSR (keep process)
+      INT E0h/AH=01h: 6x
+      INT E0h/AH=02h: 12x
+      INT E0h/AH=06h: 6x
+
+--- Printer Extensions ---
+    Files: 5, Total size: 21,882 bytes, Functions: 0, Instructions: 308
+    DMPE1.RES             5,138 bytes  DM89    0 funcs     62 insns  [OK]
+    DMPE2.RES             5,138 bytes  DM89    0 funcs     62 insns  [OK]
+    DMPEIBMM.RES          3,090 bytes  DM89    0 funcs     61 insns  [OK]
+    DMPELASR.RES          5,330 bytes  DM89    0 funcs     61 insns  [OK]
+    DMPES.RES             3,186 bytes  DM89    0 funcs     62 insns  [OK]
+    INT usage:
+      INT 21h/AH=31h: 5x  TSR (keep process)
+      INT 21h/AH=51h: 5x  Get PSP
+      INT E0h/AH=01h: 5x
+      INT E0h/AH=02h: 5x
+      INT E0h/AH=06h: 5x
+
+--- Sound/Music ---
+    Files: 5, Total size: 53,366 bytes, Functions: 28, Instructions: 758
+    DMMDJ.RES             1,540 bytes  DM89    0 funcs     24 insns  [OK]
+    DMMDP.RES             1,493 bytes  DM89    0 funcs     30 insns  [OK]
+    DMMDS.RES             2,113 bytes  DM89    0 funcs     18 insns  [OK]
+    DMPLAY.RES           42,188 bytes  DM89   16 funcs    564 insns  [OK]
+    DMSSM.RES             6,032 bytes  DM89   12 funcs    122 insns  [OK]
+    INT usage:
+      INT 15h/AH=C2h: 1x
+      INT 21h/AH=2Ch: 2x  Get time
+      INT 21h/AH=31h: 5x  TSR (keep process)
+      INT 21h/AH=48h: 3x  Allocate memory
+      INT 21h/AH=49h: 1x  Free memory
+      INT 21h/AH=4Ch: 2x  Exit with return code
+      INT 21h/AH=50h: 2x  Set PSP
+      INT 21h/AH=51h: 1x  Get PSP
+      INT E0h: 2x
+      INT E0h/AH=00h: 1x
+      INT E0h/AH=01h: 5x
+      INT E0h/AH=02h: 2x
+      INT E0h/AH=06h: 9x
+
+--- Database Engine ---
+    Files: 3, Total size: 47,553 bytes, Functions: 335, Instructions: 16854
+    DMDBBLD.RES          11,858 bytes  DM89  104 funcs   4257 insns  [OK]
+    DMDBRD.RES           21,955 bytes  DM89  129 funcs   7537 insns  [OK]
+    DMDBUPD.RES          13,740 bytes  DM89  102 funcs   5060 insns  [OK]
+    INT usage:
+      INT 20h/AH=30h: 1x
+      INT 21h/AH=0Dh: 2x
+      INT 21h/AH=19h: 1x  Get default drive
+      INT 21h/AH=25h: 3x  Set interrupt vector
+      INT 21h/AH=30h: 2x  Get DOS version
+      INT 21h/AH=31h: 3x  TSR (keep process)
+      INT 21h/AH=35h: 3x  Get interrupt vector
+      INT 21h/AH=36h: 1x  Get disk free space
+      INT 21h/AH=38h: 1x  Get/set country info
+      INT 21h/AH=3Ch: 1x  Create file
+      INT 21h/AH=3Dh: 1x  Open file
+      INT 21h/AH=3Eh: 4x  Close file
+      INT 21h/AH=3Fh: 1x  Read file
+      INT 21h/AH=40h: 2x  Write file
+      INT 21h/AH=42h: 1x  Seek (lseek)
+      INT 21h/AH=44h: 1x  IOCTL
+      INT 21h/AH=45h: 1x  Duplicate handle
+      INT 21h/AH=48h: 1x  Allocate memory
+      INT 21h/AH=4Ah: 3x  Resize memory block
+      INT 21h/AH=4Ch: 2x  Exit with return code
+      INT 21h/AH=50h: 2x  Set PSP
+      INT 21h/AH=51h: 4x  Get PSP
+      INT 21h/AH=59h: 1x  Get extended error
+      INT 21h/AH=68h: 1x
+      INT E0h/AH=00h: 2x
+      INT E0h/AH=01h: 3x
+      INT E0h/AH=02h: 2x
+      INT E0h/AH=06h: 6x
+      INT E0h/AH=4Dh: 2x
+
+--- Form Manager ---
+    Files: 2, Total size: 21,742 bytes, Functions: 0, Instructions: 147
+    DMEFORM.RES          11,889 bytes  DM89    0 funcs     94 insns  [OK]
+    DMFORM.RES            9,853 bytes  DM89    0 funcs     53 insns  [OK]
+    INT usage:
+      INT 21h/AH=31h: 2x  TSR (keep process)
+      INT ABh/AH=31h: 1x
+      INT E0h/AH=01h: 2x
+      INT E0h/AH=02h: 2x
+      INT E0h/AH=06h: 2x
+
+--- Spelling/Language ---
+    Files: 5, Total size: 41,294 bytes, Functions: 141, Instructions: 10947
+    DICTARY.RES           1,586 bytes  DM89    7 funcs    114 insns  [OK]
+    DMTHES.RES            1,704 bytes  DM89    1 funcs     42 insns  [OK]
+    SPELL.RES             8,866 bytes  DM89   32 funcs    735 insns  [OK]
+    SPL.RES              27,552 bytes  DM89   94 funcs   9942 insns  [OK]
+    TRANSLAT.RES          1,586 bytes  DM89    7 funcs    114 insns  [OK]
+    INT usage:
+      INT 15h/AH=70h: 9x
+      INT 21h/AH=02h: 1x  Write char
+      INT 21h/AH=09h: 1x  Print string (DS:DX)
+      INT 21h/AH=2Ch: 2x  Get time
+      INT 21h/AH=31h: 3x  TSR (keep process)
+      INT 21h/AH=3Fh: 1x  Read file
+      INT 21h/AH=42h: 1x  Seek (lseek)
+      INT 21h/AH=48h: 2x  Allocate memory
+      INT 21h/AH=49h: 1x  Free memory
+      INT 21h/AH=4Ch: 2x  Exit with return code
+      INT 21h/AH=50h: 3x  Set PSP
+      INT 21h/AH=51h: 2x  Get PSP
+      INT 6Bh: 1x
+      INT E0h: 2x
+      INT E0h/AH=01h: 5x
+      INT E0h/AH=02h: 10x
+      INT E0h/AH=06h: 7x
+      INT E0h/AH=4Dh: 2x
+
+--- Utilities ---
+    Files: 4, Total size: 17,062 bytes, Functions: 96, Instructions: 2968
+    AUTOLOAD.RES          4,244 bytes  DM89   49 funcs   1118 insns  [OK]
+    DMEMM.RES             2,582 bytes  DM89    1 funcs    183 insns  [OK]
+    DMUNPACK.RES          3,172 bytes    MZ    0 funcs     96 insns  [OK]
+    PRGUF.RES             7,064 bytes  DM89   46 funcs   1571 insns  [OK]
+    INT usage:
+      INT 11h: 2x
+      INT 11h/AH=FFh: 1x
+      INT 15h/AH=70h: 3x
+      INT 21h/AH=0Dh: 1x
+      INT 21h/AH=0Eh: 4x
+      INT 21h/AH=19h: 3x  Get default drive
+      INT 21h/AH=25h: 3x  Set interrupt vector
+      INT 21h/AH=30h: 2x  Get DOS version
+      INT 21h/AH=31h: 5x  TSR (keep process)
+      INT 21h/AH=35h: 4x  Get interrupt vector
+      INT 21h/AH=36h: 1x  Get disk free space
+      INT 21h/AH=3Bh: 4x  Change directory
+      INT 21h/AH=3Ch: 1x  Create file
+      INT 21h/AH=3Dh: 1x  Open file
+      INT 21h/AH=3Eh: 1x  Close file
+      INT 21h/AH=3Fh: 1x  Read file
+      INT 21h/AH=40h: 1x  Write file
+      INT 21h/AH=42h: 1x  Seek (lseek)
+      INT 21h/AH=43h: 1x  Get/set file attributes
+      INT 21h/AH=44h: 4x  IOCTL
+      INT 21h/AH=47h: 4x  Get current directory
+      INT 21h/AH=50h: 2x  Set PSP
+      INT 21h/AH=51h: 3x  Get PSP
+      INT 21h/AH=59h: 1x  Get extended error
+      INT 2Fh/AH=43h: 2x
+      INT 67h/AH=40h: 1x
+      INT 67h/AH=41h: 1x
+      INT 67h/AH=42h: 1x
+      INT 67h/AH=43h: 1x
+      INT 67h/AH=45h: 1x
+      INT 67h/AH=47h: 1x
+      INT 67h/AH=48h: 1x
+      INT 67h/AH=4Eh: 1x
+      INT 67h/AH=4Fh: 1x
+      INT 67h/AH=50h: 1x
+      INT E0h: 3x
+      INT E0h/AH=00h: 1x
+      INT E0h/AH=01h: 4x
+      INT E0h/AH=02h: 8x
+      INT E0h/AH=06h: 9x
+      INT E0h/AH=4Dh: 2x
+
+--- Alarm/Init ---
+    Files: 2, Total size: 21,412 bytes, Functions: 148, Instructions: 6875
+    ALARM.RES            11,427 bytes  DM89   81 funcs   4250 insns  [OK]
+    ALRMINIT.RES          9,985 bytes    MZ   67 funcs   2625 insns  [OK]
+    INT usage:
+      INT 10h/AH=0Eh: 1x  Write char (teletype)
+      INT 16h: 1x
+      INT 16h/AH=01h: 1x  Check keyboard buffer
+      INT 20h/AH=30h: 2x
+      INT 21h: 1x
+      INT 21h/AH=1Ah: 1x  Set DTA
+      INT 21h/AH=25h: 5x  Set interrupt vector
+      INT 21h/AH=2Ah: 4x  Get date
+      INT 21h/AH=2Ch: 2x  Get time
+      INT 21h/AH=2Fh: 1x  Get DTA
+      INT 21h/AH=30h: 4x  Get DOS version
+      INT 21h/AH=31h: 2x  TSR (keep process)
+      INT 21h/AH=34h: 1x
+      INT 21h/AH=35h: 10x  Get interrupt vector
+      INT 21h/AH=3Dh: 1x  Open file
+      INT 21h/AH=3Eh: 3x  Close file
+      INT 21h/AH=40h: 4x  Write file
+      INT 21h/AH=42h: 6x  Seek (lseek)
+      INT 21h/AH=44h: 2x  IOCTL
+      INT 21h/AH=48h: 1x  Allocate memory
+      INT 21h/AH=4Ah: 5x  Resize memory block
+      INT 21h/AH=4Ch: 4x  Exit with return code
+      INT 21h/AH=50h: 1x  Set PSP
+      INT 28h/AH=01h: 1x
+      INT ABh: 1x
+      INT E0h: 1x
+      INT E0h/AH=01h: 2x
+      INT E0h/AH=02h: 9x
+      INT E0h/AH=06h: 6x
+
+--- Other ---
+    Files: 2, Total size: 12,340 bytes, Functions: 81, Instructions: 2937
+    D87.RES                 818 bytes    MZ    0 funcs    133 insns  [OK]
+    PROTOCOL.RES         11,522 bytes  DM89   81 funcs   2804 insns  [OK]
+    INT usage:
+      INT 1Ah: 1x
+      INT 1Ah/AH=01h: 1x
+      INT 20h/AH=30h: 1x
+      INT 21h/AH=25h: 5x  Set interrupt vector
+      INT 21h/AH=2Ah: 2x  Get date
+      INT 21h/AH=2Ch: 1x  Get time
+      INT 21h/AH=30h: 2x  Get DOS version
+      INT 21h/AH=31h: 2x  TSR (keep process)
+      INT 21h/AH=35h: 2x  Get interrupt vector
+      INT 21h/AH=3Eh: 1x  Close file
+      INT 21h/AH=40h: 1x  Write file
+      INT 21h/AH=44h: 1x  IOCTL
+      INT 21h/AH=4Ah: 2x  Resize memory block
+      INT 21h/AH=4Ch: 3x  Exit with return code
+      INT E0h/AH=01h: 2x
+      INT E0h/AH=02h: 4x
+      INT E0h/AH=06h: 2x
+
+================================================================================
+REVERSE ENGINEERING PRIORITY ANALYSIS
+================================================================================
+
+CRITICAL (needed for DESK.EXE shell to function):
+  - DMVE*.RES / DMVS*.RES: Video drivers are essential for any display output.
+    The DMVE files are small entry-point stubs (~5KB); the DMVS files contain
+    the bulk of the video rendering code (22-26KB each).
+  - DMFONT.RES: Font data and rendering, required for all text display.
+
+HIGH (needed for core application functionality):
+  - DMPLAY.RES: Sound playback engine (42KB, largest .RES). Needed for
+    MUSIC.PDM and SOUND.PDM.
+  - DMSSM.RES: Sound system manager. Companion to DMPLAY.
+  - DMDBBLD.RES/DMDBRD.RES/DMDBUPD.RES: Database engine used by FILER.PDM.
+  - DMFORM.RES/DMEFORM.RES: Form display engine, used by multiple apps.
+  - DMPD*.RES/DMPE*.RES: Printer drivers, needed for TEXT.PDM print function.
+
+MEDIUM:
+  - SPELL.RES/SPL.RES: Spell checker for TEXT.PDM.
+  - PROTOCOL.RES: Communication protocols for TELECOM.PDM.
+  - ALARM.RES/ALRMINIT.RES: Alarm/scheduler support for CALENDAR.PDM.
+  - DMEMM.RES: Extended memory manager (EMS/XMS).
+  - PRGUF.RES: Program user functions framework.
+
+LOW:
+  - DMUNPACK.RES: Data decompression utility.
+  - D87.RES: 8087 FPU emulation stub (818 bytes).
+  - DICTARY.RES/DMTHES.RES/TRANSLAT.RES: Dictionary/thesaurus lookup stubs.
+  - DMMD*.RES: MIDI driver variants (joystick port, parallel, serial).
+  - AUTOLOAD.RES: Auto-load configuration helper.
+
