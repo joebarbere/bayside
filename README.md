@@ -82,16 +82,120 @@ bayside/
 └── STATUS.md                 # Per-module reverse engineering status
 ```
 
-## Tools
+## Getting Started
 
-| Script | Purpose |
-|--------|---------|
-| `tools/disasm_mz.py` | General-purpose MZ+DM89 disassembler using Capstone x86-16 |
-| `tools/disasm_pdm.py` | Recursive descent disassembler with prologue scanning for PDMs |
-| `tools/disasm_dmvid.py` | Specialized disassembler for DMVID.EXE (MSC 5.0 small model) |
-| `tools/batch_disasm_pdm.py` | Batch disassembly for all 14 PDM application modules |
-| `tools/batch_disasm_res.py` | Batch disassembly for all 51 RES resource/driver modules |
-| `tools/batch_disasm_acc.py` | Batch disassembly for all 18 ACC desk accessories |
+### Prerequisites
+
+- **DOSBox-X** (recommended) or DOSBox — for running DeskMate in Tandy emulation mode
+- **OpenWatcom V2** — for compiling the transpiled C source to DOS executables
+
+Install on macOS:
+```bash
+# DOSBox-X
+brew install --cask dosbox-x
+
+# OpenWatcom V2 (automated installer)
+./scripts/setup-watcom.sh --install
+
+# Or activate in current shell (after install)
+source scripts/setup-watcom.sh
+```
+
+On Linux, download OpenWatcom V2 from [GitHub releases](https://github.com/open-watcom/open-watcom-v2/releases) (`ow-snapshot.tar.xz`) and extract to `~/watcom`. Then `source scripts/setup-watcom.sh`.
+
+### Running the Original DeskMate 3.05
+
+The original DeskMate binaries live in `archive/deskmate-3.05/extracted/`. To run them:
+
+```bash
+./dosbox/scripts/run-original.sh
+```
+
+This launches DOSBox-X in Tandy mode (8086 CPU, 640KB RAM, TGA video, 3-voice sound) and boots directly into the DeskMate desktop. From there you can open any application — Text, Draw, Filer, Calendar, Hangman, etc. — through the Programs menu.
+
+**DOSBox-X keyboard shortcuts:**
+| Key | Action |
+|-----|--------|
+| `Ctrl+F5` | Save PNG screenshot |
+| `Ctrl+F9` | Kill DOSBox-X |
+| `Ctrl+F10` | Release mouse capture |
+| `Alt+Enter` | Toggle fullscreen |
+
+The DOSBox config (`dosbox/configs/deskmate-tandy.conf`) matches the original Tandy 1000 hardware:
+- `machine=tandy` — TGA/TGA2 video adapter + SN76496 3-voice sound
+- `cputype=8086` — real mode only, no protected mode
+- `cycles=4000` — approximate Tandy 1000 SX speed
+- `memsize=640` — 640KB conventional, no EMS/XMS/UMB
+
+### Building the Rebuilt Version
+
+The transpiled C source compiles with OpenWatcom targeting 16-bit DOS:
+
+```bash
+# Set up the OpenWatcom environment
+source scripts/setup-watcom.sh
+
+# Build HANGMAN (first completed module)
+cd src/hangman
+wmake
+
+# Output: build/hangman/HANGMAN.EXE (10 KB DOS MZ executable)
+```
+
+Build flags match the original Microsoft C 5.x configuration:
+- `-mm` — Medium memory model (multiple code segments, single data segment)
+- `-0` — 8086 instruction set only
+- `-zp1` — 1-byte struct packing (binary-compatible with original data layouts)
+- `-s` — No stack checking (original had none)
+
+### Running the Rebuilt Version in DOSBox
+
+The rebuilt HANGMAN.EXE is a standard DOS MZ executable, but it is a **PDM module** — it cannot run standalone. It requires the DeskMate host environment (DESK.EXE) to provide the INT E0h API services (window management, menus, file I/O, cursor control, etc.).
+
+To test the rebuilt Hangman inside the original DeskMate shell:
+
+```bash
+# Copy the rebuilt binary into the DeskMate directory
+cp build/hangman/HANGMAN.EXE archive/deskmate-3.05/extracted/HANGMAN.PDM
+
+# Launch DeskMate with the replaced module
+./dosbox/scripts/run-original.sh
+
+# In DeskMate: open Hangman from the Programs menu
+```
+
+To restore the original:
+```bash
+git checkout -- archive/deskmate-3.05/extracted/HANGMAN.PDM
+```
+
+> **Note:** The rebuilt HANGMAN.EXE currently compiles but has not yet been verified for runtime equivalence. The word list data is a placeholder subset — full verification requires extracting the complete packed word data from the original binary. See [STATUS.md](STATUS.md) for current verification status.
+
+### Capturing Screenshots
+
+For visual comparison between original and rebuilt versions:
+
+```bash
+./dosbox/scripts/capture-screenshots.sh
+```
+
+This launches DeskMate in DOSBox-X. Press **Ctrl+F5** to save PNG screenshots. DOSBox-X saves captures to its internal capture directory (typically `~/Library/Preferences/DOSBox-X/capture/` on macOS or `~/.dosbox-x/capture/` on Linux).
+
+## Stage 4: First Transpilation — HANGMAN.PDM
+
+HANGMAN.PDM was chosen as the first module to transpile because it's self-contained (no DM89 imports), visually testable, and small enough to validate the full pipeline.
+
+**Source files** (`src/hangman/`):
+
+| File | Lines | Description |
+|------|-------|-------------|
+| `hangman.c` | 1,336 | Core game logic: init, game loop, input, word selection, save/restore |
+| `hangman_ui.c` | 732 | Drawing: game board, hangman figure, letter tiles, animations |
+| `hangman_dialog.c` | 343 | Dialogs: define game, define players, add/delete player, about |
+| `hangman_data.c` | 404 | Static data: word list, profanity filter, menus, graphics coords |
+| `deskmate.h` / `deskmate.c` | 789 | DeskMate INT E0h API wrappers (reusable for other modules) |
+| `hangman.h` | 224 | Structs, constants, prototypes |
+| `Makefile` | 83 | OpenWatcom wmake build targeting DOS medium model |
 
 ## Technical Details
 
@@ -104,7 +208,7 @@ bayside/
 
 ### Compiler & Build
 - **Original compiler:** Microsoft C 5.x (1987-1988)
-- **Rebuild compiler:** OpenWatcom (C89, targeting DOS)
+- **Rebuild compiler:** OpenWatcom V2 (C89, targeting DOS)
 - **Emulation:** DOSBox-X in Tandy machine mode
 
 ### DM89 Executable Format
@@ -130,34 +234,17 @@ Complete I/O port maps and programming references for TGA/TGA2 video, SN76496 so
 
 See [research/references/hardware-registers.md](research/references/hardware-registers.md) for the full reference.
 
-## Stage 4: First Transpilation — HANGMAN.PDM
+## Tools
 
-HANGMAN.PDM was chosen as the first module to transpile because it's self-contained (no DM89 imports), visually testable, and small enough to validate the full pipeline.
-
-**Source files** (`src/hangman/`):
-
-| File | Lines | Description |
-|------|-------|-------------|
-| `hangman.c` | 1,336 | Core game logic: init, game loop, input, word selection, save/restore |
-| `hangman_ui.c` | 732 | Drawing: game board, hangman figure, letter tiles, animations |
-| `hangman_dialog.c` | 343 | Dialogs: define game, define players, add/delete player, about |
-| `hangman_data.c` | 404 | Static data: word list, profanity filter, menus, graphics coords |
-| `deskmate.h` / `deskmate.c` | 789 | DeskMate INT E0h API wrappers (reusable for other modules) |
-| `hangman.h` | 224 | Structs, constants, prototypes |
-| `Makefile` | 83 | OpenWatcom wmake build targeting DOS medium model |
-
-**Build:**
-```bash
-source scripts/setup-watcom.sh
-cd src/hangman && wmake
-# Produces build/hangman/HANGMAN.EXE (10 KB DOS MZ executable)
-```
-
-**To capture screenshots** (requires interactive session):
-```bash
-./dosbox/scripts/capture-screenshots.sh
-# Press Ctrl+F5 in DOSBox-X to save PNG screenshots
-```
+| Script | Purpose |
+|--------|---------|
+| `tools/disasm_mz.py` | General-purpose MZ+DM89 disassembler using Capstone x86-16 |
+| `tools/disasm_pdm.py` | Recursive descent disassembler with prologue scanning for PDMs |
+| `tools/disasm_dmvid.py` | Specialized disassembler for DMVID.EXE (MSC 5.0 small model) |
+| `tools/batch_disasm_pdm.py` | Batch disassembly for all 14 PDM application modules |
+| `tools/batch_disasm_res.py` | Batch disassembly for all 51 RES resource/driver modules |
+| `tools/batch_disasm_acc.py` | Batch disassembly for all 18 ACC desk accessories |
+| `scripts/setup-watcom.sh` | Install and configure OpenWatcom V2 for DOS cross-compilation |
 
 ## Sources
 
