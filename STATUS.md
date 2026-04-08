@@ -75,7 +75,7 @@
 
 | Module | Functions | Lines of C | Compiles | Notes |
 |--------|-----------|-----------|----------|-------|
-| common/ | :white_large_square: | — | :white_large_square: | DOS API, video, sound wrappers |
+| common/ | :yellow_circle: | ~790 | :white_check_mark: | DeskMate INT E0h API wrappers (deskmate.c/h) created as part of hangman; to be generalized for other modules |
 | desktop/ | :white_large_square: | — | :white_large_square: | Shell + desktop UI |
 | text/ | :white_large_square: | — | :white_large_square: | Word processor |
 | worksheet/ | :white_large_square: | — | :white_large_square: | Spreadsheet |
@@ -85,7 +85,7 @@
 | addressbook/ | :white_large_square: | — | :white_large_square: | Address book |
 | telecom/ | :white_large_square: | — | :white_large_square: | Terminal emulator |
 | pclink/ | :white_large_square: | — | :white_large_square: | Online service client |
-| hangman/ | :white_large_square: | — | :white_large_square: | Word game |
+| hangman/ | :white_check_mark: | ~3,900 | :white_check_mark: | First module transpiled; 8 source files (hangman.c/h, hangman_ui.c, hangman_dialog.c, hangman_data.c, deskmate.c/h, Makefile); compiles to 10KB DOS MZ EXE with OpenWatcom; see src/hangman/ |
 | formset/ | :white_large_square: | — | :white_large_square: | Form designer |
 | play/ | :white_large_square: | — | :white_large_square: | Music player |
 | mailmerge/ | :white_large_square: | — | :white_large_square: | Mail merge |
@@ -104,7 +104,7 @@
 | Calendar | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Telecom | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | PC-Link | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
-| Hangman | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
+| Hangman | :yellow_circle: | :white_large_square: | :white_large_square: | :white_large_square: | Compiles to DOS MZ EXE; needs DeskMate host (DESK.EXE) to run; DOSBox testing pending |
 | Form Set | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Play | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Mail Merge | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |

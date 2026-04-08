@@ -8,11 +8,11 @@ bayside is a preservation and reconstruction project targeting DeskMate 3.05 (19
 
 | Stage | Status | Details |
 |-------|--------|---------|
-| 1. Research & Acquisition | **Complete** | 148 files extracted from 3 disk image sources; 16 file formats documented; full hardware register maps |
-| 2. Binary Analysis | **Complete** | 86 binaries disassembled (565K lines of assembly); 8,500+ functions identified; compiler confirmed as Microsoft C 5.x |
-| 3. Annotation | Not started | Function labeling, data structures, hardware I/O mapping |
-| 4. C Transpilation | Not started | Module-by-module conversion to C89 targeting OpenWatcom |
-| 5. Verification | Not started | DOSBox comparison testing between original and rebuilt binaries |
+| 1. Research & Acquisition | **Complete** | 148 files extracted from 3 disk image sources; 20 file formats documented; full hardware register maps; desk accessory documentation |
+| 2. Binary Analysis | **Complete** | 87 binaries disassembled (565K+ lines of assembly); 8,500+ functions identified; compiler confirmed as Microsoft C 5.x |
+| 3. Annotation | **Complete** | All 87 binaries fully annotated — 17 EXE/PDM + 52 RES + 18 ACC; every function named; data structures mapped; INT E0h API reference with 8 service classes |
+| 4. C Transpilation | **In Progress** | HANGMAN.PDM transpiled to ~3,900 lines of C89; compiles with OpenWatcom to DOS MZ executable |
+| 5. Verification | **In Progress** | DOSBox-X + OpenWatcom toolchain configured; HANGMAN.EXE builds successfully; runtime testing pending |
 
 See [STATUS.md](STATUS.md) for detailed per-module progress.
 
@@ -58,18 +58,25 @@ bayside/
 │       ├── winworld_3.5/     # WinWorld 3.5" disk images
 │       └── winworld_5.25/    # WinWorld 5.25" disk images
 ├── disassembly/
-│   └── raw/                  # Raw Capstone disassembly output
-│       ├── *.asm             # 17 EXE/PDM disassembly files
-│       ├── *-callgraph.txt   # Call graphs with INT usage analysis
-│       ├── res/              # 51 .RES driver disassemblies
-│       └── acc/              # 18 .ACC accessory disassemblies
+│   ├── raw/                  # Raw Capstone disassembly output
+│   │   ├── *.asm             # 17 EXE/PDM disassembly files
+│   │   ├── *-callgraph.txt   # Call graphs with INT usage analysis
+│   │   ├── res/              # 52 .RES driver disassemblies
+│   │   └── acc/              # 18 .ACC accessory disassemblies
+│   └── annotated/            # Fully annotated disassembly with named functions
+│       ├── *.asm             # 17 EXE/PDM annotated disassemblies
+│       ├── res/              # 52 .RES annotated disassemblies
+│       └── acc/              # 18 .ACC annotated disassemblies
 ├── research/
 │   ├── docs/                 # DeskMate overview, SDK research, file format specs
 │   └── references/           # Tandy hardware register documentation
 ├── dosbox/
 │   ├── configs/              # DOSBox config (Tandy mode, 8086, 4000 cycles)
 │   └── scripts/              # Launch scripts for original and rebuilt versions
-├── src/                      # Transpiled C source (future — Stage 4)
+├── build/                    # Compiled DOS executables (OpenWatcom output)
+│   └── hangman/              # HANGMAN.EXE — first transpiled module
+├── src/                      # Transpiled C89 source code
+│   └── hangman/              # HANGMAN.PDM transpilation (8 files, ~3,900 LOC)
 ├── tools/                    # Python disassembly and analysis scripts
 ├── CLAUDE.md                 # Project instructions for Claude Code
 └── STATUS.md                 # Per-module reverse engineering status
@@ -122,6 +129,35 @@ See [research/docs/file-formats.md](research/docs/file-formats.md) for full spec
 Complete I/O port maps and programming references for TGA/TGA2 video, SN76496 sound, Tandy DAC, PC speaker, keyboard, joystick, and mouse.
 
 See [research/references/hardware-registers.md](research/references/hardware-registers.md) for the full reference.
+
+## Stage 4: First Transpilation — HANGMAN.PDM
+
+HANGMAN.PDM was chosen as the first module to transpile because it's self-contained (no DM89 imports), visually testable, and small enough to validate the full pipeline.
+
+**Source files** (`src/hangman/`):
+
+| File | Lines | Description |
+|------|-------|-------------|
+| `hangman.c` | 1,336 | Core game logic: init, game loop, input, word selection, save/restore |
+| `hangman_ui.c` | 732 | Drawing: game board, hangman figure, letter tiles, animations |
+| `hangman_dialog.c` | 343 | Dialogs: define game, define players, add/delete player, about |
+| `hangman_data.c` | 404 | Static data: word list, profanity filter, menus, graphics coords |
+| `deskmate.h` / `deskmate.c` | 789 | DeskMate INT E0h API wrappers (reusable for other modules) |
+| `hangman.h` | 224 | Structs, constants, prototypes |
+| `Makefile` | 83 | OpenWatcom wmake build targeting DOS medium model |
+
+**Build:**
+```bash
+source scripts/setup-watcom.sh
+cd src/hangman && wmake
+# Produces build/hangman/HANGMAN.EXE (10 KB DOS MZ executable)
+```
+
+**To capture screenshots** (requires interactive session):
+```bash
+./dosbox/scripts/capture-screenshots.sh
+# Press Ctrl+F5 in DOSBox-X to save PNG screenshots
+```
 
 ## Sources
 
