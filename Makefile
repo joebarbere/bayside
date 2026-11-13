@@ -8,6 +8,8 @@
 #   make trace-check    trace the rebuilt HANGMAN and diff against the golden
 #   make run-original   headless DOSBox-X: original Hangman, frames in build/run/
 #   make run-rebuilt    headless DOSBox-X: rebuilt Hangman swapped in
+#   make play           play the rebuilt Hangman in a DOSBox-X window
+#   make play-original  same with the original HANGMAN.PDM
 #
 # Works from any shell (fish included): the OpenWatcom env is set here rather
 # than by sourcing scripts/setup-watcom.sh.
@@ -46,7 +48,7 @@ ARGC      := tests/traces/hangman.argc.json
 # implemented in C (C-to-C calls never pass through the original address).
 DEEP      := --deep $(HM)/functions.txt --deep-skip $(HMB)/in_c.txt
 
-.PHONY: setup hangman identical trace trace-check run-original run-rebuilt clean
+.PHONY: setup hangman identical trace trace-check run-original run-rebuilt play play-original clean
 
 setup: $(PY)
 $(PY): tools/requirements.txt
@@ -65,10 +67,17 @@ $(HMB)/protos.h $(HMB)/in_c.txt: $(HM)/functions.txt $(HM_C) $(HM_H) tools/mkpro
 	@mkdir -p $(HMB)
 	$(PY) tools/mkprotos.py $(HM)/functions.txt $(HM) -o $(HMB)/protos.h --list-c $(HMB)/in_c.txt
 
+# Application code range: once it is all C, the C code is linked into it so
+# the original segment map is kept exactly (DESK.EXE needs that; with C code
+# after CRT_TEXT it crashed with "Corrupt MCB chain").
+C_REGION  := 0010:3000
+C_END     := $(word 2,$(subst :, ,$(C_REGION)))
+PDM2WASM   = $(PY) tools/pdm2wasm.py $(ORIG) --functions $(HM)/functions.txt \
+	  --c-sources $(HM) $(foreach f,$(HM_SYMS),--data-syms $(f)) --c-region $(C_REGION)
+
 $(HMB)/orig.asm: $(ORIG) $(HM)/functions.txt $(HM_C) $(HM_SYMS) tools/pdm2wasm.py tools/mkprotos.py | $(PY)
 	@mkdir -p $(HMB)
-	$(PY) tools/pdm2wasm.py $(ORIG) --functions $(HM)/functions.txt \
-	  --c-sources $(HM) $(foreach f,$(HM_SYMS),--data-syms $(f)) -o $@
+	$(PDM2WASM) -o $@
 
 $(HMB)/orig.obj: $(HMB)/orig.asm
 	$(WATCOM_ENV) wasm -q -0 -fo=$@ $<
@@ -78,10 +87,21 @@ $(HMB)/%.obj: $(HM)/%.c $(HM_H) $(HMB)/protos.h
 	$(WATCOM_ENV) wcc $(WCC_FLAGS) -i=$(HMB) -fo=$@ $<
 
 # orig.obj must be linked first: its segments fix the original layout.
+# In-place mode needs two links: the first measures the C code, the second
+# pads it so the original code after the region resumes at its address.
+LINK_HM = $(WATCOM_ENV) wlink option quiet format dos option map=$(HMB)/hangman.map \
+	  option nodefaultlibs option start=_crt_start name $(HMB)/hangman.exe \
+	  file $(HMB)/orig.obj $(foreach o,$(HM_OBJ),file $(o)) 2>&1 | grep -v W1014 || true
 $(HMB)/hangman.exe: $(HMB)/orig.obj $(HM_OBJ)
-	$(WATCOM_ENV) wlink option quiet format dos option map=$(HMB)/hangman.map \
-	  option nodefaultlibs option start=_crt_start name $@ \
-	  $(foreach o,$^,file $(o)) 2>&1 | grep -v W1014 || true
+	$(LINK_HM)
+	@if grep -q '^HM_PAD' $(HMB)/hangman.map; then \
+	  pad=$$($(PY) tools/mkpdm.py --pad-for $(C_END) --map $(HMB)/hangman.map) || exit 1; \
+	  $(PDM2WASM) --pad $$pad -o $(HMB)/orig.asm && \
+	  $(WATCOM_ENV) wasm -q -0 -fo=$(HMB)/orig.obj $(HMB)/orig.asm && \
+	  $(LINK_HM); \
+	  $(PY) tools/mkpdm.py --check-at TEXT2=$(C_END) --map $(HMB)/hangman.map || exit 1; \
+	  echo "C code linked in place: $$pad bytes spare in $(C_REGION)"; \
+	fi
 	@test -f $@
 	@# The original startup zeroes only the original BSS, so C must not add any.
 	@awk '$$1=="_BSS" && $$NF!="00000000" {print "error: C code added uninitialised data (_BSS " $$NF " bytes); initialise it or use an original global"; exit 1}' $(HMB)/hangman.map
@@ -129,6 +149,13 @@ run-original:
 run-rebuilt: $(REBUILT)
 	tools/dosbox_run.py hangman-rebuilt --overlay $(REBUILT)=HANGMAN.PDM \
 	  --cmd "DESK.EXE HANGMAN.PDM" --frames 15,38
+
+play: $(REBUILT)
+	tools/dosbox_run.py play --overlay $(REBUILT)=HANGMAN.PDM \
+	  --cmd "DESK.EXE HANGMAN.PDM" --window --seconds 86400
+
+play-original:
+	tools/dosbox_run.py play-original --cmd "DESK.EXE HANGMAN.PDM" --window --seconds 86400
 
 clean:
 	rm -rf build

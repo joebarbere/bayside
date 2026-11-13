@@ -86,7 +86,7 @@
 | addressbook/ | :white_large_square: | — | :white_large_square: | Address book |
 | telecom/ | :white_large_square: | — | :white_large_square: | Terminal emulator |
 | pclink/ | :white_large_square: | — | :white_large_square: | Online service client |
-| hangman/ | :construction: | 5 fns | :white_check_mark: | Rebuilt from source byte-identically (`make identical`); functions moving to C one at a time via binary splicing (src/hangman/replaced.txt). Earlier free-form transpilation (wrong DeskMate ABI, crashed DeskMate) kept in src/hangman/legacy/ |
+| hangman/ | :white_check_mark: | 84 fns | :white_check_mark: | All application code in C (src/hangman/*.c), spliced into the original binary; MSC runtime and DeskMate SDK glue (incl. shared About box) still original asm. Earlier free-form transpilation kept in src/hangman/legacy/ |
 | formset/ | :white_large_square: | — | :white_large_square: | Form designer |
 | play/ | :white_large_square: | — | :white_large_square: | Music player |
 | mailmerge/ | :white_large_square: | — | :white_large_square: | Mail merge |
@@ -105,7 +105,7 @@
 | Calendar | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Telecom | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | PC-Link | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
-| Hangman | :white_check_mark: | :yellow_circle: | :white_large_square: | :yellow_circle: | Spliced rebuild runs in real DeskMate (DOSBox-X headless); `make trace-check` scenarios: Define Game OK / arrows / limits / cancel |
+| Hangman | :white_check_mark: | :yellow_circle: | :white_large_square: | :white_check_mark: | Plays in real DeskMate (DOSBox-X). `make trace-check`: 18 scenarios (define game, full games win/lose, 2 players, all menus, save/restore, word suggestions, profanity filter) match the original call-for-call |
 | Form Set | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Play | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Mail Merge | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |

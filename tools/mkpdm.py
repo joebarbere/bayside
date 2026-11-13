@@ -36,7 +36,43 @@ def parse(raw):
                 ss=ss, sp=sp, ip=ip, cs=cs, relocs=relocs, ovl=ovl)
 
 
+def map_segments(path):
+    """segment name -> (linear start, size) from a wlink map."""
+    out = {}
+    for line in open(path):
+        f = line.split()
+        if len(f) >= 5 and ":" in f[-2]:
+            try:
+                seg, off = (int(x, 16) for x in f[-2].split(":"))
+                out[f[0]] = (seg * 16 + off, int(f[-1], 16))
+            except ValueError:
+                pass
+    return out
+
+
+def layout_tools(argv):
+    """Small link-layout helpers used by the Makefile (not the PDM writer)."""
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--map", required=True)
+    ap.add_argument("--pad-for", metavar="END")
+    ap.add_argument("--check-at", metavar="SEG=OFF")
+    a = ap.parse_args(argv)
+    segs = map_segments(a.map)
+    if a.pad_for:
+        start, size = segs["HM_TEXT"]
+        pad = int(a.pad_for, 16) - (start + size)
+        if pad < 0:
+            sys.exit(f"error: C code is {-pad} bytes too big for the region ending {a.pad_for}")
+        print(pad)
+    if a.check_at:
+        name, off = a.check_at.split("=")
+        if segs[name][0] != int(off, 16):
+            sys.exit(f"error: {name} at {segs[name][0]:#x}, expected {off}")
+
+
 def main():
+    if "--pad-for" in sys.argv or "--check-at" in sys.argv:
+        return layout_tools(sys.argv[1:])
     ap = argparse.ArgumentParser()
     ap.add_argument("exe")
     ap.add_argument("--orig", required=True)

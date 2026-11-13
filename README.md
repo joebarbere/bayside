@@ -11,7 +11,7 @@ bayside is a preservation and reconstruction project targeting DeskMate 3.05 (19
 | 1. Research & Acquisition | **Complete** | 148 files extracted from 3 disk image sources; 20 file formats documented; full hardware register maps; desk accessory documentation |
 | 2. Binary Analysis | **Complete** | 87 binaries disassembled (565K+ lines of assembly); 8,500+ functions identified; compiler confirmed as Microsoft C 5.x |
 | 3. Annotation | **Complete** | All 87 binaries fully annotated — 17 EXE/PDM + 52 RES + 18 ACC; every function named; data structures mapped; INT E0h API reference with 8 service classes |
-| 4. C Transpilation | **In Progress** | HANGMAN.PDM rebuilt from source byte-identically; being translated to C function by function (binary splicing) |
+| 4. C Transpilation | **In Progress** | HANGMAN.PDM: all 84 application functions translated to C (runtime + DeskMate SDK glue still original); playable in real DeskMate |
 | 5. Verification | **In Progress** | Automated: Unicorn boundary/call-trace diff vs. the original (`make trace-check`) + headless DOSBox-X runs in real DeskMate |
 
 See [STATUS.md](STATUS.md) for detailed per-module progress.
@@ -140,6 +140,7 @@ make identical      # rebuild HANGMAN.PDM from source with no C: byte-identical 
 make hangman        # build build/hangman/HANGMAN.PDM (original + C functions spliced in)
 make trace-check    # ~1s: every scenario's boundary + call trace vs. the original
 make run-rebuilt    # headless DOSBox-X in real DeskMate, frames in build/run/
+make play           # play the rebuilt Hangman in a DOSBox-X window (make play-original to compare)
 make trace          # re-record the golden traces from the original binary
 ```
 
@@ -151,8 +152,11 @@ spliced in with a `jmp` at their original address; C calls untranslated
 original code through labels (`src/hangman/functions.txt`) and uses
 original globals at their original addresses (`src/hangman/dgroup.syms`).
 Everything is `__cdecl` (`wcc -ecc`), matching MSC 5.x, so both directions
-work. `tools/mkpdm.py` writes the MZ+DM89 header. The binary works at every
-step, so each newly translated function is verified on its own.
+work. `tools/mkpdm.py` writes the MZ+DM89 header. While some application
+functions are still original, the C code links after the startup segment
+(fine in the harness, but DESK.EXE refuses that layout); once the whole
+application range (`0010-2FFF`) is C, it links *into* that range and the
+PDM keeps the original segment map exactly, which real DeskMate needs.
 
 **How it is verified.** `tools/pdm_trace.py` runs a PDM under Unicorn with a
 fake DESK.EXE and records every INT E0h call, every far call into a

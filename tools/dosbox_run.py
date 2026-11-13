@@ -99,8 +99,10 @@ def main():
         "-time-limit", str(args.seconds),
         "-set", f"dosbox captures={cap}",
         "-c", f"mount c {disk}", "-c", "c:", "-c", "SET DMCONFIG=C:\\",
-        "-c", "config -avistart",
     ]
+    record = not args.window or bool(args.frames)
+    if record:
+        cmd += ["-c", "config -avistart"]
     if args.autotype:
         cmd += ["-c", f"autotype -w {args.autotype_wait} "
                       f"-p {args.autotype_pace} {args.autotype}"]
@@ -117,6 +119,9 @@ def main():
     if crash:
         print(f"CRASH:  DOSBox-X aborted -- {crash}")
 
+    if not record:
+        print(f"log:    {run / 'run.log'}")
+        sys.exit(2 if crash else 0)
     avis = sorted(cap.glob("*.avi"))
     if not avis:
         sys.exit(f"error: no AVI captured; see {run / 'run.log'}")

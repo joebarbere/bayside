@@ -194,14 +194,17 @@ make hangman        # build/hangman/HANGMAN.PDM with C functions spliced in
 make trace-check    # compare traces of the rebuild vs. golden traces (~1s) -- run after every change
 make trace          # re-record golden traces from the original binary
 make run-rebuilt    # headless DOSBox-X run inside real DeskMate (frames in build/run/)
+make play           # interactive DOSBox-X window with the rebuilt Hangman
 ```
 
 ### Decompilation workflow (binary splicing)
 - The original PDM is emitted as asm with original offsets (tools/pdm2wasm.py).
   A C function replaces the original when its definition is preceded by a
   `/* address: 0000:XXXX ... */` comment whose address and name match
-  src/hangman/functions.txt. C code links into HM_TEXT after the original
-  startup segment (never between _TEXT and CRT_TEXT).
+  src/hangman/functions.txt. Placement: once every function in 0010-2FFF is
+  C, the C code links INTO that range (two-pass link, original segment map
+  kept exactly -- real DESK.EXE needs this); otherwise after CRT_TEXT, which
+  only runs in the harness. Never between _TEXT and CRT_TEXT.
 - Read code with `tools/disfn.py <name|addr>` (calls resolved, arg counts,
   jump tables decoded). Translate faithfully from the disassembly, not from
   the annotations' prose: annotated names/arg descriptions are often guesses.
@@ -224,3 +227,7 @@ make run-rebuilt    # headless DOSBox-X run inside real DeskMate (frames in buil
 - UI services are far calls into DMCSR with AX = code & 0FFFh (args at SS:BP);
   DMGUF/PRGUF calls take args at SS:BX+6. NOT direct INT E0h.
 - DMCSR.R89 and DMGUF.R89 (the main UI libraries) are not yet disassembled.
+- The harness's DeskMate event queue / SPELL / keyToChar behaviour is a MODEL
+  derived from HANGMAN's call sites (documented in tools/pdm_trace.py), not
+  verified against DMCSR. Passing traces + a DOSBox playthrough together are
+  the bar.
