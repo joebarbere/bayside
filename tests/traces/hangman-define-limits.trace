@@ -1,5 +1,5 @@
 int21 21/30    3000 -> 1E03
-int21 21/4A    4AFF
+int21 21/4A    4A00
 fn    _cinit
 int21 21/30    3000 -> 1E03
 int21 21/35    3500
@@ -35,7 +35,7 @@ fn    _crt_ltoa
 fn    _crt_getEnvItem [STK STK]
 int21 21/2A    2A00 -> 2A01
 fn    _crt_getEnvItem [STK STK]
-int21 21/2C    2C00
+int21 21/2C    2C00 t='12:00:00.00'
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
 fn    _rand
@@ -446,8 +446,6 @@ call  DMCSR    0051 [002E] -> 0000
 fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    dm_yield
-call  DMCSR    0016 -> 0000
 fn    hangman_wordAnimEnter [AB92]
 call  SPELL    0002 [AB92] s0='txufwirco' -> 0000
 fn    hangman_profanityCheck [AB92]
@@ -587,7 +585,7 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks
+fn    hangman_drawWordBlanks [0847]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -654,6 +652,7 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    dm_yield
-call  DMCSR    0016 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] -> 0000
+fn    hangman_mapKeyToLetter [STK STK]
 # end: idle

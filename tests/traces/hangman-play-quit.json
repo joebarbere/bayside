@@ -1,0 +1,69 @@
+{
+ "word_addr": "0xAB92",
+ "returns": [
+  {
+   "on": [
+    "DMCSR",
+    "0xE4"
+   ],
+   "ret": "0xF566",
+   "note": "Words per Game down (4->3)"
+  },
+  {
+   "on": [
+    "DMCSR",
+    "0xE4"
+   ],
+   "ret": "0xF566",
+   "note": "Words per Game down (3->2)"
+  },
+  {
+   "on": [
+    "DMCSR",
+    "0xE4"
+   ],
+   "ret": "0xF566",
+   "note": "Words per Game down (2->1)"
+  },
+  {
+   "on": [
+    "DMCSR",
+    "0xE4"
+   ],
+   "ret": "0xF56E",
+   "note": "Define Game: OK"
+  },
+  {
+   "on": [
+    "DMCSR",
+    "0xE4"
+   ],
+   "after": 1,
+   "ret": "0xF56E",
+   "note": "Define Players: OK"
+  },
+  {
+   "on": [
+    "DMCSR",
+    "0xE9"
+   ],
+   "after": 0,
+   "ret": "0xF704",
+   "note": "end-of-game box: quit"
+  }
+ ],
+ "events": [
+  [
+   "wrong",
+   3
+  ],
+  [
+   "word"
+  ],
+  [
+   "key",
+   " "
+  ]
+ ],
+ "comment": "1 word per game, win, choose quit at the end-of-game box -> cleanup -> exit"
+}

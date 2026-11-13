@@ -1,5 +1,5 @@
 int21 21/30    3000 -> 1E03
-int21 21/4A    4AFF
+int21 21/4A    4A00
 fn    _cinit
 int21 21/30    3000 -> 1E03
 int21 21/35    3500
@@ -35,7 +35,7 @@ fn    _crt_ltoa
 fn    _crt_getEnvItem [STK STK]
 int21 21/2A    2A00 -> 2A01
 fn    _crt_getEnvItem [STK STK]
-int21 21/2C    2C00
+int21 21/2C    2C00 t='12:00:00.00'
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
 fn    _rand

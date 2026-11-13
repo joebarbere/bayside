@@ -1,0 +1,72 @@
+{
+ "word_addr": "0xAB92",
+ "defaults": {
+  "DMCSR:0xE4": "0xF56E"
+ },
+ "events": [
+  [
+   "key",
+   "E"
+  ],
+  [
+   "menu",
+   "0xF505"
+  ],
+  [
+   "menu",
+   "0xF50A"
+  ],
+  [
+   "menu",
+   "0xF50B"
+  ],
+  [
+   "menu",
+   "0xF50C"
+  ],
+  [
+   "menu",
+   "0xF501"
+  ],
+  [
+   "menu",
+   "0xF502"
+  ],
+  [
+   "menu",
+   "0xF546"
+  ],
+  [
+   "menu",
+   "0xF547"
+  ],
+  [
+   "key",
+   "S"
+  ],
+  [
+   "menu",
+   "0xF500"
+  ],
+  [
+   "key",
+   "T"
+  ],
+  [
+   "menu",
+   "0xF503"
+  ]
+ ],
+ "comment": "every dialog answers OK; About, Define/Add/Delete Players, Save, Restore, letter-tile clicks (A,B), New Game, Quit",
+ "returns": [
+  {
+   "on": [
+    "DMCSR",
+    "0xE4"
+   ],
+   "arg0": "0x1DD1",
+   "ret": "0xF5CA",
+   "note": "About box (SDK form 1DD1): OK = F5CA (0000:386F)"
+  }
+ ]
+}

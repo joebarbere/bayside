@@ -81,8 +81,9 @@ FRAME_SOURCE = {
 DEFAULT_FRAME_SOURCE = ("bx", 6, 2)
 STACK_WINDOW = 0x800    # args within [SP, SP+STACK_WINDOW) are stack pointers
 FRAME_WORDS = 8
-IDLE_WINDOW = 200
-IDLE_KINDS = 4
+AL_IS_INPUT = {0x25, 0x35, 0x3D, 0x42, 0x43, 0x44, 0x4B, 0x4C, 0x57}
+IDLE_WINDOW = 400
+IDLE_KINDS = 12
 
 # INT E0h service return values (AX) not handled specially below.
 INT_E0_RETURNS = {
@@ -125,6 +126,24 @@ class PdmTracer:
         self.res_by_name = {}     # name -> trap seg
         self.open_files = {}      # handle -> (name, data, pos)
         self.next_handle = 5
+        # A scenario is either a list of return-value steps (old form) or
+        # {"returns": [...], "events": [...]}; events are ["key", "A"],
+        # ["menu", "0xF500"] or [type, word].
+        self.word_addr = 0
+        self.defaults = {}
+        self.clock_reads = 0
+        self.key_yielded = False
+        if isinstance(script, dict):
+            self.events_in = [self.parse_event(e) for e in script.get("events", [])]
+            self.word_addr = num(script.get("word_addr", 0))
+            # "defaults": {"DMCSR:0xE4": "0xF56E"} -- return value for every
+            # such call not answered by a "returns" step
+            for k, v in script.get("defaults", {}).items():
+                r, a = k.split(":")
+                self.defaults[f"{r}:{num(a):04X}"] = num(v)
+            script = script.get("returns", [])
+        else:
+            self.events_in = []
         self.script = list(script or [])
         self.exit_code = None
         self.recent = []
@@ -228,7 +247,8 @@ class PdmTracer:
             print(self.fmt(ev), file=sys.stderr)
         # Idle detection: the last IDLE_WINDOW events use <= IDLE_KINDS
         # distinct calls (e.g. GetEvent/Yield ping-pong waiting for input).
-        key = (ev.kind, ev.name, ev.ax, tuple(ev.frame))
+        key = (ev.kind, ev.name, ev.ax, tuple(ev.frame),
+               tuple(sorted(ev.strings.items())))
         self.recent.append(key)
         if len(self.recent) > IDLE_WINDOW:
             self.recent.pop(0)
@@ -340,6 +360,34 @@ class PdmTracer:
         names = {self.reg("ss"): "DGRP", self.load_seg: "CSEG"}
         return {i: names[w] for i, w in enumerate(frame) if w in names}
 
+    def expand_event_macros(self):
+        """Scenario macros, expanded when they reach the queue head so they
+        see the game's state at that moment (word at self.word_addr):
+          ["word"]      type the current word's distinct letters in order
+          ["wrong", n]  type n letters not in the current word (A..Z order)"""
+        while self.events_in and self.events_in[0][0] in ("word", "wrong"):
+            kind, arg = self.events_in.pop(0)
+            word = self.asciiz(self.reg("ds"), self.word_addr, 32).decode("latin-1").upper()
+            if kind == "word":
+                letters = list(dict.fromkeys(c for c in word if "A" <= c <= "Z"))
+            else:
+                letters = [c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if c not in word][:arg]
+            self.events_in[0:0] = [(1, ord(c)) for c in letters]
+
+    @staticmethod
+    def parse_event(e):
+        kind = e[0]
+        if kind == "word":
+            return ("word", None)
+        if kind == "wrong":
+            return ("wrong", int(e[1]))
+        val = e[1]
+        if kind == "key":
+            return (1, ord(val) if isinstance(val, str) and len(val) == 1 else num(val))
+        if kind == "menu":
+            return (3, num(val))
+        return (num(kind), num(val))
+
     def cleanup_words(self, seg, off):
         """Arg words a cdecl caller pops after the call returning to seg:off:
         `add sp,imm8` (83 C4 ib), `add sp,imm16` (81 C4 iw), `pop reg`
@@ -364,17 +412,65 @@ class PdmTracer:
         A step fires on the (after+1)-th matching call once it reaches the
         head of the script. Numbers may be ints or hex strings.
         """
+        # DeskMate event queue MODEL (not DMCSR's verified behaviour; DMCSR
+        # is not disassembled yet). Both calls fill the 8-byte record at
+        # arg0 (DS-relative): type byte, then a word (key code / menu id).
+        #   0013h get : pops the queue head (empty -> type 0)
+        #   0014h peek: shows the head event until the program yields
+        #               (0016h); after that it shows type 0 until the head
+        #               is fetched.
+        # Derived from all HANGMAN call sites: delayLoop (0000:222F) stops
+        # on any non-zero peek; processInput (0000:086A) yields while the
+        # peek shows type 1 and fetches with 0013h after a type-0 peek;
+        # the word-generation poll (0000:2F96) yields on non-zero;
+        # checkDmApiEvent (0000:1564) only takes type-1 FD14/FD17.
+        if name == "DMCSR" and ax in (0x0013, 0x0014) and ev.frame:
+            ptr = ev.frame[0]
+            if ax == 0x0013:
+                self.expand_event_macros()      # only once a key is fetched
+            head = self.events_in[0] if self.events_in else None
+            if head is not None and isinstance(head[0], str):
+                head = (1, 0)                   # unexpanded macro = key pending
+            if head is not None and ax == 0x0014 and self.key_yielded:
+                head = None
+            rec = bytes(8) if head is None else bytes(
+                [head[0], head[1] & 0xFF, head[1] >> 8]) + bytes(5)
+            self.wr(self.reg("ds"), ptr, rec)
+            if head is not None:
+                ev.strings["event"] = f"{head[0]}:{head[1]:04X}"
+            if ax == 0x0013 and self.events_in:
+                self.events_in.pop(0)
+                self.key_yielded = False
+            return 0
+        if name == "DMCSR" and ax == 0x0016:
+            if self.events_in:
+                self.key_yielded = True
+            return 0
+        # dm_keyToChar model: key code low byte, upper-cased
+        if name == "DMGUF" and ax == 0x0023 and ev.frame:
+            c = ev.frame[0] & 0xFF
+            return c - 32 if 0x61 <= c <= 0x7A else c
         if self.script:
             step = self.script[0]
             want_name, want_ax = step["on"]
-            if want_name == name and num(want_ax) == ax:
+            arg_ok = "arg0" not in step or (ev.frame and ev.frame[0] == num(step["arg0"]))
+            if want_name == name and num(want_ax) == ax and arg_ok:
                 left = num(step.get("after", 0))
                 if left > 0:
                     step["after"] = left - 1
                 else:
                     self.script.pop(0)
                     ev.strings["script"] = step.get("note", "")
+                    # "poke": {"0C0F": 1} sets DGROUP bytes first (dialog
+                    # state the form would have changed, e.g. a radio button)
+                    for off, val in step.get("poke", {}).items():
+                        data = (val.encode("latin-1") + b"\0" if isinstance(val, str)
+                                and not val.startswith("0x") else bytes([num(val)]))
+                        self.wr(self.reg("ds"), int(off, 16), data)
                     return num(step.get("ret", 0))
+        d = self.defaults.get(f"{name}:{ax:04X}")
+        if d is not None:
+            return d
         return RESOURCE_RETURNS.get((name, ax), 0)
 
     def on_int_e0(self):
@@ -400,7 +496,10 @@ class PdmTracer:
     def on_int21(self):
         ah = self.reg("ax") >> 8
         al = self.reg("ax") & 0xFF
-        ev = TraceEvent(0, "int21", f"21/{ah:02X}", self.reg("ax"),
+        # AL is an input only for some DOS functions; elsewhere it is
+        # leftover register garbage that differs between builds.
+        ax_in = self.reg("ax") if ah in AL_IS_INPUT else ah << 8
+        ev = TraceEvent(0, "int21", f"21/{ah:02X}", ax_in,
                         self.snapshot(), caller=self.caller_addr())
         ret = None
         self.set_cf(False)
@@ -421,9 +520,17 @@ class PdmTracer:
             self.setreg("cx", 1990)
             self.setreg("dx", 0x0101)
             ret = (self.reg("ax") & 0xFF00) | 1
-        elif ah == 0x2C:                     # time: fixed
-            self.setreg("cx", 0x0C00)
-            self.setreg("dx", 0)
+        elif ah == 0x2C:
+            # Time: starts 12:00:00.00 and advances 1/100 s per read, so
+            # delay loops that poll the clock terminate, identically in the
+            # original and the rebuild (independent of instruction counts).
+            t = self.clock_reads
+            self.clock_reads += 1
+            sec, hund = divmod(t, 100)
+            mins, sec = divmod(sec, 60)
+            self.setreg("cx", (12 << 8) | (mins % 60))
+            self.setreg("dx", (sec << 8) | hund)
+            ev.strings = {"t": f"12:{mins % 60:02d}:{sec:02d}.{hund:02d}"}
         elif ah == 0x3D:                     # open: no files yet -> not found
             fn = self.asciiz(self.reg("ds"), self.reg("dx")).decode("ascii", "replace")
             ev.strings = {"file": fn}
@@ -501,6 +608,8 @@ def main():
                     help="functions to leave out of the deep trace (the "
                          "replaced.txt list: C-to-C calls bypass the original "
                          "address, so they cannot be compared)")
+    ap.add_argument("--peek", action="append", default=[], metavar="OFF:LEN",
+                    help="print DGROUP bytes at OFF (hex) when tracing stops")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="print every event to stderr as it happens")
     args = ap.parse_args()
@@ -514,6 +623,9 @@ def main():
     t = PdmTracer(args.pdm, args.max_insns, script, args.verbose,
                   argc=argc, learn_argc=bool(args.learn_argc), deep=deep)
     reason = t.run()
+    for spec in args.peek:
+        off, ln = (int(x, 16) for x in spec.split(":"))
+        print(f"peek {off:04X}: {t.rd(t.reg('ss'), off, ln)!r}", file=sys.stderr)
     if args.learn_argc:
         # merge with what earlier scenarios learned (max per service)
         try:

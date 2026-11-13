@@ -38,7 +38,8 @@ HM_OBJ    := $(patsubst $(HM)/%.c,$(HMB)/%.obj,$(HM_C))
 # -ms small model, -0 8086, -s no stack checks, -zl no default libs,
 # -ecc __cdecl everywhere (MSC convention, so C <-> original code calls work),
 # -zp1 byte packing, -os optimise for size
-WCC_FLAGS := -q -bt=dos -ms -0 -s -zl -ecc -zp1 -os -w4 -we
+# -nt/-g: C code in HM_TEXT, after the original startup segment (see pdm2wasm)
+WCC_FLAGS := -q -bt=dos -ms -0 -s -zl -ecc -zp1 -os -w4 -we -nt=HM_TEXT -g=CGROUP
 ARGC      := tests/traces/hangman.argc.json
 # Deep trace: calls into original functions are compared too, except those
 # implemented in C (C-to-C calls never pass through the original address).

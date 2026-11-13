@@ -6,8 +6,11 @@ used by matching-decompilation projects).
 
 Output layout (identical offsets to the original):
     _TEXT     original code segment bytes at offset 0, a public label on
-              every known function; C code links in *after* them
-    CRT_TEXT  the MSC startup segment (paragraph aligned)
+              every known function
+    CRT_TEXT  the MSC startup segment (paragraph aligned), directly after
+              _TEXT as in the original
+    HM_TEXT   C code (wcc -nt=HM_TEXT -g=CGROUP); CGROUP = _TEXT + CRT_TEXT
+              + HM_TEXT is one near-call frame
     DGROUP    ORIG_DATA: original initialised data + BSS + stack region at
               their original offsets (0 .. stack top); C data links after
 Relocations become symbolic `dw _TEXT` / `dw DGROUP` fixups, so the image
@@ -148,6 +151,12 @@ _TEXT     segment word public 'CODE'
 _TEXT     ends
 CRT_TEXT  segment para public 'CODE'
 CRT_TEXT  ends
+; C code goes AFTER the startup segment: original code near-calls into
+; CRT_TEXT by offset from _TEXT's base (e.g. 0000:44A6), so nothing may be
+; inserted between them. CGROUP makes one near-call frame for all three.
+HM_TEXT   segment word public 'CODE'
+HM_TEXT   ends
+CGROUP    group _TEXT, CRT_TEXT, HM_TEXT
 ORIG_DATA segment para public 'DATA'
 ORIG_DATA ends
 _DATA     segment word public 'DATA'
@@ -166,7 +175,7 @@ DGROUP    group ORIG_DATA, _DATA, CONST, CONST2, _BSS
         L.append(f"        public  _{n}")
     for n in sorted(set(code_jumps.values())):
         L.append(f"        extrn   {n}:near")
-    L.append("\n_TEXT     segment\n        assume cs:_TEXT")
+    L.append("\n_TEXT     segment\n        assume cs:CGROUP")
     emit_bytes(L, img, "code", 0, code_end, fix(0, code_end), code_labels, code_jumps)
     L.append("_TEXT     ends\n\nCRT_TEXT  segment\n        assume cs:CRT_TEXT")
     L.append("        public  _crt_start")
