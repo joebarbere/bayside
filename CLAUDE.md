@@ -197,18 +197,26 @@ make run-rebuilt    # headless DOSBox-X run inside real DeskMate (frames in buil
 ```
 
 ### Decompilation workflow (binary splicing)
-- The original PDM is emitted as asm with original offsets (tools/pdm2wasm.py);
-  C functions replace originals one at a time via src/hangman/replaced.txt.
-- Translate faithfully from the disassembly, not from the annotations' prose:
-  the annotated names/arg descriptions are often guesses. Check call sites
-  (pushes + `add sp,N`) for argument counts.
-- C may call untranslated original functions (declare them in hangman.h; names
-  in functions.txt) and use original globals at their original DGROUP offsets
-  (name them in dgroup.syms, or DG8/DG16(addr) until understood).
-- No new uninitialised C globals: the original startup only zeroes the
-  original BSS.
-- After each function: `make trace-check`. If no scenario reaches the new
-  code, add tests/traces/<name>.json (scripted dialog results) and `make trace`.
+- The original PDM is emitted as asm with original offsets (tools/pdm2wasm.py).
+  A C function replaces the original when its definition is preceded by a
+  `/* address: 0000:XXXX ... */` comment whose address and name match
+  src/hangman/functions.txt. C code links into HM_TEXT after the original
+  startup segment (never between _TEXT and CRT_TEXT).
+- Read code with `tools/disfn.py <name|addr>` (calls resolved, arg counts,
+  jump tables decoded). Translate faithfully from the disassembly, not from
+  the annotations' prose: annotated names/arg descriptions are often guesses.
+- Original functions not yet in C are declared old-style in the generated
+  build/hangman/protos.h. Functions in C get a full prototype in their area
+  header: game.h (0010-0DD7), dialog.h (0DD8-1AFA), draw.h (1AFB-23EA),
+  words.h (23EB-2FFF). Never call hangman_itoaBuf/strcpyDI/strlenSI or
+  dm_videoNameIndex (register conventions).
+- Globals: original DGROUP offsets. Name them in a *.syms file (one per area
+  is fine; conflicts fail the build) or use DG8/DG16(addr) until understood.
+- No new uninitialised C globals (build fails): the original startup only
+  zeroes the original BSS.
+- After each function: `make trace-check`. If no scenario reaches the code,
+  add tests/traces/hangman-<name>.json and run `make trace` (re-records all
+  goldens from the original).
 
 ### PDM <-> DeskMate interface (verified with tools/pdm_trace.py)
 - INT E0h AX=0206h loads a resource by name (DS:DX) and writes its far entry
