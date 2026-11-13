@@ -648,13 +648,10 @@ fn    dm_drawBitmap [FFFF 0373]
 call  DMCSR    001C [FFFF 0373] -> 0000
 fn    dm_drawBitmap [FFFF 038A]
 call  DMCSR    001C [FFFF 038A] -> 0000
-fn    hangman_drawHangmanFigure
-fn    hangman_drawWrongGuess [0000]
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_drawHangmanParts
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0002 0003]
@@ -675,28 +672,24 @@ fn    dm_getDialogField [1424 0018 01C2]
 call  DMCSR    005F [1424 0018 01C2] -> 0000
 fn    dm_setDialogField [01F4 012C 0082 0082 0000]
 call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -707,14 +700,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -729,7 +720,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -779,7 +769,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -828,7 +817,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -877,7 +865,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -926,7 +913,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -975,7 +961,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1024,7 +1009,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1073,7 +1057,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1122,7 +1105,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1170,7 +1152,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1185,7 +1166,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawCelebration
 fn    dm_setTextAttr [0000 0002 0002]
 call  DMCSR    004B [0000 0002 0002] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
@@ -1209,28 +1189,24 @@ call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0ABE 0EE0 0000]
 call  DMCSR    0060 [0ABE 0EE0 0000] -> 0000
 fn    hangman_handleWin [ADFD]
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -1241,14 +1217,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1263,7 +1237,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawSmileyFace
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_drawAt [0AAC 0EE0 0000]
@@ -1280,38 +1253,30 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawGallowsPart [0A20 0005]
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
 call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
 call  DMCSR    0060 [09F0 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F8 0EE0 0000]
 call  DMCSR    0060 [09F8 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A00 0EE0 0000]
 call  DMCSR    0060 [0A00 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A08 0EE0 0000]
 call  DMCSR    0060 [0A08 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0006]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A10 0EE0 0000]
 call  DMCSR    0060 [0A10 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0007]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A18 0EE0 0000]
@@ -1320,7 +1285,6 @@ fn    dm_setTextAttr [0000 0000 0003]
 call  DMCSR    004B [0000 0000 0003] -> 0000
 fn    dm_drawAt [0A3A 0EE0 0000]
 call  DMCSR    0060 [0A3A 0EE0 0000] -> 0000
-fn    hangman_showResultMessage [137A 1386]
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -1349,7 +1313,6 @@ fn    dm_drawLine [0000]
 call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawPressAnyKey
 fn    hangman_drawWordBlanks [00B8]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
@@ -1491,7 +1454,6 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_delayLoop [1388 0000]
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -1810,13 +1772,10 @@ fn    dm_drawBitmap [FFFF 032E]
 call  DMCSR    001C [FFFF 032E] -> 0000
 fn    dm_drawBitmap [FFFF 0345]
 call  DMCSR    001C [FFFF 0345] -> 0000
-fn    hangman_drawHangmanFigure
-fn    hangman_drawWrongGuess [0000]
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_drawHangmanParts
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0002 0003]
@@ -1837,28 +1796,24 @@ fn    dm_getDialogField [1424 0018 01C2]
 call  DMCSR    005F [1424 0018 01C2] -> 0000
 fn    dm_setDialogField [01F4 012C 0082 0082 0000]
 call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -1869,14 +1824,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1891,7 +1844,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1952,7 +1904,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
@@ -1995,7 +1946,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
@@ -2038,7 +1988,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F8 0EE0 0000]
@@ -2081,7 +2030,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A00 0EE0 0000]
@@ -2124,7 +2072,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A08 0EE0 0000]
@@ -2167,7 +2114,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0006]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A10 0EE0 0000]
@@ -2210,12 +2156,10 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0007]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A18 0EE0 0000]
 call  DMCSR    0060 [0A18 0EE0 0000] -> 0000
-fn    hangman_drawCelebration
 fn    dm_setTextAttr [0000 0002 0002]
 call  DMCSR    004B [0000 0002 0002] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
@@ -2239,38 +2183,30 @@ call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0ABE 0EE0 0000]
 call  DMCSR    0060 [0ABE 0EE0 0000] -> 0000
 fn    hangman_handleLose
-fn    hangman_drawGallowsPart [0B80 FFFF]
-fn    hangman_drawHangmanStage [0B80 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0AD4 0EE0 0000]
 call  DMCSR    0060 [0AD4 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0B80 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0AE0 0EE0 0000]
 call  DMCSR    0060 [0AE0 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0B80 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0B04 0EE0 0000]
 call  DMCSR    0060 [0B04 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0B80 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0B0C 0EE0 0000]
 call  DMCSR    0060 [0B0C 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0B80 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0B14 0EE0 0000]
 call  DMCSR    0060 [0B14 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0B80 0006]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0B1C 0EE0 0000]
 call  DMCSR    0060 [0B1C 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0B80 0007]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0B2A 0EE0 0000]
@@ -2279,7 +2215,6 @@ fn    dm_setTextAttr [0000 0000 0003]
 call  DMCSR    004B [0000 0000 0003] -> 0000
 fn    dm_drawAt [0A6A 0EE0 0000]
 call  DMCSR    0060 [0A6A 0EE0 0000] -> 0000
-fn    hangman_showResultMessage [137A 1390]
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -2308,7 +2243,6 @@ fn    dm_drawLine [0000]
 call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawPressAnyKey
 fn    hangman_drawWordBlanks [008C]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
@@ -2444,8 +2378,6 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawDeathAnim
-fn    hangman_drawProfanityList [0000]
 fn    dm_setTextAttr [0000 0002 0002]
 call  DMCSR    004B [0000 0002 0002] -> 0000
 fn    dm_drawAt [0B1C 0EE0 0000]
@@ -2510,7 +2442,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0AD4 0EE0 0000]
 call  DMCSR    0060 [0AD4 0EE0 0000] -> 0000
-fn    hangman_delayLoop [01F4 0000]
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -2568,7 +2499,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0AD4 0EE0 0000]
 call  DMCSR    0060 [0AD4 0EE0 0000] -> 0000
-fn    hangman_delayLoop [0BB8 0000]
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -2869,13 +2799,10 @@ fn    dm_drawBitmap [FFFF 0300]
 call  DMCSR    001C [FFFF 0300] -> 0000
 fn    dm_drawBitmap [FFFF 0317]
 call  DMCSR    001C [FFFF 0317] -> 0000
-fn    hangman_drawHangmanFigure
-fn    hangman_drawWrongGuess [0000]
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_drawHangmanParts
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0002 0003]
@@ -2896,28 +2823,24 @@ fn    dm_getDialogField [1424 0018 01C2]
 call  DMCSR    005F [1424 0018 01C2] -> 0000
 fn    dm_setDialogField [01F4 012C 0082 0082 0000]
 call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -2928,14 +2851,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -2950,7 +2871,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3007,7 +2927,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3063,7 +2982,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3121,7 +3039,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3169,7 +3086,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3184,7 +3100,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawCelebration
 fn    dm_setTextAttr [0000 0002 0002]
 call  DMCSR    004B [0000 0002 0002] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
@@ -3208,28 +3123,24 @@ call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0ABE 0EE0 0000]
 call  DMCSR    0060 [0ABE 0EE0 0000] -> 0000
 fn    hangman_handleWin [ADFD]
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -3240,14 +3151,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3262,7 +3171,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawSmileyFace
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_drawAt [0AAC 0EE0 0000]
@@ -3279,38 +3187,30 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawGallowsPart [0A20 0005]
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
 call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
 call  DMCSR    0060 [09F0 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F8 0EE0 0000]
 call  DMCSR    0060 [09F8 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A00 0EE0 0000]
 call  DMCSR    0060 [0A00 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A08 0EE0 0000]
 call  DMCSR    0060 [0A08 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0006]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A10 0EE0 0000]
 call  DMCSR    0060 [0A10 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0007]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A18 0EE0 0000]
@@ -3319,7 +3219,6 @@ fn    dm_setTextAttr [0000 0000 0003]
 call  DMCSR    004B [0000 0000 0003] -> 0000
 fn    dm_drawAt [0A3A 0EE0 0000]
 call  DMCSR    0060 [0A3A 0EE0 0000] -> 0000
-fn    hangman_showResultMessage [137A 1386]
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -3348,7 +3247,6 @@ fn    dm_drawLine [0000]
 call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawPressAnyKey
 fn    hangman_drawWordBlanks [0045]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
@@ -3480,7 +3378,6 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_delayLoop [1388 0000]
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -3795,13 +3692,10 @@ fn    dm_drawBitmap [FFFF 0317]
 call  DMCSR    001C [FFFF 0317] -> 0000
 fn    dm_drawBitmap [FFFF 032E]
 call  DMCSR    001C [FFFF 032E] -> 0000
-fn    hangman_drawHangmanFigure
-fn    hangman_drawWrongGuess [0000]
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_drawHangmanParts
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0002 0003]
@@ -3822,28 +3716,24 @@ fn    dm_getDialogField [1424 0018 01C2]
 call  DMCSR    005F [1424 0018 01C2] -> 0000
 fn    dm_setDialogField [01F4 012C 0082 0082 0000]
 call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -3854,14 +3744,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3876,7 +3764,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -3937,7 +3824,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
@@ -3980,7 +3866,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
@@ -4019,7 +3904,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
@@ -4058,7 +3942,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
@@ -4097,7 +3980,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
@@ -4136,7 +4018,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
@@ -4174,12 +4055,10 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
 call  DMCSR    0060 [09F0 0EE0 0000] -> 0000
-fn    hangman_drawCelebration
 fn    dm_setTextAttr [0000 0002 0002]
 call  DMCSR    004B [0000 0002 0002] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
@@ -4203,28 +4082,24 @@ call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0ABE 0EE0 0000]
 call  DMCSR    0060 [0ABE 0EE0 0000] -> 0000
 fn    hangman_handleWin [ADFD]
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -4235,14 +4110,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -4257,7 +4130,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawSmileyFace
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_drawAt [0AAC 0EE0 0000]
@@ -4274,38 +4146,30 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawGallowsPart [0A20 0005]
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09CE 0EE0 0000]
 call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F0 0EE0 0000]
 call  DMCSR    0060 [09F0 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09F8 0EE0 0000]
 call  DMCSR    0060 [09F8 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A00 0EE0 0000]
 call  DMCSR    0060 [0A00 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A08 0EE0 0000]
 call  DMCSR    0060 [0A08 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0006]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A10 0EE0 0000]
 call  DMCSR    0060 [0A10 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0007]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [0A18 0EE0 0000]
@@ -4314,7 +4178,6 @@ fn    dm_setTextAttr [0000 0000 0003]
 call  DMCSR    004B [0000 0000 0003] -> 0000
 fn    dm_drawAt [0A3A 0EE0 0000]
 call  DMCSR    0060 [0A3A 0EE0 0000] -> 0000
-fn    hangman_showResultMessage [137A 1386]
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -4343,7 +4206,6 @@ fn    dm_drawLine [0000]
 call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_drawPressAnyKey
 fn    hangman_drawWordBlanks [005C]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
@@ -4477,7 +4339,6 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_delayLoop [1388 0000]
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -4925,13 +4786,10 @@ fn    dm_drawBitmap [FFFF 0345]
 call  DMCSR    001C [FFFF 0345] -> 0000
 fn    dm_drawBitmap [FFFF 035C]
 call  DMCSR    001C [FFFF 035C] -> 0000
-fn    hangman_drawHangmanFigure
-fn    hangman_drawWrongGuess [0000]
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_drawHangmanParts
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0002 0003]
@@ -4952,28 +4810,24 @@ fn    dm_getDialogField [1424 0018 01C2]
 call  DMCSR    005F [1424 0018 01C2] -> 0000
 fn    dm_setDialogField [01F4 012C 0082 0082 0000]
 call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0946 0EE0 0000]
 call  DMCSR    0060 [0946 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0001]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [094E 0EE0 0000]
 call  DMCSR    0060 [094E 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0002]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0964 0EE0 0000]
 call  DMCSR    0060 [0964 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0003]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0000 0002]
@@ -4984,14 +4838,12 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [098A 0EE0 0000]
 call  DMCSR    0060 [098A 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0004]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0005]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -5006,7 +4858,6 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    hangman_drawHangmanStage [0A20 0000]
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]

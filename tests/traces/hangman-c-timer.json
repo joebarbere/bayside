@@ -1,0 +1,6 @@
+{"word_addr": "0xAB92",
+ "returns": [
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Game: OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Players: OK"}],
+ "events": [[6, 3], [6, 4], ["word"], ["key", " "]],
+ "comment": "type-6 events reach hangman_handleTimerEvent (0000:239A): subtype 3 -> dm_checkSpell, subtype 4 -> dm_getTick poll; then win a word"}
