@@ -1,0 +1,8 @@
+{"word_addr": "0xAB92",
+ "returns": [
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Game: OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Players: OK"},
+  {"on": ["SPELL", "0x2"], "ret": 0, "poke": {"AB92": "whore"},
+   "note": "SPELL knows the word but it fails the filter -> playWord gives up (-1)"}],
+ "events": [],
+ "comment": "area D: a real word that the profanity filter rejects ends word choice with -1"}

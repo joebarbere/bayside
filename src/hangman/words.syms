@@ -1,0 +1,5 @@
+# Area D (word choice) DGROUP symbols: OFFSET name  # comment
+139A g_waitMessage      # "Please wait while a word is chosen..." (27A3/2778/2864)
+13C0 g_firstLetterFreq  # 25 words: cumulative rand() thresholds for the first letter (260F)
+13F2 g_nextLetterFreq   # 25 words: same for following letters (2702)
+A86A g_suggestBuf       # SPELL suggestion list, NUL-separated strings (2591)

@@ -1,0 +1,13 @@
+{"word_addr": "0xAB92",
+ "defaults": {"SPELL:0x2": "0xFFFF"},
+ "returns": [
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Game: OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Players: OK"},
+  {"on": ["SPELL", "0x3"], "after": 250, "ret": 5,
+   "poke": {"A86A": "abc", "A86E": "anusxxxxx", "A878": "Bxxxxxxxx",
+            "A882": "planetary", "A88C": "zzzzzzzzz"},
+   "note": "251st suggestion call: 5 suggestions; wrong length, filtered, not lower case, PLANETARY (taken)"},
+  {"on": ["SPELL", "0x3"], "after": 3, "ret": "0xFFFE",
+   "note": "SPELL suggest error during the second word -> word choice gives up"}],
+ "events": [["word"], ["key", " "]],
+ "comment": "area D: SPELL never knows the generated words (dots blink past 37 tries), first word comes from the suggestion list; second word: suggestion error -> playWord -1"}
