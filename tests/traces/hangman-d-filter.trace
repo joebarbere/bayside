@@ -1,0 +1,510 @@
+int21 21/30    3000 -> 1E03
+int21 21/4A    4A00
+fn    _cinit
+int21 21/30    3000 -> 1E03
+int21 21/35    3500
+int21 21/25    2500
+int21 21/44    4400
+int21 21/44    4400
+int21 21/44    4400
+int21 21/44    4400
+int21 21/44    4400
+fn    _crt_printStr
+fn    _crt_printMsg
+fn    _setargv
+fn    _crt_sbrk
+fn    _setenvp
+fn    dm_initCursor
+fn    dm_loadCursor
+inte0 DMCSR    0206 res='DMCSR' -> 0001
+call  DMCSR    00D5 -> 0000
+fn    dm_cursorInit
+call  DMCSR    00D6 -> 0000
+fn    dm_loadDmguf
+inte0 DMGUF    0206 res='DMGUF' -> 0001
+inte0 PRGUF    0208 res='PRGUF' -> 0001
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_loadSpell
+inte0 SPELL    0206 res='SPELL' -> 0001
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:00.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0000]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _srand [STK]
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    dm_setAppTitle [0EFA]
+call  DMCSR    0100 [0EFA] -> 0000
+fn    dm_initApp
+inte0 DESK     020A -> 0000
+fn    dm_setBorder
+call  DMCSR    006A -> 0000
+fn    dm_showStatusBar
+call  DMCSR    0047 -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getScreenWidth [0122]
+call  DMCSR    003F [0122] -> 0000
+fn    dm_getScreenHeight [0158]
+call  DMCSR    0041 [0158] -> 0000
+fn    dm_setCursorPos [0000 0000]
+call  DMCSR    0044 [0000 0000] -> 0000
+fn    dm_setBackground
+call  DMCSR    006C -> 0000
+fn    dm_multiply [0294]
+call  DMCSR    0043 [0294] -> 0000
+fn    dm_divide [0064]
+call  DMCSR    0042 [0064] -> 0000
+fn    dm_defineMenu [FFFF 0000 1EDC 1564 0000]
+call  DMCSR    005A [FFFF 0000 1EDC 1564 0000] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_setCursorPos [0960 0024]
+call  DMCSR    0044 [0960 0024] -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_drawString [0F0C]
+call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_setTitle [0EEC]
+call  DMGUF    000B [0EEC] -> 0000
+fn    dm_getTitle [0EEC]
+call  DMGUF    000C [0EEC] -> 0000
+fn    _sscanf [0000 0000 DGRP ABA8 005A]
+fn    dm_msgBox [0EBA]
+call  DMCSR    00E9 [0EBA] -> 0000
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0CA4]
+call  DMCSR    00E3 [0CA4] -> 0000
+fn    dm_getFormResult [0CA4]
+call  DMCSR    00E4 [0CA4] -> 0000
+fn    dm_getFormResult [0CA4]
+call  DMCSR    00E4 [0CA4] -> 0000
+fn    dm_getFormResult [0CA4]
+call  DMCSR    00E4 [0CA4] -> F56E   # script: Define Game: OK
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _atoi [10D4]
+fn    _atoi [10D8]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    _strncpy [STK ADF0]
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0DA8]
+call  DMCSR    00E3 [0DA8] -> 0000
+fn    dm_getFormResult [0DA8]
+call  DMCSR    00E4 [0DA8] -> 0000
+fn    dm_getFormResult [0DA8]
+call  DMCSR    00E4 [0DA8] -> 0000
+fn    dm_getFormResult [0DA8]
+call  DMCSR    00E4 [0DA8] -> F56E   # script: Define Players: OK
+fn    _strncpy [ADF0 STK]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_loadBitmap [00CA]
+call  DMCSR    001B [00CA] -> 0000
+fn    dm_loadBitmap [00DE]
+call  DMCSR    001B [00DE] -> 0000
+fn    dm_loadBitmap [00F2]
+call  DMCSR    001B [00F2] -> 0000
+fn    dm_loadBitmap [0106]
+call  DMCSR    001B [0106] -> 0000
+fn    dm_loadBitmap [011A]
+call  DMCSR    001B [011A] -> 0000
+fn    dm_loadBitmap [012E]
+call  DMCSR    001B [012E] -> 0000
+fn    dm_loadBitmap [0142]
+call  DMCSR    001B [0142] -> 0000
+fn    dm_loadBitmap [0156]
+call  DMCSR    001B [0156] -> 0000
+fn    dm_loadBitmap [016A]
+call  DMCSR    001B [016A] -> 0000
+fn    dm_loadBitmap [017E]
+call  DMCSR    001B [017E] -> 0000
+fn    dm_loadBitmap [0192]
+call  DMCSR    001B [0192] -> 0000
+fn    dm_loadBitmap [01A6]
+call  DMCSR    001B [01A6] -> 0000
+fn    dm_loadBitmap [01BA]
+call  DMCSR    001B [01BA] -> 0000
+fn    dm_loadBitmap [01CE]
+call  DMCSR    001B [01CE] -> 0000
+fn    dm_loadBitmap [01E2]
+call  DMCSR    001B [01E2] -> 0000
+fn    dm_loadBitmap [01F6]
+call  DMCSR    001B [01F6] -> 0000
+fn    dm_loadBitmap [020A]
+call  DMCSR    001B [020A] -> 0000
+fn    dm_loadBitmap [021E]
+call  DMCSR    001B [021E] -> 0000
+fn    dm_loadBitmap [0232]
+call  DMCSR    001B [0232] -> 0000
+fn    dm_loadBitmap [0246]
+call  DMCSR    001B [0246] -> 0000
+fn    dm_loadBitmap [025A]
+call  DMCSR    001B [025A] -> 0000
+fn    dm_loadBitmap [026E]
+call  DMCSR    001B [026E] -> 0000
+fn    dm_loadBitmap [0282]
+call  DMCSR    001B [0282] -> 0000
+fn    dm_loadBitmap [0296]
+call  DMCSR    001B [0296] -> 0000
+fn    dm_loadBitmap [02AA]
+call  DMCSR    001B [02AA] -> 0000
+fn    dm_loadBitmap [02BE]
+call  DMCSR    001B [02BE] -> 0000
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0001 0002]
+call  DMCSR    004A [0001 0002] -> 0000
+fn    dm_defineMenu [0064 0294 0F3C 0B2C 0001]
+call  DMCSR    005A [0064 0294 0F3C 0B2C 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0000]
+call  DMCSR    004B [0000 0001 0000] -> 0000
+fn    dm_setColor [0003 0001]
+call  DMCSR    004A [0003 0001] -> 0000
+fn    dm_setCursorPos [0064 0294]
+call  DMCSR    0044 [0064 0294] -> 0000
+fn    dm_drawString [10DC]
+call  DMCSR    0052 [10DC] s0='             SCOREBOARD               ' -> 0000
+fn    dm_setCursorPos [0064 0528]
+call  DMCSR    0044 [0064 0528] -> 0000
+fn    dm_drawString [1104]
+call  DMCSR    0052 [1104] s0='            CURRENT GAME              ' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0370]
+call  DMCSR    0044 [00C8 0370] -> 0000
+fn    dm_drawString [112C]
+call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
+fn    dm_initScrollbar [0ED8]
+call  DMCSR    002D [0ED8] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    _rand
+fn    _crt_lmul
+fn    dm_waitReady
+call  DMCSR    00F8 -> 0000
+fn    _strlen [139A]
+fn    dm_openDialog [0834 0D8E 0E74 0294]
+call  DMCSR    0061 [0834 0D8E 0E74 0294] -> 0000
+fn    dm_openDialogEx [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0062 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_setColor [0001 0000]
+call  DMCSR    004A [0001 0000] -> 0000
+fn    dm_setCursorPos [0834 0DC0]
+call  DMCSR    0044 [0834 0DC0] -> 0000
+fn    dm_drawString [139A]
+call  DMCSR    0052 [139A] s0='Please wait while a word is chosen...' -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setCursorPos [0834 0E9C]
+call  DMCSR    0044 [0834 0E9C] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    _rand
+fn    _crt_lmul
+fn    dm_drawChar [002E]
+call  DMCSR    0051 [002E] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_spellCheckWord [AB92]
+call  SPELL    0002 [AB92] s0='txufwirco' -> 0000   # script: SPELL knows the word but it fails the filter -> playWord gives up (-1)
+fn    _strncmp [AB93 2185 0003]
+fn    dm_scrollContent
+call  DMCSR    00F7 -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    _strncpy [STK 124C]
+fn    dm_msgBox [0EC0]
+call  DMCSR    00E9 [0EC0] -> 0000
+fn    dm_initWindow [0000]
+call  DMCSR    0030 [0000] -> 0000
+fn    dm_saveBitmap [0000 00CA]
+call  DMCSR    001E [0000 00CA] -> 0000
+fn    dm_saveBitmap [0000 00DE]
+call  DMCSR    001E [0000 00DE] -> 0000
+fn    dm_saveBitmap [0000 00F2]
+call  DMCSR    001E [0000 00F2] -> 0000
+fn    dm_saveBitmap [0000 0106]
+call  DMCSR    001E [0000 0106] -> 0000
+fn    dm_saveBitmap [0000 011A]
+call  DMCSR    001E [0000 011A] -> 0000
+fn    dm_saveBitmap [0000 012E]
+call  DMCSR    001E [0000 012E] -> 0000
+fn    dm_saveBitmap [0000 0142]
+call  DMCSR    001E [0000 0142] -> 0000
+fn    dm_saveBitmap [0000 0156]
+call  DMCSR    001E [0000 0156] -> 0000
+fn    dm_saveBitmap [0000 016A]
+call  DMCSR    001E [0000 016A] -> 0000
+fn    dm_saveBitmap [0000 017E]
+call  DMCSR    001E [0000 017E] -> 0000
+fn    dm_saveBitmap [0000 0192]
+call  DMCSR    001E [0000 0192] -> 0000
+fn    dm_saveBitmap [0000 01A6]
+call  DMCSR    001E [0000 01A6] -> 0000
+fn    dm_saveBitmap [0000 01BA]
+call  DMCSR    001E [0000 01BA] -> 0000
+fn    dm_saveBitmap [0000 01CE]
+call  DMCSR    001E [0000 01CE] -> 0000
+fn    dm_saveBitmap [0000 01E2]
+call  DMCSR    001E [0000 01E2] -> 0000
+fn    dm_saveBitmap [0000 01F6]
+call  DMCSR    001E [0000 01F6] -> 0000
+fn    dm_saveBitmap [0000 020A]
+call  DMCSR    001E [0000 020A] -> 0000
+fn    dm_saveBitmap [0000 021E]
+call  DMCSR    001E [0000 021E] -> 0000
+fn    dm_saveBitmap [0000 0232]
+call  DMCSR    001E [0000 0232] -> 0000
+fn    dm_saveBitmap [0000 0246]
+call  DMCSR    001E [0000 0246] -> 0000
+fn    dm_saveBitmap [0000 025A]
+call  DMCSR    001E [0000 025A] -> 0000
+fn    dm_saveBitmap [0000 026E]
+call  DMCSR    001E [0000 026E] -> 0000
+fn    dm_saveBitmap [0000 0282]
+call  DMCSR    001E [0000 0282] -> 0000
+fn    dm_saveBitmap [0000 0296]
+call  DMCSR    001E [0000 0296] -> 0000
+fn    dm_saveBitmap [0000 02AA]
+call  DMCSR    001E [0000 02AA] -> 0000
+fn    dm_saveBitmap [0000 02BE]
+call  DMCSR    001E [0000 02BE] -> 0000
+fn    dm_setTimeout [00B4]
+call  DMCSR    0018 [00B4] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_unloadSpell
+fn    dm_spellCleanup
+call  SPELL    0014 -> 0000
+inte0 SPELL    0207 res='SPELL' -> 0000
+fn    dm_unloadRes
+inte0 DMGUF    0207 res='DMGUF' -> 0000
+fn    dm_cleanupCursor
+fn    dm_cursorCleanup
+call  DMCSR    00D7 -> 0000
+fn    dm_unloadCursor
+inte0 DMCSR    0207 res='DMCSR' -> 0000
+fn    _exit [0000]
+fn    _crt_printMsg
+fn    _crt_printMsg
+fn    _crt_printMsg
+fn    _crt_printStr
+fn    _nullcheck
+fn    _amsg_exit
+int21 21/25    2500
+exit  21/4C    4C00
+# end: exit

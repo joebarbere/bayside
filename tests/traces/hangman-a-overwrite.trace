@@ -27,7 +27,6 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] event='3:F501' -> 0000
 fn    dm_loadSpell
 inte0 SPELL    0206 res='SPELL' -> 0001
-fn    hangman_initGameState
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -349,10 +348,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
 fn    _crt_lmul
-fn    hangman_playWord [AB92 0009]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
-fn    hangman_showWaitMessage
 fn    _strlen [139A]
 fn    dm_openDialog [0834 0D8E 0E74 0294]
 call  DMCSR    0061 [0834 0D8E 0E74 0294] -> 0000
@@ -368,115 +365,60 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
-fn    hangman_getWordFlags
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_showLetterAnim [AB92 0009]
-fn    hangman_animFlash [13C0]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0074]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0078]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0074]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0072]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006E]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0072]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0064]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0067]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006C]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0070]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0076]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0075]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0066]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0077]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0079]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0069]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0072]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0063]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0064]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006F]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
-fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    hangman_wordAnimEnter [AB92]
 fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='txufwirco' -> 0000
-fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 215C 0006]
 fn    _strncmp [AB93 2163 0005]
 fn    _strncmp [AB93 2169 0003]
 fn    _strupr [AB92]
-fn    hangman_setWordFlags [0003]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_drawScoreUpdate [0000]
 fn    _strlen [139A]
 fn    dm_closeDialog [0834 0D8E 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0D8E 0E74 0294 22D2] -> 0000
@@ -1772,10 +1714,8 @@ fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_fillRect [09C4 06E0 04B0 00DC 0000]
 call  DMCSR    006E [09C4 06E0 04B0 00DC 0000] -> 0000
-fn    hangman_playWord [AB92 0009]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
-fn    hangman_showWaitMessage
 fn    _strlen [139A]
 fn    dm_openDialog [0834 0DFC 0E74 0294]
 call  DMCSR    0061 [0834 0DFC 0E74 0294] -> 0000
@@ -1791,75 +1731,40 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setCursorPos [0834 0F0A]
 call  DMCSR    0044 [0834 0F0A] -> 0000
-fn    hangman_getWordFlags
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_showLetterAnim [AB92 0009]
-fn    hangman_animFlash [13C0]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0061]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0061]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0074]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0073]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0063]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0061]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0069]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0072]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0074]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0065]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
-fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    hangman_wordAnimEnter [AB92]
 fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='aatsairte' -> 0000
-fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 1FEA 0003]
 fn    _strncmp [AB93 1FEE 0007]
 fn    _strncmp [AB93 1FF6 0003]
 fn    _strupr [AB92]
-fn    hangman_setWordFlags [0003]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_drawScoreUpdate [0000]
 fn    _strlen [139A]
 fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
@@ -2772,10 +2677,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
 fn    _crt_lmul
-fn    hangman_playWord [AB92 0006]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
-fn    hangman_showWaitMessage
 fn    _strlen [139A]
 fn    dm_openDialog [0834 0DFC 0E74 0294]
 call  DMCSR    0061 [0834 0DFC 0E74 0294] -> 0000
@@ -2791,48 +2694,26 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setCursorPos [0834 0F0A]
 call  DMCSR    0044 [0834 0F0A] -> 0000
-fn    hangman_getWordFlags
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_showLetterAnim [AB92 0006]
-fn    hangman_animFlash [13C0]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0073]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0061]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0072]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0067]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0075]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0067]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
-fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    hangman_wordAnimEnter [AB92]
 fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sargug' -> 0000
-fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 212A 0003]
 fn    _strncmp [AB93 212E 0004]
 fn    _strncmp [AB93 2133 0004]
@@ -2844,10 +2725,8 @@ fn    _strncmp [AB93 2149 0006]
 fn    _strncmp [AB93 2150 0006]
 fn    _strncmp [AB93 2157 0004]
 fn    _strupr [AB92]
-fn    hangman_setWordFlags [0003]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_drawScoreUpdate [0000]
 fn    _strlen [139A]
 fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
@@ -3694,10 +3573,8 @@ fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_fillRect [09C4 06E0 04B0 00DC 0000]
 call  DMCSR    006E [09C4 06E0 04B0 00DC 0000] -> 0000
-fn    hangman_playWord [AB92 0006]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
-fn    hangman_showWaitMessage
 fn    _strlen [139A]
 fn    dm_openDialog [0834 0DFC 0E74 0294]
 call  DMCSR    0061 [0834 0DFC 0E74 0294] -> 0000
@@ -3713,62 +3590,36 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setCursorPos [0834 0F0A]
 call  DMCSR    0044 [0834 0F0A] -> 0000
-fn    hangman_getWordFlags
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_showLetterAnim [AB92 0006]
-fn    hangman_animFlash [13C0]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006D]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0074]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0069]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006E]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006C]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006D]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0065]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
-fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    hangman_wordAnimEnter [AB92]
 fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mtinle' -> 0000
-fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 20B0 0007]
 fn    _strncmp [AB93 20B8 0005]
 fn    _strncmp [AB93 20BE 0005]
 fn    _strncmp [AB93 20C4 0007]
 fn    _strncmp [AB93 20CC 0006]
 fn    _strupr [AB92]
-fn    hangman_setWordFlags [0003]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_drawScoreUpdate [0000]
 fn    _strlen [139A]
 fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
@@ -4660,10 +4511,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
 fn    _crt_lmul
-fn    hangman_playWord [AB92 0004]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
-fn    hangman_showWaitMessage
 fn    _strlen [139A]
 fn    dm_openDialog [0834 0DFC 0E74 0294]
 call  DMCSR    0061 [0834 0DFC 0E74 0294] -> 0000
@@ -4679,47 +4528,29 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setCursorPos [0834 0F0A]
 call  DMCSR    0044 [0834 0F0A] -> 0000
-fn    hangman_getWordFlags
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_showLetterAnim [AB92 0004]
-fn    hangman_animFlash [13C0]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0072]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0065]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [0065]
-fn    hangman_animSequence [STK]
-fn    hangman_animFlash [13F2]
 fn    _rand
 fn    _crt_lmul
-fn    hangman_animFrame [006C]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
-fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
-fn    hangman_wordAnimEnter [AB92]
 fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='reel' -> 0000
-fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 2114 0003]
 fn    _strncmp [AB93 2118 0005]
 fn    _strncmp [AB93 211E 0005]
 fn    _strncmp [AB93 2124 0005]
 fn    _strupr [AB92]
-fn    hangman_setWordFlags [0003]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
-fn    hangman_drawScoreUpdate [0000]
 fn    _strlen [139A]
 fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
