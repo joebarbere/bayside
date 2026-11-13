@@ -224,10 +224,17 @@ make play           # interactive DOSBox-X window with the rebuilt Hangman
 ### PDM <-> DeskMate interface (verified with tools/pdm_trace.py)
 - INT E0h AX=0206h loads a resource by name (DS:DX) and writes its far entry
   point to ES:BX; 0207h unloads; 0208h queries.
-- UI services are far calls into DMCSR with AX = code & 0FFFh (args at SS:BP);
+- UI services are far calls into DMCSR; DMCSR dispatches on AX & 0FFFh (args at SS:BP);
   DMGUF/PRGUF calls take args at SS:BX+6. NOT direct INT E0h.
-- DMCSR.R89 and DMGUF.R89 (the main UI libraries) are not yet disassembled.
-- The harness's DeskMate event queue / SPELL / keyToChar behaviour is a MODEL
-  derived from HANGMAN's call sites (documented in tools/pdm_trace.py), not
-  verified against DMCSR. Passing traces + a DOSBox playthrough together are
-  the bar.
+- Service dispatch in DMCSR/DMGUF/PRGUF/SPELL is mapped in
+  research/docs/dmcsr-services.md; `tools/resdis.py DMCSR <code>` disassembles
+  any service handler. Check a harness model against the handler before
+  relying on it.
+- Verified against the handlers and modelled to match: the event queue
+  (0014h peek holds an event, 0013h get blocks then consumes, 0016h flush
+  DISCARDS the held event), keyToChar (PRGUF 0023h), the DMCSR version
+  (00D5h = 036Fh), SPELL return codes. Scenario events are input given while
+  the program blocks in get; mark an event "ahead" (["key","A","ahead"]) for
+  type-ahead that peeks can see. Drawing/dialog/form services are not read
+  (traces check their arguments only). Passing traces + a DOSBox playthrough
+  together are still the bar.

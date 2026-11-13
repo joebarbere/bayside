@@ -31,6 +31,7 @@ summary goes to stderr.
 
 import argparse
 import json
+import re
 import struct
 import sys
 from dataclasses import dataclass, field
@@ -62,6 +63,10 @@ REGS = {"ax": UC_X86_REG_AX, "bx": UC_X86_REG_BX, "cx": UC_X86_REG_CX,
 # PDM needs to make progress -- each entry is a documented fact about the
 # DeskMate API, so annotate where it came from.
 RESOURCE_RETURNS = {
+    # DMCSR version (handler 0000:0653: mov ax,036Fh; and ah,0Fh). HANGMAN's
+    # glue (0000:38C6) picks its service-code mask from AL: AL > 37h ->
+    # EFFFh, so codes reach DMCSR as 20xxh, as in real DeskMate.
+    ("DMCSR", 0x00D5): 0x036F,
 }
 
 # Where the C-level arguments of a resource call live when control reaches
@@ -132,9 +137,12 @@ class PdmTracer:
         self.word_addr = 0
         self.defaults = {}
         self.clock_reads = 0
-        self.key_yielded = False
+        self.held = None            # DMCSR's held (peeked) event
+        self.stop_after = None
         if isinstance(script, dict):
-            self.events_in = [self.parse_event(e) for e in script.get("events", [])]
+            evs = script.get("events", [])
+            self.events_in = [self.parse_event(e) for e in evs]
+            self.events_ahead = [len(e) > 2 and e[2] == "ahead" for e in evs]
             self.word_addr = num(script.get("word_addr", 0))
             # "defaults": {"DMCSR:0xE4": "0xF56E"} -- return value for every
             # such call not answered by a "returns" step
@@ -144,6 +152,7 @@ class PdmTracer:
             script = script.get("returns", [])
         else:
             self.events_in = []
+            self.events_ahead = []
         self.script = list(script or [])
         self.exit_code = None
         self.recent = []
@@ -304,6 +313,10 @@ class PdmTracer:
         ip = self.uc.reg_read(UC_X86_REG_IP)
         name = self.resources.get(cs, f"?{cs:04X}")
         ax, ss = self.reg("ax"), self.reg("ss")
+        if name == "DMCSR":
+            # DMCSR dispatches on AX & 0FFFh (0000:0475); the top nibble
+            # (2 from HANGMAN) is passed to the handler, not part of the code
+            ax &= 0x0FFF
         # Where the PDM-side glue leaves the C arguments differs per gateway
         # (see FRAME_SOURCE). Log the C argument words, not glue scratch.
         reg, skip, retoff = FRAME_SOURCE.get(name, DEFAULT_FRAME_SOURCE)
@@ -336,6 +349,8 @@ class PdmTracer:
         ev.ret = ret
         self.setreg("ax", ret)
         self.emit(ev)
+        if self.stop_after:
+            raise Stop(self.stop_after)
 
     def on_function_entry(self, name):
         """Deep trace: entry of an original (untranslated) function. All code
@@ -376,6 +391,7 @@ class PdmTracer:
             else:
                 letters = [c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if c not in word][:arg]
             self.events_in[0:0] = [(1, ord(c)) for c in letters]
+            self.events_ahead[0:1] = [False] * len(letters)
 
     @staticmethod
     def parse_event(e):
@@ -417,44 +433,50 @@ class PdmTracer:
         A step fires on the (after+1)-th matching call once it reaches the
         head of the script. Numbers may be ints or hex strings.
         """
-        # DeskMate event queue MODEL (not DMCSR's verified behaviour; DMCSR
-        # is not disassembled yet). Both calls fill the 8-byte record at
-        # arg0 (DS-relative): type byte, then a word (key code / menu id).
-        #   0013h get : pops the queue head (empty -> type 0)
-        #   0014h peek: shows the head event until the program yields
-        #               (0016h); after that it shows type 0 until the head
-        #               is fetched.
-        # Derived from all HANGMAN call sites: delayLoop (0000:222F) stops
-        # on any non-zero peek; processInput (0000:086A) yields while the
-        # peek shows type 1 and fetches with 0013h after a type-0 peek;
-        # the word-generation poll (0000:2F96) yields on non-zero;
-        # checkDmApiEvent (0000:1564) only takes type-1 FD14/FD17.
+        # DeskMate event queue, as implemented by DMCSR.R89 (handlers
+        # 0000:2A31 peek, 0000:2B9B get, 0000:2BD5 flush; see
+        # research/docs/dmcsr-services.md). The record is 7 bytes at arg0
+        # (DS-relative): type byte, key/menu word, word, word.
+        #   0014h peek : non-blocking. Returns the held event if there is
+        #                one; otherwise polls the input sources and, if one
+        #                has an event, holds it. Nothing -> type 0. A type-1
+        #                (key) event gets FFFFh in its second word.
+        #   0013h get  : peeks until an event exists (BLOCKS), then consumes
+        #                it (type 4 is not consumed).
+        #   0016h flush: discards the held event without returning it.
+        # Scenario events are input the user gives while the program waits
+        # in get; an event marked "ahead" was typed ahead, so peeks see it.
+        # When the script has no more input, get would block forever: stop.
         if name == "DMCSR" and ax in (0x0013, 0x0014) and ev.frame:
             ptr = ev.frame[0]
-            if ax == 0x0013:
-                self.expand_event_macros()      # only once a key is fetched
-            head = self.events_in[0] if self.events_in else None
-            if head is not None and isinstance(head[0], str):
-                head = (1, 0)                   # unexpanded macro = key pending
-            if head is not None and ax == 0x0014 and self.key_yielded:
-                head = None
-            rec = bytes(8) if head is None else bytes(
-                [head[0], head[1] & 0xFF, head[1] >> 8]) + bytes(5)
+            if self.held is None and self.events_in:
+                if ax == 0x0013 or self.events_ahead[0]:
+                    self.expand_event_macros()
+                    if self.events_in:
+                        self.held = self.events_in.pop(0)
+                        self.events_ahead.pop(0)
+            if self.held is None and ax == 0x0013:
+                self.stop_after = "idle: get (DMCSR 0013h) blocks; the script has no more input"
+            rec = bytes(7)
+            if self.held is not None:
+                t, w = self.held
+                rec = bytes([t, w & 0xFF, w >> 8]) + (b"\xff\xff" if t == 1 else bytes(2)) + bytes(2)
+                ev.strings["event"] = f"{t}:{w:04X}"
+                if ax == 0x0013 and t != 4:
+                    self.held = None
             self.wr(self.reg("ds"), ptr, rec)
-            if head is not None:
-                ev.strings["event"] = f"{head[0]}:{head[1]:04X}"
-            if ax == 0x0013 and self.events_in:
-                self.events_in.pop(0)
-                self.key_yielded = False
             return 0
         if name == "DMCSR" and ax == 0x0016:
-            if self.events_in:
-                self.key_yielded = True
+            self.held = None
             return 0
-        # dm_keyToChar model: key code low byte, upper-cased
+        # dm_keyToChar: DMGUF forwards 0023h to PRGUF.RES (0000:01CA): the
+        # key word goes through the DOS country case-map routine (changes
+        # only AL >= 80h; identity here), then AL a-z is upper-cased. AH
+        # passes through unchanged.
         if name == "DMGUF" and ax == 0x0023 and ev.frame:
-            c = ev.frame[0] & 0xFF
-            return c - 32 if 0x61 <= c <= 0x7A else c
+            k = ev.frame[0]
+            c = k & 0xFF
+            return (k & 0xFF00) | (c - 32 if 0x61 <= c <= 0x7A else c)
         if self.script:
             step = self.script[0]
             want_name, want_ax = step["on"]
@@ -611,7 +633,7 @@ def main():
                          "format: OFFSET name)")
     ap.add_argument("--deep-skip", metavar="LIST",
                     help="functions to leave out of the deep trace (the "
-                         "replaced.txt list: C-to-C calls bypass the original "
+                         "functions implemented in C, build/hangman/in_c.txt: C-to-C calls bypass the original "
                          "address, so they cannot be compared)")
     ap.add_argument("--peek", action="append", default=[], metavar="OFF:LEN",
                     help="print DGROUP bytes at OFF (hex) when tracing stops")
@@ -646,8 +668,8 @@ def main():
           file=sys.stderr)
     if args.trace:
         with open(args.trace, "w") as f:
-            for ev in t.events:
-                f.write(normalize(ev, args.frames) + "\n")
+            for line in fold_repeats([normalize(ev, args.frames) for ev in t.events]):
+                f.write(line + "\n")
             f.write(f"# end: {'exit' if t.exit_code is not None else 'idle' if (reason or '').startswith('idle') else reason}\n")
     if args.out:
         with open(args.out, "w") as f:
@@ -687,6 +709,28 @@ def normalize(ev, frames=True):
     if "script" in ev.strings:
         s += f"   # script: {ev.strings['script']}"
     return s
+
+
+def fold_repeats(lines, max_period=32):
+    """Fold a block of lines repeated back to back (a delay or polling loop)
+    into '#{ xN' / first iteration / '#}'. Clock readings (t='...') are
+    ignored when comparing iterations, since every pass of a delay loop
+    reads a later time. A changed iteration count still shows as a diff."""
+    keys = [re.sub(r" t='[^']*'", "", x) for x in lines]
+    out, i, n = [], 0, len(lines)
+    while i < n:
+        for p in range(1, max_period + 1):
+            if keys[i:i + p] == keys[i + p:i + 2 * p]:
+                k = 2
+                while keys[i:i + p] == keys[i + k * p:i + (k + 1) * p]:
+                    k += 1
+                out += [f"#{{ x{k}"] + lines[i:i + p] + ["#}"]
+                i += k * p
+                break
+        else:
+            out.append(lines[i])
+            i += 1
+    return out
 
 
 def collapse(lines):

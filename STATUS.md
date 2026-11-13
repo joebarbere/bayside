@@ -42,7 +42,7 @@
 | INSTALL.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 210 functions, 5 segments, 13 relocs |
 | DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); 74 functions (41 named); CRT chain → _main; config I/O to DMCSR.CFG |
 | INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | 828-byte chain loader; validates DM89 sig then EXEC's DESK.EXE |
-| *.R89 (DMCSR, DMGUF, DMDB) | :white_large_square: | :white_large_square: | :white_large_square: | Not covered by the batch scripts. DMCSR.R89 (80 KB) is the main UI library every PDM far-calls into |
+| *.R89 (DMCSR, DMGUF, DMDB) | :white_large_square: | :white_large_square: | :white_large_square: | Not covered by the batch scripts. DMCSR.R89 (80 KB) is the main UI library every PDM far-calls into. Service dispatch for DMCSR/DMGUF/PRGUF/SPELL mapped and the event, keyToChar, version and SPELL services read: research/docs/dmcsr-services.md, tools/resdis.py |
 | *.RES (52 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 1056 functions, 59351 insns total; 48 MZ+DM89 + 3 plain MZ + 1 compressed data (TUTKBD.RES); DMFONT.RES largest (179 funcs); see disassembly/raw/res/ |
 | *.ACC (18 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 2141 functions total; DMHELP.ACC largest (223 funcs); 11 import dmguf; see disassembly/raw/acc/ |
 

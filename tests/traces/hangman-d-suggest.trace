@@ -4,11 +4,9 @@ fn    _cinit
 int21 21/30    3000 -> 1E03
 int21 21/35    3500
 int21 21/25    2500
+#{ x5
 int21 21/44    4400
-int21 21/44    4400
-int21 21/44    4400
-int21 21/44    4400
-int21 21/44    4400
+#}
 fn    _crt_printStr
 fn    _crt_printMsg
 fn    _setargv
@@ -17,14 +15,14 @@ fn    _setenvp
 fn    dm_initCursor
 fn    dm_loadCursor
 inte0 DMCSR    0206 res='DMCSR' -> 0001
-call  DMCSR    00D5 -> 0000
+call  DMCSR    00D5 -> 036F
 fn    dm_cursorInit
 call  DMCSR    00D6 -> 0000
 fn    dm_loadDmguf
 inte0 DMGUF    0206 res='DMGUF' -> 0001
 inte0 PRGUF    0208 res='PRGUF' -> 0001
 fn    dm_getEvent [STK]
-call  DMCSR    0014 [STK] event='1:0000' -> 0000
+call  DMCSR    0014 [STK] -> 0000
 fn    dm_loadSpell
 inte0 SPELL    0206 res='SPELL' -> 0001
 fn    _ftime [STK]
@@ -37,104 +35,20 @@ int21 21/2A    2A00 -> 2A01
 fn    _crt_getEnvItem [STK STK]
 int21 21/2C    2C00 t='12:00:00.00'
 fn    _crt_mktime [000A 0001 0001 000C 0000 0000]
+#{ x4
 fn    _crt_lmul
-fn    _crt_lmul
-fn    _crt_lmul
-fn    _crt_lmul
+#}
 fn    _tzset
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
+#{ x2
 fn    _isindst [STK]
-fn    _isindst [STK]
+#}
 fn    _srand [STK]
+#{ x44
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_setAppTitle [0EFA]
 call  DMCSR    0100 [0EFA] -> 0000
 fn    dm_initApp
@@ -169,10 +83,10 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_drawString [0F0C]
 call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    dm_drawString [0F20]
-call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_setTitle [0EEC]
@@ -188,10 +102,10 @@ fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
 call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
 fn    dm_showForm [0CA4]
 call  DMCSR    00E3 [0CA4] -> 0000
+#{ x2
 fn    dm_getFormResult [0CA4]
 call  DMCSR    00E4 [0CA4] -> 0000
-fn    dm_getFormResult [0CA4]
-call  DMCSR    00E4 [0CA4] -> 0000
+#}
 fn    dm_getFormResult [0CA4]
 call  DMCSR    00E4 [0CA4] -> F56E   # script: Define Game: OK
 fn    dm_setTimer [00B4]
@@ -209,10 +123,10 @@ fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
 call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
 fn    dm_showForm [0DA8]
 call  DMCSR    00E3 [0DA8] -> 0000
+#{ x2
 fn    dm_getFormResult [0DA8]
 call  DMCSR    00E4 [0DA8] -> 0000
-fn    dm_getFormResult [0DA8]
-call  DMCSR    00E4 [0DA8] -> 0000
+#}
 fn    dm_getFormResult [0DA8]
 call  DMCSR    00E4 [0DA8] -> F56E   # script: Define Players: OK
 fn    _strncpy [ADF0 STK]
@@ -375,46 +289,10 @@ fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
+#{ x20
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -423,26 +301,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='txufwirco' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='txufwirco' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -451,26 +313,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='aatsairte' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='aatsairte' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -479,26 +325,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dsargugni' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dsargugni' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -507,32 +337,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mleereelo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mleereelo' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -541,24 +349,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='fsonpisor' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='fsonpisor' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -567,28 +361,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mfoliobne' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mfoliobne' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -597,28 +373,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='depgengai' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='depgengai' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -627,24 +385,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='unuulinte' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='unuulinte' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -653,42 +397,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gurkerhae' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gurkerhae' -> 0000
+#{ x18
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -697,26 +409,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='adlaupulc' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='adlaupulc' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -725,26 +421,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dlantiemz' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dlantiemz' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -753,30 +433,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cuevdewgi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cuevdewgi' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -785,26 +445,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cconniiku' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cconniiku' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -813,24 +457,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='aeldaenok' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='aeldaenok' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -839,32 +469,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pliinoene' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pliinoene' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -873,30 +481,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='psehasdeh' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='psehasdeh' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -905,24 +493,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sserlerat' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sserlerat' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -931,36 +505,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ifecisorv' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ifecisorv' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -969,34 +517,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='iagraufot' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='iagraufot' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1005,26 +529,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hraclehna' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hraclehna' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1033,38 +541,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='aosoomliw' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='aosoomliw' -> 0000
+#{ x16
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1073,26 +553,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ialluosno' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ialluosno' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1101,28 +565,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='padostaop' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='padostaop' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1131,28 +577,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sapoiwguu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sapoiwguu' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1161,24 +589,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dcabcehos' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dcabcehos' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1187,34 +601,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ptumulecr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ptumulecr' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1223,36 +613,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='auttegath' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='auttegath' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1261,28 +625,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dromoedbe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dromoedbe' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1291,24 +637,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='panpevaay' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='panpevaay' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1317,32 +649,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gaxirlorr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gaxirlorr' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1351,32 +661,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='asroabfeo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='asroabfeo' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1385,36 +673,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='diuluarle' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='diuluarle' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1423,24 +685,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cwaultaur' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cwaultaur' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1449,30 +697,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bingaroud' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bingaroud' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1481,28 +709,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ahtalpaam' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ahtalpaam' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1511,38 +721,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hkiagdetz' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hkiagdetz' -> 0000
+#{ x16
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1551,26 +733,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='soatlutbe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='soatlutbe' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    _strlen [139A]
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
@@ -1582,38 +748,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='alurtudne' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='alurtudne' -> 0000
+#{ x16
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1622,26 +760,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='haehsieny' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='haehsieny' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1650,36 +772,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='petoascup' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='petoascup' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1688,28 +784,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dnewweigi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dnewweigi' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1718,30 +796,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='scutiildo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='scutiildo' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1750,32 +808,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='faayrisda' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='faayrisda' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1784,24 +820,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cnigwapga' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cnigwapga' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1810,28 +832,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='udeitques' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='udeitques' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1840,30 +844,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tquixiarn' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tquixiarn' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1872,26 +856,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gleemauni' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gleemauni' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1900,36 +868,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hionriinb' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hionriinb' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1938,28 +880,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dseableec' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dseableec' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1968,28 +892,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ceexalpii' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ceexalpii' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -1998,26 +904,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bnesbeole' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bnesbeole' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2026,28 +916,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='byierseat' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='byierseat' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2056,60 +928,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='odiemanna' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='odiemanna' -> 0000
+#{ x27
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2118,32 +940,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tneetlieb' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tneetlieb' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2152,30 +952,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tsapceori' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tsapceori' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2184,32 +964,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tmoasloih' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tmoasloih' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2218,40 +976,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='alneclaiy' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='alneclaiy' -> 0000
+#{ x17
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2260,24 +988,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dsigraoyr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dsigraoyr' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2286,30 +1000,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='clerseull' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='clerseull' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2318,34 +1012,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='awoyhunmu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='awoyhunmu' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2354,26 +1024,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='negceesra' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='negceesra' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2382,30 +1036,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='lruomtocs' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='lruomtocs' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2414,26 +1048,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='rmoahsoln' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='rmoahsoln' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2442,28 +1060,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tnigsetei' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tnigsetei' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2472,36 +1072,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='najtadjeo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='najtadjeo' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2510,32 +1084,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mnietpems' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mnietpems' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2544,28 +1096,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='colpauhco' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='colpauhco' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2574,30 +1108,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='calpuseta' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='calpuseta' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2606,26 +1120,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='creyopnir' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='creyopnir' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2634,28 +1132,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tatepreay' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tatepreay' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2664,30 +1144,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='vgehsitso' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='vgehsitso' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2696,36 +1156,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tomilnonx' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tomilnonx' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2734,26 +1168,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='vocsuvfut' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='vocsuvfut' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -2762,32 +1180,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gacwaewir' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gacwaewir' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    _strlen [139A]
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
@@ -2799,34 +1195,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ldossolni' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ldossolni' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -2835,28 +1207,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='utsogabmi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='utsogabmi' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -2865,38 +1219,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='iocenialn' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='iocenialn' -> 0000
+#{ x16
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -2905,28 +1231,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='yenodporm' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='yenodporm' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -2935,28 +1243,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mlecbable' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mlecbable' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -2965,34 +1255,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='fmuyveler' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='fmuyveler' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3001,40 +1267,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='anmacyuwa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='anmacyuwa' -> 0000
+#{ x17
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3043,26 +1279,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='irgeitmis' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='irgeitmis' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3071,32 +1291,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bxerutneo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bxerutneo' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3105,24 +1303,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pcacadehe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pcacadehe' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3131,28 +1315,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pabisboge' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pabisboge' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3161,28 +1327,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='suacuollo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='suacuollo' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3191,36 +1339,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tlaeporii' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tlaeporii' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3229,28 +1351,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ceetcaert' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ceetcaert' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3259,26 +1363,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tdolnusay' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tdolnusay' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3287,36 +1375,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='itcoblogm' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='itcoblogm' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3325,24 +1387,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='iehpottiu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='iehpottiu' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3351,24 +1399,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ctaliotne' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ctaliotne' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3377,28 +1411,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='buanartot' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='buanartot' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3407,32 +1423,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cvoovyelg' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cvoovyelg' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3441,26 +1435,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eesuplixc' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eesuplixc' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3469,28 +1447,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dtacaatto' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dtacaatto' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3499,24 +1459,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='epemestie' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='epemestie' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3525,40 +1471,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dnooresce' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dnooresce' -> 0000
+#{ x17
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3567,28 +1483,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='uwpiteecl' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='uwpiteecl' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3597,26 +1495,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mucneonha' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mucneonha' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3625,28 +1507,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='enloginir' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='enloginir' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3655,24 +1519,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='circeuvvu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='circeuvvu' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3681,32 +1531,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gzemoyief' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gzemoyief' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3715,24 +1543,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dnoatiins' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dnoatiins' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3741,32 +1555,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='toamulvau' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='toamulvau' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3775,24 +1567,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='onnosguto' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='onnosguto' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3801,26 +1579,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eysolorsi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eysolorsi' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3829,26 +1591,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tubaeveoq' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tubaeveoq' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3857,24 +1603,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dlaenyest' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dlaenyest' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3883,30 +1615,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='troolfeuy' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='troolfeuy' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -3915,28 +1627,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eutnuvron' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eutnuvron' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    _strlen [139A]
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
@@ -3948,44 +1642,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='iagteecin' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='iagteecin' -> 0000
+#{ x19
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -3994,26 +1654,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='meytiuyco' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='meytiuyco' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4022,28 +1666,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='fmamatasd' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='fmamatasd' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4052,30 +1678,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='smotiltin' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='smotiltin' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4084,24 +1690,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='riitlarri' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='riitlarri' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4110,34 +1702,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='uptipaecl' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='uptipaecl' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4146,32 +1714,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='broerxiro' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='broerxiro' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4180,34 +1726,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='potcedari' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='potcedari' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4216,40 +1738,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tyenuecya' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tyenuecya' -> 0000
+#{ x17
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4258,32 +1750,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ntiedrucp' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ntiedrucp' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4292,32 +1762,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='vnaacgama' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='vnaacgama' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4326,26 +1774,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='lloetraik' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='lloetraik' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4354,42 +1786,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sathennan' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sathennan' -> 0000
+#{ x18
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4398,28 +1798,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ndoehuwte' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ndoehuwte' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4428,24 +1810,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='rheclauno' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='rheclauno' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4454,34 +1822,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='matlofald' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='matlofald' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4490,24 +1834,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='atdonenmi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='atdonenmi' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4516,32 +1846,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='flomloert' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='flomloert' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4550,34 +1858,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='diehimnet' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='diehimnet' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4586,26 +1870,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cruelonra' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cruelonra' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4614,32 +1882,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='csercoceo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='csercoceo' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4648,36 +1894,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bgarniabx' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bgarniabx' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4686,28 +1906,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hvoobteso' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hvoobteso' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4716,26 +1918,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ranfiulgo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ranfiulgo' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4744,36 +1930,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='meexbetew' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='meexbetew' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4782,30 +1942,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tsedyesti' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tsedyesti' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4814,26 +1954,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ciquaetta' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ciquaetta' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4842,32 +1966,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tiitreetc' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tiitreetc' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4876,50 +1978,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='olaacfarn' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='olaacfarn' -> 0000
+#{ x22
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4928,28 +1990,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='nsadlicpe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='nsadlicpe' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4958,34 +2002,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='malyopmuh' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='malyopmuh' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -4994,28 +2014,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='apgietiir' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='apgietiir' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -5024,26 +2026,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hoerteaht' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hoerteaht' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -5052,34 +2038,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sissaical' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sissaical' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -5088,24 +2050,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ferpafbof' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ferpafbof' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -5114,26 +2062,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='nelyaarei' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='nelyaarei' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -5142,30 +2074,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sciguchan' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sciguchan' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    _strlen [139A]
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
@@ -5177,36 +2089,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bustascat' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bustascat' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5215,28 +2101,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='rnornohbe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='rnornohbe' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5245,24 +2113,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sgatigfee' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sgatigfee' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5271,26 +2125,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pikciivra' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pikciivra' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5299,30 +2137,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ccoaxotuy' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ccoaxotuy' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5331,26 +2149,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mdaennant' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mdaennant' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5359,38 +2161,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='jteolvoel' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='jteolvoel' -> 0000
+#{ x16
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5399,40 +2173,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='shiotouvc' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='shiotouvc' -> 0000
+#{ x17
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5441,28 +2185,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eittirgan' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eittirgan' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5471,30 +2197,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='rlelwaned' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='rlelwaned' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5503,30 +2209,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mpaegfaiy' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mpaegfaiy' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5535,40 +2221,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='piininmeb' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='piininmeb' -> 0000
+#{ x17
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5577,30 +2233,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pguedtiut' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pguedtiut' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5609,26 +2245,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tfariolke' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tfariolke' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5637,30 +2257,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cefoniing' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cefoniing' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5669,26 +2269,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mraamarah' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mraamarah' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5697,28 +2281,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tentasanc' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tentasanc' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5727,34 +2293,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dnilelren' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dnilelren' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5763,32 +2305,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pgilmaved' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pgilmaved' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5797,28 +2317,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='adobaesli' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='adobaesli' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5827,28 +2329,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dlaitdiys' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dlaitdiys' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5857,36 +2341,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ttarquiri' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ttarquiri' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5895,32 +2353,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='unnurapon' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='unnurapon' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5929,24 +2365,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='atcamyien' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='atcamyien' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -5955,50 +2377,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cnaowatya' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cnaowatya' -> 0000
+#{ x22
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6007,26 +2389,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='fanrolrob' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='fanrolrob' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6035,30 +2401,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='icouldemo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='icouldemo' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6067,34 +2413,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='btioleisr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='btioleisr' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6103,38 +2425,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sirxiobla' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sirxiobla' -> 0000
+#{ x16
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6143,26 +2437,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sruidoucr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sruidoucr' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6171,24 +2449,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tasyognar' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tasyognar' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6197,24 +2461,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='raehoendi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='raehoendi' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6223,26 +2473,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='prukloowa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='prukloowa' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6251,28 +2485,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='scotarmic' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='scotarmic' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6281,32 +2497,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='silseaceo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='silseaceo' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6315,32 +2509,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ealsimreu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ealsimreu' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -6349,44 +2521,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eutrirsel' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eutrirsel' -> 0000
+#{ x19
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    _strlen [139A]
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
@@ -6398,36 +2536,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='afnanreta' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='afnanreta' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6436,26 +2548,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='creeccewa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='creeccewa' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6464,24 +2560,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='weecsocro' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='weecsocro' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6490,34 +2572,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cirairazc' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cirairazc' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6526,24 +2584,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='preinfell' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='preinfell' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6552,32 +2596,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gaesoyuas' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gaesoyuas' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6586,24 +2608,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='fneogcaho' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='fneogcaho' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6612,30 +2620,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bguhxaitt' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bguhxaitt' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6644,32 +2632,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cacsaenca' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cacsaenca' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6678,28 +2644,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='meodeokco' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='meodeokco' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6708,30 +2656,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='wapiazcoe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='wapiazcoe' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6740,24 +2668,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eoluwutle' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eoluwutle' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6766,24 +2680,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dinnidaan' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dinnidaan' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6792,24 +2692,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='blirulaam' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='blirulaam' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6818,24 +2704,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mareworob' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mareworob' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6844,24 +2716,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dtakdugac' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dtakdugac' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6870,26 +2728,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='iriparkoo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='iriparkoo' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6898,32 +2740,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='pbeasceun' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='pbeasceun' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6932,26 +2752,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='aasadtabe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='aasadtabe' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6960,30 +2764,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cepuscuut' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cepuscuut' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -6992,30 +2776,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='csesneetk' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='csesneetk' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7024,28 +2788,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='dneuherye' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='dneuherye' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7054,32 +2800,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='bquittisa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='bquittisa' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7088,24 +2812,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ssualneeh' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ssualneeh' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7114,28 +2824,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='mlejbenne' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='mlejbenne' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7144,30 +2836,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='gyewilsis' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='gyewilsis' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7176,28 +2848,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='rcaeblahk' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='rcaeblahk' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7206,34 +2860,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tbumhigop' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tbumhigop' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7242,34 +2872,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='badoccatm' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='badoccatm' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7278,24 +2884,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='sliykeonm' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='sliykeonm' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7304,24 +2896,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='saohfiimr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='saohfiimr' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7330,28 +2908,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ogeretasr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ogeretasr' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7360,30 +2920,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='adibbalyu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='adibbalyu' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7392,26 +2932,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='baudnimes' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='baudnimes' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7420,28 +2944,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='vahkenous' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='vahkenous' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7450,24 +2956,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='phidkacoa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='phidkacoa' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_getEvent [STK]
@@ -7476,24 +2968,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='seariruam' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='seariruam' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    _strlen [139A]
 fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
@@ -7505,28 +2983,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='calpelrei' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='calpelrei' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7535,36 +2995,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='echeorees' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='echeorees' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7573,34 +3007,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cwutlaodu' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cwutlaodu' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7609,24 +3019,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='csueldaip' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='csueldaip' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7635,36 +3031,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tcekelyor' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tcekelyor' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7673,24 +3043,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='rvegseosa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='rvegseosa' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7699,26 +3055,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='toeteamhi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='toeteamhi' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7727,28 +3067,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='meimnaeru' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='meimnaeru' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7757,28 +3079,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='usaisgiyt' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='usaisgiyt' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7787,28 +3091,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='fraaflect' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='fraaflect' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7817,32 +3103,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='daehhubro' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='daehhubro' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7851,26 +3115,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='chaswetie' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='chaswetie' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7879,26 +3127,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cagniirio' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cagniirio' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7907,34 +3139,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='taeraccan' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='taeraccan' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7943,28 +3151,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hrautsirr' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hrautsirr' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -7973,26 +3163,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='nsapmaemo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='nsapmaemo' -> 0000
+#{ x10
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8001,30 +3175,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='buopeenro' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='buopeenro' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8033,24 +3187,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ivcainano' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ivcainano' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8059,30 +3199,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='tlutukroi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='tlutukroi' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8091,28 +3211,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='voannaina' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='voannaina' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8121,30 +3223,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='soitilsoo' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='soitilsoo' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8153,36 +3235,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='garcoyroy' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='garcoyroy' -> 0000
+#{ x15
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8191,24 +3247,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='ldeahquen' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='ldeahquen' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8217,28 +3259,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hneerehas' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hneerehas' -> 0000
+#{ x11
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8247,32 +3271,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='vneclorhe' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='vneclorhe' -> 0000
+#{ x13
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8281,30 +3283,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='cnarmeeti' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='cnarmeeti' -> 0000
+#{ x12
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8313,34 +3295,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='deerkelpi' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='deerkelpi' -> 0000
+#{ x14
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8349,24 +3307,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='hroopsala' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='hroopsala' -> 0000
+#{ x9
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -8585,6 +3529,7 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -8599,20 +3544,7 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0001 0003]
-call  DMCSR    004B [0000 0001 0003] -> 0000
-fn    dm_drawAt [09A6 0EE0 0000]
-call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0002 0002]
-call  DMCSR    004B [0000 0002 0002] -> 0000
-fn    dm_drawAt [09AE 0EE0 0000]
-call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
-fn    dm_drawAt [09B6 0EE0 0000]
-call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0002 0003]
-call  DMCSR    004B [0000 0002 0003] -> 0000
-fn    dm_drawAt [09BE 0EE0 0000]
-call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_showCursor
@@ -9244,6 +4176,7 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
+#{ x99
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -9266,15 +4199,156 @@ fn    _isindst [STK]
 fn    _crt_lmod
 fn    _crt_lmul
 fn    dm_getEvent [STK]
-call  DMCSR    0014 [STK] event='1:0020' -> 0000
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:01.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0001]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:02.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0002]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:03.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0003]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:04.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0004]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:05.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0005]
+#{ x4
+fn    _crt_lmul
+#}
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+#{ x2
+fn    _isindst [STK]
+#}
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:05.01'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0005]
+#{ x4
+fn    _crt_lmul
+#}
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+#{ x2
+fn    _isindst [STK]
+#}
+fn    _crt_lmod
+fn    _crt_lmul
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
-fn    dm_getEvent [STK]
-call  DMCSR    0014 [STK] event='1:0020' -> 0000
-fn    dm_yield
-call  DMCSR    0016 -> 0000
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_hideCursor
@@ -9360,18 +4434,10 @@ fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
+#{ x6
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -9380,14 +4446,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='epge' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='epge' s1='abc' -> 0000
+#{ x4
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -9396,18 +4458,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eraa' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eraa' s1='abc' -> 0000
+#{ x6
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -9416,18 +4470,10 @@ fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='eunt' -> FFFF
 fn    dm_spellSuggest [AB92 A86A]
 call  SPELL    0003 [AB92 A86A] s0='eunt' s1='abc' -> 0000
+#{ x6
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -9513,9 +4559,9 @@ call  DMCSR    00D7 -> 0000
 fn    dm_unloadCursor
 inte0 DMCSR    0207 res='DMCSR' -> 0000
 fn    _exit [0000]
+#{ x3
 fn    _crt_printMsg
-fn    _crt_printMsg
-fn    _crt_printMsg
+#}
 fn    _crt_printStr
 fn    _nullcheck
 fn    _amsg_exit

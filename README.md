@@ -146,9 +146,9 @@ make trace          # re-record the golden traces from the original binary
 
 **How the rebuild works (binary splicing).** `tools/pdm2wasm.py` turns the
 original PDM into linkable OpenWatcom asm with every function and every
-DGROUP variable at its original offset. Functions listed in
-`src/hangman/replaced.txt` are implemented in C (`src/hangman/*.c`) and
-spliced in with a `jmp` at their original address; C calls untranslated
+DGROUP variable at its original offset. A C function in `src/hangman/*.c`
+whose definition carries a `/* address: 0000:XXXX */` comment replaces the
+original function at that address; C calls untranslated
 original code through labels (`src/hangman/functions.txt`) and uses
 original globals at their original addresses (`src/hangman/dgroup.syms`).
 Everything is `__cdecl` (`wcc -ecc`), matching MSC 5.x, so both directions
@@ -164,11 +164,15 @@ DeskMate resource (DMCSR, DMGUF, PRGUF, SPELL), DOS calls, and every call
 into a not-yet-translated original function, with arguments. Input
 scenarios (`tests/traces/*.json`) script dialog results; their golden
 traces (`*.trace`) come from the original binary. A wrong argument in
-translated C shows up as a one-line diff naming the call.
+translated C shows up as a one-line diff naming the call. Where the fake
+DeskMate has to behave like the real one (the event queue, key decoding, the
+DMCSR version, SPELL's return codes), its behaviour was checked against the
+service handlers in DMCSR/DMGUF/PRGUF/SPELL: see
+`research/docs/dmcsr-services.md` and `tools/resdis.py`.
 
-**To translate a function:** read it in the disassembly, write it in C
-(original address in a comment), add it to `replaced.txt`, name any
-globals it touches in `dgroup.syms`, run `make trace-check`. If no
+**To translate a function:** read it with `tools/disfn.py`, write it in C
+with a `/* address: 0000:XXXX name */` comment (that alone splices it in),
+name any globals it touches in a `*.syms` file, run `make trace-check`. If no
 scenario reaches the new code, add one first.
 
 `tools/dosbox_run.py` (behind `make run-original` / `make run-rebuilt`)

@@ -4,11 +4,9 @@ fn    _cinit
 int21 21/30    3000 -> 1E03
 int21 21/35    3500
 int21 21/25    2500
+#{ x5
 int21 21/44    4400
-int21 21/44    4400
-int21 21/44    4400
-int21 21/44    4400
-int21 21/44    4400
+#}
 fn    _crt_printStr
 fn    _crt_printMsg
 fn    _setargv
@@ -17,14 +15,14 @@ fn    _setenvp
 fn    dm_initCursor
 fn    dm_loadCursor
 inte0 DMCSR    0206 res='DMCSR' -> 0001
-call  DMCSR    00D5 -> 0000
+call  DMCSR    00D5 -> 036F
 fn    dm_cursorInit
 call  DMCSR    00D6 -> 0000
 fn    dm_loadDmguf
 inte0 DMGUF    0206 res='DMGUF' -> 0001
 inte0 PRGUF    0208 res='PRGUF' -> 0001
 fn    dm_getEvent [STK]
-call  DMCSR    0014 [STK] event='6:0000' -> 0000
+call  DMCSR    0014 [STK] -> 0000
 fn    dm_loadSpell
 inte0 SPELL    0206 res='SPELL' -> 0001
 fn    _ftime [STK]
@@ -37,104 +35,20 @@ int21 21/2A    2A00 -> 2A01
 fn    _crt_getEnvItem [STK STK]
 int21 21/2C    2C00 t='12:00:00.00'
 fn    _crt_mktime [000A 0001 0001 000C 0000 0000]
+#{ x4
 fn    _crt_lmul
-fn    _crt_lmul
-fn    _crt_lmul
-fn    _crt_lmul
+#}
 fn    _tzset
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
+#{ x2
 fn    _isindst [STK]
-fn    _isindst [STK]
+#}
 fn    _srand [STK]
+#{ x44
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_setAppTitle [0EFA]
 call  DMCSR    0100 [0EFA] -> 0000
 fn    dm_initApp
@@ -169,10 +83,10 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_drawString [0F0C]
 call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    dm_drawString [0F20]
-call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_setTitle [0EEC]
@@ -362,46 +276,10 @@ fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
+#{ x20
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -606,6 +484,7 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -620,20 +499,7 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0001 0003]
-call  DMCSR    004B [0000 0001 0003] -> 0000
-fn    dm_drawAt [09A6 0EE0 0000]
-call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0002 0002]
-call  DMCSR    004B [0000 0002 0002] -> 0000
-fn    dm_drawAt [09AE 0EE0 0000]
-call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
-fn    dm_drawAt [09B6 0EE0 0000]
-call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0002 0003]
-call  DMCSR    004B [0000 0002 0003] -> 0000
-fn    dm_drawAt [09BE 0EE0 0000]
-call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_showCursor
@@ -644,10 +510,10 @@ fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='6:0000' -> 0000
 fn    dm_setCursorPos [0960 0024]
 call  DMCSR    0044 [0960 0024] -> 0000
+#{ x2
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    dm_drawString [0F20]
-call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
 fn    dm_setColor [0000 0001]
@@ -676,10 +542,10 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_drawString [0F0C]
 call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    dm_drawString [0F20]
-call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
@@ -734,7 +600,7 @@ call  DMCSR    0013 [STK] event='1:0054' -> 0000
 fn    dm_keyToChar [0054]
 call  DMGUF    0023 [0054] -> 0054
 fn    dm_keyToChar [F504]
-call  DMGUF    0023 [F504] -> 0004
+call  DMGUF    0023 [F504] -> F504
 fn    dm_drawBitmap [0000 0246]
 call  DMCSR    001C [0000 0246] -> 0000
 fn    _strstr [AB92 0054]
@@ -1307,6 +1173,7 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
+#{ x99
 fn    _ftime [STK]
 fn    _tzset
 fn    _crt_findEnv [1F82]
@@ -1329,15 +1196,156 @@ fn    _isindst [STK]
 fn    _crt_lmod
 fn    _crt_lmul
 fn    dm_getEvent [STK]
-call  DMCSR    0014 [STK] event='1:0020' -> 0000
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:01.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0001]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:02.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0002]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:03.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0003]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+#{ x100
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:04.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0004]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+#}
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:05.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0005]
+#{ x4
+fn    _crt_lmul
+#}
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+#{ x2
+fn    _isindst [STK]
+#}
+fn    _crt_lmod
+fn    _crt_lmul
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:05.01'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0005]
+#{ x4
+fn    _crt_lmul
+#}
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+#{ x2
+fn    _isindst [STK]
+#}
+fn    _crt_lmod
+fn    _crt_lmul
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
-fn    dm_getEvent [STK]
-call  DMCSR    0014 [STK] event='1:0020' -> 0000
-fn    dm_yield
-call  DMCSR    0016 -> 0000
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_hideCursor
@@ -1423,20 +1431,10 @@ fn    dm_setCursorPos [0834 0E9C]
 call  DMCSR    0044 [0834 0E9C] -> 0000
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
+#{ x7
 fn    _rand
 fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
-fn    _rand
-fn    _crt_lmul
+#}
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
 fn    dm_getEvent [STK]
@@ -1635,6 +1633,7 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [0998 0EE0 0000]
 call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_drawAt [09A6 0EE0 0000]
@@ -1649,20 +1648,7 @@ fn    dm_setTextAttr [0000 0002 0003]
 call  DMCSR    004B [0000 0002 0003] -> 0000
 fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0001 0003]
-call  DMCSR    004B [0000 0001 0003] -> 0000
-fn    dm_drawAt [09A6 0EE0 0000]
-call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0002 0002]
-call  DMCSR    004B [0000 0002 0002] -> 0000
-fn    dm_drawAt [09AE 0EE0 0000]
-call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
-fn    dm_drawAt [09B6 0EE0 0000]
-call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
-fn    dm_setTextAttr [0000 0002 0003]
-call  DMCSR    004B [0000 0002 0003] -> 0000
-fn    dm_drawAt [09BE 0EE0 0000]
-call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_showCursor
@@ -1811,9 +1797,9 @@ call  DMCSR    00D7 -> 0000
 fn    dm_unloadCursor
 inte0 DMCSR    0207 res='DMCSR' -> 0000
 fn    _exit [0000]
+#{ x3
 fn    _crt_printMsg
-fn    _crt_printMsg
-fn    _crt_printMsg
+#}
 fn    _crt_printStr
 fn    _nullcheck
 fn    _amsg_exit

@@ -1,0 +1,6 @@
+{"word_addr": "0xAB92",
+ "returns": [
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Game: OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E", "note": "Define Players: OK"}],
+ "events": [["key", "Q", "ahead"], ["word"], ["key", " "]],
+ "comment": "a key typed ahead at startup (Q) is seen by peeks but flushed (DMCSR 0016h) before play, so it is never guessed; then win one word"}
