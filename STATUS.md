@@ -42,6 +42,7 @@
 | INSTALL.PDM | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.x; MZ+DM89; 210 functions, 5 segments, 13 relocs |
 | DMVID.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | MSC 5.0 small model; plain MZ (no DM89); 74 functions (41 named); CRT chain → _main; config I/O to DMCSR.CFG |
 | INSTALL.EXE | :white_check_mark: | :white_check_mark: | :white_check_mark: | 828-byte chain loader; validates DM89 sig then EXEC's DESK.EXE |
+| *.R89 (DMCSR, DMGUF, DMDB) | :white_large_square: | :white_large_square: | :white_large_square: | Not covered by the batch scripts. DMCSR.R89 (80 KB) is the main UI library every PDM far-calls into |
 | *.RES (52 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 1056 functions, 59351 insns total; 48 MZ+DM89 + 3 plain MZ + 1 compressed data (TUTKBD.RES); DMFONT.RES largest (179 funcs); see disassembly/raw/res/ |
 | *.ACC (18 files) | :white_check_mark: | :white_check_mark: | :white_check_mark: | 2141 functions total; DMHELP.ACC largest (223 funcs); 11 import dmguf; see disassembly/raw/acc/ |
 
@@ -85,7 +86,7 @@
 | addressbook/ | :white_large_square: | — | :white_large_square: | Address book |
 | telecom/ | :white_large_square: | — | :white_large_square: | Terminal emulator |
 | pclink/ | :white_large_square: | — | :white_large_square: | Online service client |
-| hangman/ | :white_check_mark: | ~3,900 | :white_check_mark: | First module transpiled; 8 source files (hangman.c/h, hangman_ui.c, hangman_dialog.c, hangman_data.c, deskmate.c/h, Makefile); compiles to 10KB DOS MZ EXE with OpenWatcom; see src/hangman/ |
+| hangman/ | :construction: | 5 fns | :white_check_mark: | Rebuilt from source byte-identically (`make identical`); functions moving to C one at a time via binary splicing (src/hangman/replaced.txt). Earlier free-form transpilation (wrong DeskMate ABI, crashed DeskMate) kept in src/hangman/legacy/ |
 | formset/ | :white_large_square: | — | :white_large_square: | Form designer |
 | play/ | :white_large_square: | — | :white_large_square: | Music player |
 | mailmerge/ | :white_large_square: | — | :white_large_square: | Mail merge |
@@ -104,7 +105,7 @@
 | Calendar | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Telecom | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | PC-Link | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
-| Hangman | :yellow_circle: | :white_large_square: | :white_large_square: | :white_large_square: | Compiles to DOS MZ EXE; needs DeskMate host (DESK.EXE) to run; DOSBox testing pending |
+| Hangman | :white_check_mark: | :yellow_circle: | :white_large_square: | :yellow_circle: | Spliced rebuild runs in real DeskMate (DOSBox-X headless); `make trace-check` scenarios: Define Game OK / arrows / limits / cancel |
 | Form Set | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Play | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |
 | Mail Merge | :white_large_square: | :white_large_square: | :white_large_square: | :white_large_square: |

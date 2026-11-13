@@ -7,3 +7,11 @@
 0F08 g_spellLoaded      # word: 1 once SPELL resource loaded (init 0000:0072)
 AB9E g_cursorHandle     # word: result of dm_initCursor (init 0000:0028)
 ABA2 g_windowHandle     # word: passed to dm_initWindow at cleanup (0000:00BF)
+0C08 g_defGameDlg       # "Define Game" dialog definition (control state bytes inside)
+0CA4 g_defGameForm      # form passed to dm_showForm / dm_getFormResult
+10D4 g_wordsPerGameText # " 4" -- text of the Words per Game field (atoi'd on OK)
+10D8 g_wrongGuessText   # " 7" -- text of the Wrong Guesses field
+22D2 g_dlgSaveArea      # passed to dm_openDialogEx / dm_closeDialog (screen save?)
+ADEE g_numPlayers       # word: players chosen in Define Game (radio index + 1)
+AE44 g_wordsPerGame     # word
+AE46 g_maxWrongGuesses  # word

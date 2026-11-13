@@ -185,20 +185,34 @@ Both scripts should use Tandy machine type with matching memory/video/sound conf
 
 ## Development Commands
 
-### Build (once OpenWatcom is set up)
+All from the top-level Makefile (no need to source anything; works from fish):
+
 ```bash
-# Set up OpenWatcom environment
-source scripts/setup-watcom.sh
-# Build all modules
-make -C src all
+make setup          # .venv (capstone, unicorn)
+make identical      # HANGMAN.PDM rebuilt from source, no C: must be byte-identical
+make hangman        # build/hangman/HANGMAN.PDM with C functions spliced in
+make trace-check    # compare traces of the rebuild vs. golden traces (~1s) -- run after every change
+make trace          # re-record golden traces from the original binary
+make run-rebuilt    # headless DOSBox-X run inside real DeskMate (frames in build/run/)
 ```
 
-### Disassemble a binary
-```bash
-python tools/disasm.py archive/deskmate-3.05/DESK.EXE -o disassembly/raw/desk.asm
-```
+### Decompilation workflow (binary splicing)
+- The original PDM is emitted as asm with original offsets (tools/pdm2wasm.py);
+  C functions replace originals one at a time via src/hangman/replaced.txt.
+- Translate faithfully from the disassembly, not from the annotations' prose:
+  the annotated names/arg descriptions are often guesses. Check call sites
+  (pushes + `add sp,N`) for argument counts.
+- C may call untranslated original functions (declare them in hangman.h; names
+  in functions.txt) and use original globals at their original DGROUP offsets
+  (name them in dgroup.syms, or DG8/DG16(addr) until understood).
+- No new uninitialised C globals: the original startup only zeroes the
+  original BSS.
+- After each function: `make trace-check`. If no scenario reaches the new
+  code, add tests/traces/<name>.json (scripted dialog results) and `make trace`.
 
-### Compare original vs rebuilt
-```bash
-python tools/compare.py --original dosbox/configs/original.conf --rebuilt dosbox/configs/rebuilt.conf
-```
+### PDM <-> DeskMate interface (verified with tools/pdm_trace.py)
+- INT E0h AX=0206h loads a resource by name (DS:DX) and writes its far entry
+  point to ES:BX; 0207h unloads; 0208h queries.
+- UI services are far calls into DMCSR with AX = code & 0FFFh (args at SS:BP);
+  DMGUF/PRGUF calls take args at SS:BX+6. NOT direct INT E0h.
+- DMCSR.R89 and DMGUF.R89 (the main UI libraries) are not yet disassembled.

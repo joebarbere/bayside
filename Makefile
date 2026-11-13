@@ -39,9 +39,10 @@ HM_OBJ    := $(patsubst $(HM)/%.c,$(HMB)/%.obj,$(HM_C))
 # -ecc __cdecl everywhere (MSC convention, so C <-> original code calls work),
 # -zp1 byte packing, -os optimise for size
 WCC_FLAGS := -q -bt=dos -ms -0 -s -zl -ecc -zp1 -os -w4 -we
-SCRIPT    := tests/traces/hangman-define-ok.json
-GOLDEN    := tests/traces/hangman-define-ok.trace
 ARGC      := tests/traces/hangman.argc.json
+# Deep trace: calls into original functions are compared too, except those
+# implemented in C (C-to-C calls never pass through the original address).
+DEEP      := --deep $(HM)/functions.txt --deep-skip $(HM)/replaced.txt
 
 .PHONY: setup hangman identical trace trace-check run-original run-rebuilt clean
 
@@ -72,6 +73,8 @@ $(HMB)/hangman.exe: $(HMB)/orig.obj $(HM_OBJ)
 	  option nodefaultlibs option start=_crt_start name $@ \
 	  $(foreach o,$^,file $(o)) 2>&1 | grep -v W1014 || true
 	@test -f $@
+	@# The original startup zeroes only the original BSS, so C must not add any.
+	@awk '$$1=="_BSS" && $$NF!="00000000" {print "error: C code added uninitialised data (_BSS " $$NF " bytes); initialise it or use an original global"; exit 1}' $(HMB)/hangman.map
 
 $(REBUILT): $(HMB)/hangman.exe tools/mkpdm.py
 	$(PY) tools/mkpdm.py $< --orig $(ORIG) --map $(HMB)/hangman.map -o $@
@@ -87,13 +90,28 @@ identical: | $(PY)
 	$(PY) tools/mkpdm.py build/identical/h.exe --orig $(ORIG) \
 	  --map build/identical/h.map -o build/identical/HANGMAN.PDM --verify
 
+# Every tests/traces/NAME.json input script has a golden NAME.trace
+# recorded from the original binary.
+SCENARIOS := $(basename $(notdir $(wildcard tests/traces/hangman-*.json)))
+
 trace: $(PY)
-	$(PY) tools/pdm_trace.py $(ORIG) --script $(SCRIPT) --learn-argc $(ARGC)
-	$(PY) tools/pdm_trace.py $(ORIG) --script $(SCRIPT) --argc $(ARGC) -t $(GOLDEN)
+	@rm -f $(ARGC)
+	@for s in $(SCENARIOS); do \
+	  $(PY) tools/pdm_trace.py $(ORIG) --script tests/traces/$$s.json \
+	    $(DEEP) --learn-argc $(ARGC) >/dev/null 2>&1; \
+	done
+	@for s in $(SCENARIOS); do \
+	  $(PY) tools/pdm_trace.py $(ORIG) --script tests/traces/$$s.json \
+	    $(DEEP) --argc $(ARGC) -t tests/traces/$$s.trace 2>&1 | grep -E 'stopped' | sed "s/^/$$s: /"; \
+	done
 
 trace-check: $(REBUILT) | $(PY)
-	$(PY) tools/pdm_trace.py $(REBUILT) --script $(SCRIPT) --argc $(ARGC) -t build/hangman-rebuilt.trace
-	diff -u $(GOLDEN) build/hangman-rebuilt.trace
+	@fail=0; for s in $(SCENARIOS); do \
+	  $(PY) tools/pdm_trace.py $(REBUILT) --script tests/traces/$$s.json \
+	    $(DEEP) --argc $(ARGC) -t build/$$s.trace >/dev/null 2>&1; \
+	  if diff -u tests/traces/$$s.trace build/$$s.trace > build/$$s.diff; then \
+	    echo "PASS $$s"; else echo "FAIL $$s (see build/$$s.diff)"; fail=1; fi; \
+	done; exit $$fail
 
 run-original:
 	tools/dosbox_run.py hangman-original --cmd "DESK.EXE HANGMAN.PDM" --frames 15,38

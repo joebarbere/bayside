@@ -113,7 +113,8 @@ class TraceEvent:
 
 class PdmTracer:
     def __init__(self, path, max_insns, script=None, verbose=False,
-                 argc=None, learn_argc=False):
+                 argc=None, learn_argc=False, deep=None):
+        self.deep = deep or {}
         self.argc = argc or {}
         self.learn_argc = {} if learn_argc else None
         self.path = path
@@ -305,12 +306,39 @@ class PdmTracer:
                         caller=caller)
         ev.slot = (ip - 2) // 4
         ev.stack_args = ev_stack
+        ev.seg_args = self.segment_args(frame)
         if key not in self.argc and self.argc:
             ev.strings["argc"] = "unknown"
         ret = self.resource_return(name, ax, ev)
         ev.ret = ret
         self.setreg("ax", ret)
         self.emit(ev)
+
+    def on_function_entry(self, name):
+        """Deep trace: entry of an original (untranslated) function. All code
+        is in segment 0 near-called, so [SS:SP] is the return address into
+        the caller and the args follow it (cdecl)."""
+        ss, sp = self.reg("ss"), self.reg("sp")
+        ret = self.rw(ss, sp)
+        key = f"fn:{name}"
+        if self.learn_argc is not None:
+            n = self.cleanup_words(self.load_seg, ret)
+            self.learn_argc[key] = max(n, self.learn_argc.get(key, 0))
+        argc = self.argc.get(key, 0)
+        frame = [self.rw(ss, sp + 2 + 2 * i) for i in range(argc)]
+        ev = TraceEvent(0, "fn", name, 0, self.snapshot(), frame=frame,
+                        caller=f"0000:{ret:04X}")
+        ev.stack_args = [i for i, w in enumerate(frame)
+                         if sp <= w < sp + STACK_WINDOW]
+        ev.seg_args = self.segment_args(frame)
+        self.emit(ev)
+
+    def segment_args(self, frame):
+        """Args that are absolute segment values (parts of far pointers).
+        DGROUP's segment moves whenever the code segment grows, so these
+        are compared symbolically. SS == DGROUP once the startup has run."""
+        names = {self.reg("ss"): "DGRP", self.load_seg: "CSEG"}
+        return {i: names[w] for i, w in enumerate(frame) if w in names}
 
     def cleanup_words(self, seg, off):
         """Arg words a cdecl caller pops after the call returning to seg:off:
@@ -424,11 +452,20 @@ class PdmTracer:
         self.stop_reason = None
         self.insns = 0
 
+        base = self.load_seg << 4
+        deep = {base + off: name for off, name in self.deep.items()}
+
         def count(uc, addr, size, _):
             self.insns += 1
             if self.insns >= self.max_insns:
                 self.stop_reason = f"instruction budget ({self.max_insns}) exhausted"
                 uc.emu_stop()
+            if addr in deep:
+                try:
+                    self.on_function_entry(deep[addr])
+                except Stop as e:
+                    self.stop_reason = str(e)
+                    uc.emu_stop()
         self.uc.hook_add(UC_HOOK_CODE, count)
         cs, ip = self.entry
         try:
@@ -457,18 +494,36 @@ def main():
     ap.add_argument("--learn-argc", metavar="FILE",
                     help="learn arg counts from caller cleanup code (use on "
                          "the original binary) and write them to FILE")
+    ap.add_argument("--deep", metavar="FUNCS",
+                    help="also log calls into these functions (functions.txt "
+                         "format: OFFSET name)")
+    ap.add_argument("--deep-skip", metavar="LIST",
+                    help="functions to leave out of the deep trace (the "
+                         "replaced.txt list: C-to-C calls bypass the original "
+                         "address, so they cannot be compared)")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="print every event to stderr as it happens")
     args = ap.parse_args()
 
     script = json.load(open(args.script)) if args.script else None
     argc = json.load(open(args.argc)) if args.argc else None
+    deep = read_syms(args.deep) if args.deep else {}
+    if args.deep_skip:
+        skip = set(read_syms(args.deep_skip).values())
+        deep = {o: n for o, n in deep.items() if n not in skip}
     t = PdmTracer(args.pdm, args.max_insns, script, args.verbose,
-                  argc=argc, learn_argc=bool(args.learn_argc))
+                  argc=argc, learn_argc=bool(args.learn_argc), deep=deep)
     reason = t.run()
     if args.learn_argc:
+        # merge with what earlier scenarios learned (max per service)
+        try:
+            known = json.load(open(args.learn_argc))
+        except (OSError, ValueError):
+            known = {}
+        for k, v in t.learn_argc.items():
+            known[k] = max(v, known.get(k, 0))
         with open(args.learn_argc, "w") as f:
-            json.dump(dict(sorted(t.learn_argc.items())), f, indent=1)
+            json.dump(dict(sorted(known.items())), f, indent=1)
             f.write("\n")
     print(f"stopped after {t.insns} instructions, {len(t.events)} events: {reason}",
           file=sys.stderr)
@@ -487,13 +542,25 @@ def main():
             print(line, file=sys.stderr)
 
 
+def read_syms(path):
+    out = {}
+    for line in open(path):
+        line = line.split("#")[0].strip()
+        if line:
+            off, name = line.split()[:2]
+            out[int(off, 16)] = name
+    return out
+
+
 def normalize(ev, frames=True):
     """Stable one-line form for golden files: no seq numbers or code
     addresses (those legitimately differ in a rebuilt binary)."""
-    s = f"{ev.kind:5s} {ev.name:8s} {ev.ax:04X}"
+    s = (f"{ev.kind:5s} {ev.name}" if ev.kind == "fn"
+         else f"{ev.kind:5s} {ev.name:8s} {ev.ax:04X}")
     if frames and ev.frame:
         stk = getattr(ev, "stack_args", [])
-        s += " [" + " ".join("STK" if i in stk else f"{w:04X}"
+        seg = getattr(ev, "seg_args", {})
+        s += " [" + " ".join("STK" if i in stk else seg.get(i, f"{w:04X}")
                              for i, w in enumerate(ev.frame)) + "]"
     strs = {k: v for k, v in ev.strings.items() if k != "script"}
     if strs:
