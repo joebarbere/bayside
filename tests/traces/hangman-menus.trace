@@ -145,7 +145,6 @@ fn    dm_setBorder
 call  DMCSR    006A -> 0000
 fn    dm_showStatusBar
 call  DMCSR    0047 -> 0000
-fn    hangman_setupMenuBar
 fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
@@ -178,7 +177,6 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
-fn    hangman_loadConfig
 fn    dm_setTitle [0EEC]
 call  DMGUF    000B [0EEC] -> 0000
 fn    dm_getTitle [0EEC]
@@ -275,7 +273,7 @@ fn    dm_loadBitmap [02AA]
 call  DMCSR    001B [02AA] -> 0000
 fn    dm_loadBitmap [02BE]
 call  DMCSR    001B [02BE] -> 0000
-fn    hangman_drawLetterTiles [0082]
+fn    hangman_drawLetterTiles
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -328,7 +326,6 @@ fn    dm_drawBitmap [0000 02AA]
 call  DMCSR    001C [0000 02AA] -> 0000
 fn    dm_drawBitmap [0000 02BE]
 call  DMCSR    001C [0000 02BE] -> 0000
-fn    hangman_drawGameBoard
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0001 0002]
@@ -356,14 +353,12 @@ call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
 fn    hangman_drawStartScreen
 fn    dm_initScrollbar [0ED8]
 call  DMCSR    002D [0ED8] -> 0000
-fn    hangman_gameLoop
 fn    hangman_chooseWord
 fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
 fn    _crt_lmul
-fn    hangman_playRound
 fn    hangman_playWord [AB92 0009]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
@@ -499,9 +494,7 @@ fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
 fn    hangman_layoutWordTiles
 fn    hangman_clearRevealFlags
-fn    hangman_initRoundState [ADFD]
 fn    hangman_drawInitialBoard
-fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
 fn    dm_setCursorPos [00C8 044C]
@@ -516,21 +509,18 @@ fn    dm_drawString [ADF0]
 call  DMCSR    0052 [ADF0] -> 0000
 fn    dm_setCursorPos [07D0 044C]
 call  DMCSR    0044 [07D0 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 044C]
 call  DMCSR    0044 [0D48 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
-fn    hangman_drawCurrentGame
 fn    dm_setCursorPos [01F4 0604]
 call  DMCSR    0044 [01F4 0604] -> 0000
 fn    dm_drawString [1160]
@@ -552,7 +542,6 @@ fn    dm_setCursorPos [0C1C 06E0]
 call  DMCSR    0044 [0C1C 06E0] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0004]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0034]
@@ -567,7 +556,6 @@ fn    dm_setCursorPos [0C1C 07BC]
 call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -582,7 +570,6 @@ fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -597,7 +584,6 @@ fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -612,7 +598,6 @@ fn    dm_setCursorPos [0C1C 0A50]
 call  DMCSR    0044 [0C1C 0A50] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0007]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0037]
@@ -621,7 +606,7 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
+fn    hangman_drawWordBlanks
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -738,35 +723,29 @@ fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_processInput
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='1:0045' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
 fn    dm_keyToChar [0045]
 call  DMGUF    0023 [0045] -> 0045
 fn    dm_drawBitmap [0000 011A]
 call  DMCSR    001C [0000 011A] -> 0000
-fn    hangman_checkGuess [0045]
 fn    _strstr [AB92 0045]
-fn    hangman_updateAfterGuess [0000 0001]
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
 fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
 call  DMCSR    0051 [0031] -> 0000
 fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -786,8 +765,6 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F505' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F505]
 fn    hangman_aboutBoxHandler [0EFE]
 fn    dm_getVideoMode
 inte0 DESK     0600 -> 0000
@@ -842,7 +819,6 @@ call  DMCSR    0006 -> 0000
 fn    hangman_refreshBoard
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_setupMenuBar
 fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
@@ -877,8 +853,6 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F50A' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F50A]
 fn    hangman_definePlayersDialog
 fn    _strncpy [STK ADF0]
 fn    dm_openDialog [08FC 04BA 0D48 0C08]
@@ -898,7 +872,6 @@ fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_fillRect [09C4 0604 04B0 00DC 0000]
 call  DMCSR    006E [09C4 0604 04B0 00DC 0000] -> 0000
-fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
 fn    dm_setCursorPos [00C8 044C]
@@ -913,21 +886,18 @@ fn    dm_drawString [ADF0]
 call  DMCSR    0052 [ADF0] -> 0000
 fn    dm_setCursorPos [07D0 044C]
 call  DMCSR    0044 [07D0 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 044C]
 call  DMCSR    0044 [0D48 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
-fn    hangman_drawCurrentGame
 fn    dm_setCursorPos [01F4 0604]
 call  DMCSR    0044 [01F4 0604] -> 0000
 fn    dm_drawString [1160]
@@ -949,7 +919,6 @@ fn    dm_setCursorPos [0C1C 06E0]
 call  DMCSR    0044 [0C1C 06E0] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0004]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0034]
@@ -964,7 +933,6 @@ fn    dm_setCursorPos [0C1C 07BC]
 call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -979,7 +947,6 @@ fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -994,7 +961,6 @@ fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1009,7 +975,6 @@ fn    dm_setCursorPos [0C1C 0A50]
 call  DMCSR    0044 [0C1C 0A50] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0007]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0037]
@@ -1020,8 +985,6 @@ fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F50B' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F50B]
 fn    hangman_addPlayerDialog
 fn    dm_openDialog [0898 074E 0D48 07BC]
 call  DMCSR    0061 [0898 074E 0D48 07BC] s3='N<SD^`ddodu\\uXE' -> 0000
@@ -1043,7 +1006,7 @@ fn    hangman_adjustWordLayout
 fn    dm_fillRect [0820 0D3E 0E4C 0294 0000]
 call  DMCSR    006E [0820 0D3E 0E4C 0294 0000] -> 0000
 fn    hangman_layoutWordTiles
-fn    hangman_drawWordBlanks [0A9C]
+fn    hangman_drawWordBlanks
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -1062,7 +1025,6 @@ fn    dm_drawBitmap [FFFF 0373]
 call  DMCSR    001C [FFFF 0373] -> 0000
 fn    dm_drawBitmap [FFFF 038A]
 call  DMCSR    001C [FFFF 038A] -> 0000
-fn    hangman_drawGameBoard
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0001 0002]
@@ -1087,7 +1049,6 @@ fn    dm_setCursorPos [00C8 0370]
 call  DMCSR    0044 [00C8 0370] -> 0000
 fn    dm_drawString [112C]
 call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
-fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
 fn    dm_setCursorPos [00C8 044C]
@@ -1102,14 +1063,12 @@ fn    dm_drawString [ADF0]
 call  DMCSR    0052 [ADF0] -> 0000
 fn    dm_setCursorPos [07D0 044C]
 call  DMCSR    0044 [07D0 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 044C]
 call  DMCSR    0044 [0D48 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -1126,19 +1085,16 @@ fn    dm_drawString [AE05]
 call  DMCSR    0052 [AE05] -> 0000
 fn    dm_setCursorPos [07D0 0528]
 call  DMCSR    0044 [07D0 0528] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 0528]
 call  DMCSR    0044 [0D48 0528] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
-fn    hangman_drawCurrentGame
 fn    dm_setCursorPos [01F4 06E0]
 call  DMCSR    0044 [01F4 06E0] -> 0000
 fn    dm_drawString [1160]
@@ -1160,7 +1116,6 @@ fn    dm_setCursorPos [0C1C 07BC]
 call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0004]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0034]
@@ -1175,7 +1130,6 @@ fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1190,7 +1144,6 @@ fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1205,7 +1158,6 @@ fn    dm_setCursorPos [0C1C 0A50]
 call  DMCSR    0044 [0C1C 0A50] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1220,7 +1172,6 @@ fn    dm_setCursorPos [0C1C 0B2C]
 call  DMCSR    0044 [0C1C 0B2C] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0007]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0037]
@@ -1338,8 +1289,6 @@ fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F50C' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F50C]
 fn    hangman_deletePlayerDialog
 fn    dm_openDialog [08FC 04BA 0D48 0C08]
 call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
@@ -1365,7 +1314,7 @@ fn    hangman_adjustWordLayout
 fn    dm_fillRect [0820 0DAC 0E4C 0294 0000]
 call  DMCSR    006E [0820 0DAC 0E4C 0294 0000] -> 0000
 fn    hangman_layoutWordTiles
-fn    hangman_drawWordBlanks [0A9C]
+fn    hangman_drawWordBlanks
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -1384,7 +1333,6 @@ fn    dm_drawBitmap [FFFF 0373]
 call  DMCSR    001C [FFFF 0373] -> 0000
 fn    dm_drawBitmap [FFFF 038A]
 call  DMCSR    001C [FFFF 038A] -> 0000
-fn    hangman_drawGameBoard
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0001 0002]
@@ -1409,7 +1357,6 @@ fn    dm_setCursorPos [00C8 0370]
 call  DMCSR    0044 [00C8 0370] -> 0000
 fn    dm_drawString [112C]
 call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
-fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
 fn    dm_setCursorPos [00C8 044C]
@@ -1424,21 +1371,18 @@ fn    dm_drawString [ADF0]
 call  DMCSR    0052 [ADF0] -> 0000
 fn    dm_setCursorPos [07D0 044C]
 call  DMCSR    0044 [07D0 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 044C]
 call  DMCSR    0044 [0D48 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
-fn    hangman_drawCurrentGame
 fn    dm_setCursorPos [01F4 0604]
 call  DMCSR    0044 [01F4 0604] -> 0000
 fn    dm_drawString [1160]
@@ -1460,7 +1404,6 @@ fn    dm_setCursorPos [0C1C 06E0]
 call  DMCSR    0044 [0C1C 06E0] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0004]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0034]
@@ -1475,7 +1418,6 @@ fn    dm_setCursorPos [0C1C 07BC]
 call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1490,7 +1432,6 @@ fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1505,7 +1446,6 @@ fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -1520,7 +1460,6 @@ fn    dm_setCursorPos [0C1C 0A50]
 call  DMCSR    0044 [0C1C 0A50] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0007]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0037]
@@ -1638,14 +1577,10 @@ fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F501' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F501]
 fn    dm_msgBox [0EC6]
 call  DMCSR    00E9 [0EC6] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F502' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F502]
 fn    hangman_restoreGame
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
@@ -1653,7 +1588,6 @@ fn    dm_readConfig [0EEC]
 call  DMGUF    000F [0EEC] -> 0000
 fn    dm_deleteConfig [0EEC]
 call  DMGUF    0010 [0EEC] -> 0000
-fn    hangman_validateSaveData [ABA8]
 fn    dm_msgBox [0ED2]
 call  DMCSR    00E9 [0ED2] -> 0000
 fn    dm_hideCursor
@@ -1662,7 +1596,7 @@ fn    hangman_adjustWordLayout
 fn    dm_fillRect [0820 0D3E 0E4C 0294 0000]
 call  DMCSR    006E [0820 0D3E 0E4C 0294 0000] -> 0000
 fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
+fn    hangman_drawLetterTiles
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -1721,7 +1655,6 @@ fn    hangman_drawStartScreen
 fn    dm_initScrollbar [0ED8]
 call  DMCSR    002D [0ED8] -> 0000
 fn    hangman_resetDisplay
-fn    hangman_setupMenuBar
 fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
@@ -1752,7 +1685,7 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    hangman_drawLetterTiles [078F]
+fn    hangman_drawLetterTiles
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -1805,7 +1738,6 @@ fn    dm_drawBitmap [0000 02AA]
 call  DMCSR    001C [0000 02AA] -> 0000
 fn    dm_drawBitmap [0000 02BE]
 call  DMCSR    001C [0000 02BE] -> 0000
-fn    hangman_drawGameBoard
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0001 0002]
@@ -1840,7 +1772,6 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] event='3:F546' -> 0000
 fn    _rand
 fn    _crt_lmul
-fn    hangman_playRound
 fn    hangman_playWord [AB92 0006]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
@@ -1923,9 +1854,7 @@ fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
 fn    hangman_layoutWordTiles
 fn    hangman_clearRevealFlags
-fn    hangman_initRoundState [ADFD]
 fn    hangman_drawInitialBoard
-fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
 fn    dm_setCursorPos [00C8 044C]
@@ -1940,21 +1869,18 @@ fn    dm_drawString [ADF0]
 call  DMCSR    0052 [ADF0] -> 0000
 fn    dm_setCursorPos [07D0 044C]
 call  DMCSR    0044 [07D0 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 044C]
 call  DMCSR    0044 [0D48 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
-fn    hangman_drawCurrentGame
 fn    dm_setCursorPos [01F4 0604]
 call  DMCSR    0044 [01F4 0604] -> 0000
 fn    dm_drawString [1160]
@@ -1976,7 +1902,6 @@ fn    dm_setCursorPos [0C1C 06E0]
 call  DMCSR    0044 [0C1C 06E0] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0004]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0034]
@@ -1991,7 +1916,6 @@ fn    dm_setCursorPos [0C1C 07BC]
 call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -2006,7 +1930,6 @@ fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -2021,7 +1944,6 @@ fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -2036,7 +1958,6 @@ fn    dm_setCursorPos [0C1C 0A50]
 call  DMCSR    0044 [0C1C 0A50] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0007]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0037]
@@ -2045,7 +1966,7 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
+fn    hangman_drawWordBlanks
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -2156,19 +2077,16 @@ fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_processInput
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F546' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
 fn    dm_yield
 call  DMCSR    0016 -> 0000
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
-fn    hangman_checkGuess [0041]
 fn    _strstr [AB92 0041]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
@@ -2176,14 +2094,12 @@ fn    _strstr [AB93 0041]
 fn    dm_drawBitmap [FFFF 0317]
 call  DMCSR    001C [FFFF 0317] -> 0000
 fn    _strstr [AB96 0041]
-fn    hangman_updateAfterGuess [0000 0000]
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
 fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -2213,28 +2129,23 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F547' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
 fn    dm_yield
 call  DMCSR    0016 -> 0000
 fn    dm_drawBitmap [0000 00DE]
 call  DMCSR    001C [0000 00DE] -> 0000
-fn    hangman_checkGuess [0042]
 fn    _strstr [AB92 0042]
-fn    hangman_updateAfterGuess [0000 0001]
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
 fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0002]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0032]
 call  DMCSR    0051 [0032] -> 0000
 fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -2254,26 +2165,22 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='1:0053' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
 fn    dm_keyToChar [0053]
 call  DMGUF    0023 [0053] -> 0053
 fn    dm_keyToChar [F547]
 call  DMGUF    0023 [F547] -> 0047
 fn    dm_drawBitmap [0000 0232]
 call  DMCSR    001C [0000 0232] -> 0000
-fn    hangman_checkGuess [0053]
 fn    _strstr [AB92 0053]
 fn    dm_drawBitmap [FFFF 0300]
 call  DMCSR    001C [FFFF 0300] -> 0000
 fn    _strstr [AB95 0053]
-fn    hangman_updateAfterGuess [0000 0000]
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
 fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0003]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0033]
@@ -2293,8 +2200,6 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F500' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F500]
 fn    dm_openDialog [08FC 04BA 0D48 0C08]
 call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
 fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
@@ -2335,7 +2240,7 @@ fn    hangman_adjustWordLayout
 fn    dm_fillRect [0A78 0D3E 099C 0294 0000]
 call  DMCSR    006E [0A78 0D3E 099C 0294 0000] -> 0000
 fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
+fn    hangman_drawLetterTiles
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -2394,7 +2299,6 @@ fn    hangman_drawStartScreen
 fn    dm_initScrollbar [0ED8]
 call  DMCSR    002D [0ED8] -> 0000
 fn    hangman_resetDisplay
-fn    hangman_setupMenuBar
 fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
@@ -2425,7 +2329,7 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    hangman_drawLetterTiles [078F]
+fn    hangman_drawLetterTiles
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -2478,7 +2382,6 @@ fn    dm_drawBitmap [0000 02AA]
 call  DMCSR    001C [0000 02AA] -> 0000
 fn    dm_drawBitmap [0000 02BE]
 call  DMCSR    001C [0000 02BE] -> 0000
-fn    hangman_drawGameBoard
 fn    dm_setTextAttr [0000 0001 0003]
 call  DMCSR    004B [0000 0001 0003] -> 0000
 fn    dm_setColor [0001 0002]
@@ -2513,7 +2416,6 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
 fn    _crt_lmul
-fn    hangman_playRound
 fn    hangman_playWord [AB92 0004]
 fn    dm_waitReady
 call  DMCSR    00F8 -> 0000
@@ -2580,9 +2482,7 @@ fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
 fn    hangman_layoutWordTiles
 fn    hangman_clearRevealFlags
-fn    hangman_initRoundState [ADFD]
 fn    hangman_drawInitialBoard
-fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
 fn    dm_setCursorPos [00C8 044C]
@@ -2597,21 +2497,18 @@ fn    dm_drawString [ADF0]
 call  DMCSR    0052 [ADF0] -> 0000
 fn    dm_setCursorPos [07D0 044C]
 call  DMCSR    0044 [07D0 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setCursorPos [0D48 044C]
 call  DMCSR    0044 [0D48 044C] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
 call  DMCSR    0051 [0030] -> 0000
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
-fn    hangman_drawCurrentGame
 fn    dm_setCursorPos [01F4 0604]
 call  DMCSR    0044 [01F4 0604] -> 0000
 fn    dm_drawString [1160]
@@ -2633,7 +2530,6 @@ fn    dm_setCursorPos [0C1C 06E0]
 call  DMCSR    0044 [0C1C 06E0] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0004]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0034]
@@ -2648,7 +2544,6 @@ fn    dm_setCursorPos [0C1C 07BC]
 call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -2663,7 +2558,6 @@ fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -2678,7 +2572,6 @@ fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0000]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0030]
@@ -2693,7 +2586,6 @@ fn    dm_setCursorPos [0C1C 0A50]
 call  DMCSR    0044 [0C1C 0A50] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0007]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0037]
@@ -2702,7 +2594,7 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
+fn    hangman_drawWordBlanks
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -2809,35 +2701,29 @@ fn    dm_drawAt [09BE 0EE0 0000]
 call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
-fn    hangman_processInput
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='1:0054' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
 fn    dm_keyToChar [0054]
 call  DMGUF    0023 [0054] -> 0054
 fn    dm_drawBitmap [0000 0246]
 call  DMCSR    001C [0000 0246] -> 0000
-fn    hangman_checkGuess [0054]
 fn    _strstr [AB92 0054]
-fn    hangman_updateAfterGuess [0000 0001]
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
 fn    dm_setCursorPos [0C1C 0898]
 call  DMCSR    0044 [0C1C 0898] -> 0000
 fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
 call  DMCSR    0051 [0031] -> 0000
 fn    dm_setCursorPos [0C1C 0974]
 call  DMCSR    0044 [0C1C 0974] -> 0000
-fn    hangman_printNumber [0001]
 fn    dm_drawChar [0020]
 call  DMCSR    0051 [0020] -> 0000
 fn    dm_drawChar [0031]
@@ -2857,8 +2743,6 @@ fn    dm_showCursor
 call  DMCSR    0006 -> 0000
 fn    dm_replyEvent [STK]
 call  DMCSR    0013 [STK] event='3:F503' -> 0000
-fn    hangman_mapKeyToLetter [STK STK]
-fn    hangman_handleMenuAction [F503]
 fn    hangman_promptSaveOnExit
 fn    _strncpy [STK 124C]
 fn    dm_msgBox [0EC0]
@@ -2869,7 +2753,7 @@ fn    hangman_adjustWordLayout
 fn    dm_fillRect [0C08 0D3E 067C 0294 0000]
 call  DMCSR    006E [0C08 0D3E 067C 0294 0000] -> 0000
 fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
+fn    hangman_drawLetterTiles
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]

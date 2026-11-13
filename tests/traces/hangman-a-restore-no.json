@@ -1,0 +1,5 @@
+{"word_addr": "0xAB92",
+ "returns": [
+  {"on": ["DMCSR", "0xE9"], "arg0": "0x0EBA", "ret": "0xF702", "note": "restore saved game? -> quit"}],
+ "events": [],
+ "comment": "loadConfig: restore box answered F702 -> init returns 0 -> cleanup"}

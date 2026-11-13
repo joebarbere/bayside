@@ -1,0 +1,11 @@
+{"word_addr": "0xAB92",
+ "defaults": {"DMCSR:0xE4": "0xF56E"},
+ "returns": [
+  {"on": ["DMCSR", "0xE9"], "arg0": "0x0EBA", "ret": "0xF703",
+   "poke": {"ABA8": 2, "ABA9": 0,
+            "ABAA": "ANN", "ABB7": 3, "ABB8": 1, "ABB9": 2, "ABBA": 1, "ABBB": 1, "ABBC": 0, "ABBD": 5, "ABBE": 0,
+            "ABBF": "BOB", "ABCC": 0, "ABCD": 0, "ABCE": 0, "ABCF": 0, "ABD0": 1, "ABD1": 0, "ABD2": 0, "ABD3": 0,
+            "ABFE": 3, "ABFF": 0, "AC00": 7, "AC01": 0},
+   "note": "restore saved game? -> yes; saved record at ABA8: 2 players, 3 words, 7 wrong"}],
+ "events": [["word"], ["key", " "], ["wrong", 7], ["key", " "], ["menu", "0xF503"]],
+ "comment": "loadConfig: restore box answered F703 -> hangman_restoreGame with a valid record (hangman_validateSaveData loops over both players); play on; Quit"}

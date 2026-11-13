@@ -145,7 +145,6 @@ fn    dm_setBorder
 call  DMCSR    006A -> 0000
 fn    dm_showStatusBar
 call  DMCSR    0047 -> 0000
-fn    hangman_setupMenuBar
 fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
@@ -178,7 +177,6 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_showCursor
 call  DMCSR    0006 -> 0000
-fn    hangman_loadConfig
 fn    dm_setTitle [0EEC]
 call  DMGUF    000B [0EEC] -> 0000
 fn    dm_getTitle [0EEC]
