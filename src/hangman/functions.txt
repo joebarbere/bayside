@@ -2,6 +2,7 @@
 # Seeded from the FUNCTION INDEX in disassembly/annotated/hangman.asm.
 # Names prefixed with _ in asm (cdecl). Fix names here as understanding improves.
 # 31FE-3693 and 38C6-39F6 are DeskMate SDK glue (hand-written asm, dm_*).
+# Runtime / SDK entry points not in the annotation index (identified 2026-11-13)
 0010 hangman_main
 001F hangman_init
 00BF hangman_cleanup
@@ -163,11 +164,14 @@
 3596 dm_spellOp
 359C dm_loadSpell
 35B9 dm_unloadSpell
+360B dm_spellCheckWord
+3611 dm_spellSuggest
 3677 dm_spellCleanup
 3694 hangman_aboutBoxHandler
 388D hangman_itoaBuf
 38A9 hangman_strcpyDI
 38B5 hangman_strlenSI
+39CD dm_videoNameIndex
 39F8 _cexit
 3A1E _nullcheck
 3A40 _setenvp
@@ -182,9 +186,19 @@
 3D46 _strcmp
 3D6E _strncmp
 3DA8 _atoi
+3DAC _atol
 3E04 _crt_findEnv
 3E5A _crt_getEnvItem
 3EA2 _sscanf
+3EC0 _ftime
+3FAE _tzset
+405E _isindst
+4132 _crt_mktime
 4248 _strstr
+4272 _strupr
+4294 _memcpy
+42C0 _srand
 42D2 _rand
 42F8 _crt_ltoa
+439C _crt_lmul
+43D0 _crt_lmod

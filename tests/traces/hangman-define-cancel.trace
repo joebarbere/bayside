@@ -29,6 +29,8 @@ call  DMCSR    0014 [STK] -> 0000
 fn    dm_loadSpell
 inte0 SPELL    0206 res='SPELL' -> 0001
 fn    hangman_initGameState
+fn    _ftime [STK]
+fn    _tzset
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
 fn    _crt_ltoa
@@ -36,52 +38,105 @@ fn    _crt_getEnvItem [STK STK]
 int21 21/2A    2A00 -> 2A01
 fn    _crt_getEnvItem [STK STK]
 int21 21/2C    2C00 t='12:00:00.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0000]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _srand [STK]
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    dm_setAppTitle [0EFA]
 call  DMCSR    0100 [0EFA] -> 0000
 fn    dm_initApp

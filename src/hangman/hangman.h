@@ -7,8 +7,8 @@
  * __cdecl (wcc -ecc), matching the MSC 5.x calling convention the original
  * code uses, so C and original machine code call each other freely.
  *
- * Original functions not yet in C are declared here and resolve to labels
- * in the generated asm. Names come from functions.txt.
+ * Original functions not yet in C resolve to labels in the generated asm;
+ * names come from functions.txt.
  * ======================================================================== */
 #ifndef HANGMAN_H
 #define HANGMAN_H
@@ -63,31 +63,14 @@ void dm_closeDialog(int a, int b, int c, char *dlg, char *save);        /* 354E 
 void dm_showForm(char *form);       /* 3572 */
 unsigned dm_getFormResult(char *form);  /* 3578: control id, F564..F56F */
 
-/* ---- MSC runtime (original code) ------------------------------------- */
-void _exit(int status);             /* 30FE */
-int  _atoi(char *s);                /* 3DA8 */
-
-/* ---- Hangman functions still running as original code ---------------- */
-int  hangman_checkDmApiEvent(unsigned code);    /* 1564 */
-void hangman_initGameState(void);               /* 242A */
-void hangman_setupMenuBar(void);                /* 0229 */
-int  hangman_loadConfig(void);                  /* 00F3 */
-void hangman_initLetterTiles(void);             /* 11CC */
-void hangman_saveLetterTiles(void);             /* 11FA */
-void hangman_drawGameBoard(void);               /* 02D6 */
-void hangman_drawStartScreen(void);             /* 1AE0 */
-void hangman_gameLoop(void);                    /* 0737 */
-int  hangman_spinnerControl(int dir, char *text, int lo, int hi); /* 10AD */
-void hangman_updatePlayerCount(int n);          /* 1945 */
-void hangman_refreshBoard(void);                /* 0E18 */
-int  hangman_definePlayersDialog(void);         /* 12A2 */
-void hangman_newGame(void);                     /* 1417 */
-
-/* ---- Implemented in C ------------------------------------------------- */
-void hangman_main(void);                        /* 0010 */
-int  hangman_init(void);                        /* 001F */
-void hangman_cleanup(void);                     /* 00BF */
-int  hangman_defineGame(void);                  /* 0DD8 */
-int  hangman_defineGameDialog(void);            /* 0E56 */
+/* ---- Everything else ----------------------------------------------------
+ * protos.h is generated at build time (tools/mkprotos.py): an old-style
+ * declaration for every original function not yet in C. Functions that are
+ * in C are declared with full prototypes in their area header below. */
+#include "protos.h"
+#include "game.h"       /* area A 0010-0DD7: lifecycle, board, game loop, input */
+#include "dialog.h"     /* area B 0DD8-1AFA: dialogs, players, tiles, save/restore */
+#include "draw.h"       /* area C 1AFB-23EA: hangman figure, animations, delays */
+#include "words.h"      /* area D 23EB-2FFF: word choice/generation, profanity */
 
 #endif /* HANGMAN_H */

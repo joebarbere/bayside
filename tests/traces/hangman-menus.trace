@@ -29,6 +29,8 @@ call  DMCSR    0014 [STK] event='1:0045' -> 0000
 fn    dm_loadSpell
 inte0 SPELL    0206 res='SPELL' -> 0001
 fn    hangman_initGameState
+fn    _ftime [STK]
+fn    _tzset
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
 fn    _crt_ltoa
@@ -36,52 +38,105 @@ fn    _crt_getEnvItem [STK STK]
 int21 21/2A    2A00 -> 2A01
 fn    _crt_getEnvItem [STK STK]
 int21 21/2C    2C00 t='12:00:00.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0000]
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _crt_lmul
+fn    _tzset
 fn    _crt_findEnv [1F82]
 fn    _strlen [1F82]
+fn    _isindst [STK]
+fn    _isindst [STK]
+fn    _srand [STK]
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    _rand
+fn    _crt_lmul
 fn    dm_setAppTitle [0EFA]
 call  DMCSR    0100 [0EFA] -> 0000
 fn    dm_initApp
@@ -307,6 +362,7 @@ fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
+fn    _crt_lmul
 fn    hangman_playRound
 fn    hangman_playWord [AB92 0009]
 fn    dm_waitReady
@@ -333,71 +389,91 @@ call  DMCSR    0017 [00B4] -> 0000
 fn    hangman_showLetterAnim [AB92 0009]
 fn    hangman_animFlash [13C0]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0074]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0078]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0074]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0072]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [006E]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0072]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0064]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0067]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [006C]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0070]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0076]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0075]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0066]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0077]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0079]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0069]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0072]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0063]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0064]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [006F]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
@@ -405,11 +481,13 @@ fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    hangman_wordAnimEnter [AB92]
+fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='txufwirco' -> 0000
 fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 215C 0006]
 fn    _strncmp [AB93 2163 0005]
 fn    _strncmp [AB93 2169 0003]
+fn    _strupr [AB92]
 fn    hangman_setWordFlags [0003]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
@@ -1761,6 +1839,7 @@ fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] event='3:F546' -> 0000
 fn    _rand
+fn    _crt_lmul
 fn    hangman_playRound
 fn    hangman_playWord [AB92 0006]
 fn    dm_waitReady
@@ -1787,29 +1866,36 @@ call  DMCSR    0017 [00B4] -> 0000
 fn    hangman_showLetterAnim [AB92 0006]
 fn    hangman_animFlash [13C0]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0061]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0074]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0073]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0063]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0061]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0069]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0072]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
@@ -1819,11 +1905,13 @@ call  DMCSR    0014 [STK] event='3:F546' -> 0000
 fn    dm_yield
 call  DMCSR    0016 -> 0000
 fn    hangman_wordAnimEnter [AB92]
+fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='atsair' -> 0000
 fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 1FEA 0003]
 fn    _strncmp [AB93 1FEE 0007]
 fn    _strncmp [AB93 1FF6 0003]
+fn    _strupr [AB92]
 fn    hangman_setWordFlags [0001]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
@@ -2424,6 +2512,7 @@ fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
+fn    _crt_lmul
 fn    hangman_playRound
 fn    hangman_playWord [AB92 0004]
 fn    dm_waitReady
@@ -2450,18 +2539,22 @@ call  DMCSR    0017 [00B4] -> 0000
 fn    hangman_showLetterAnim [AB92 0004]
 fn    hangman_animFlash [13C0]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0064]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0065]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0073]
 fn    hangman_animSequence [STK]
 fn    hangman_animFlash [13F2]
 fn    _rand
+fn    _crt_lmul
 fn    hangman_animFrame [0061]
 fn    dm_drawChar [002E]
 call  DMCSR    0051 [002E] -> 0000
@@ -2469,11 +2562,13 @@ fn    hangman_crtEntryStub
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    hangman_wordAnimEnter [AB92]
+fn    dm_spellCheckWord [AB92]
 call  SPELL    0002 [AB92] s0='desa' -> 0000
 fn    hangman_profanityCheck [AB92]
 fn    _strncmp [AB93 2035 0003]
 fn    _strncmp [AB93 2039 0003]
 fn    _strncmp [AB93 203D 0005]
+fn    _strupr [AB92]
 fn    hangman_setWordFlags [0001]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000

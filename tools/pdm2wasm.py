@@ -16,7 +16,8 @@ Output layout (identical offsets to the original):
 Relocations become symbolic `dw _TEXT` / `dw DGROUP` fixups, so the image
 still loads correctly when C code grows _TEXT.
 
-Splicing: every function named in the --replaced file is implemented in C.
+Splicing: every function implemented in C (found in --c-sources by its
+`/* address: 0000:XXXX */` comment) is spliced in.
 At its original address the blob gets `jmp near _name` instead of the
 public label, so original callers land in the C version. C can call any
 not-yet-replaced original function through its label (all __cdecl, near).
@@ -24,14 +25,15 @@ With an empty --replaced list the linked image is byte-identical to the
 original (checked by tools/mkpdm.py --verify).
 
 Usage:
-    tools/pdm2wasm.py HANGMAN.PDM --functions funcs.txt [--replaced r.txt]
-        [--data-syms dgroup.syms] -o orig.asm
+    tools/pdm2wasm.py HANGMAN.PDM --functions funcs.txt [--c-sources DIR]
+        [--data-syms a.syms ...] -o orig.asm
 funcs.txt / dgroup.syms lines:  XXXX name   (hex offset; '#' comments)
 """
 
 import argparse
 import struct
 import sys
+from pathlib import Path
 
 MASM = lambda v: (f"{v:X}h" if f"{v:X}"[0] not in "ABCDEF" else f"0{v:X}h")
 
@@ -83,8 +85,11 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pdm")
     ap.add_argument("--functions", required=True)
-    ap.add_argument("--replaced")
-    ap.add_argument("--data-syms")
+    ap.add_argument("--c-sources", metavar="DIR",
+                    help="directory of C files; every function whose definition "
+                         "is preceded by an `address: 0000:XXXX` comment is "
+                         "spliced in (name must match --functions)")
+    ap.add_argument("--data-syms", action="append", default=[])
     ap.add_argument("-o", "--out", required=True)
     a = ap.parse_args()
 
@@ -120,11 +125,24 @@ def main():
         sys.exit("error: DGROUP exceeds 64K")
 
     funcs = read_syms(a.functions)
-    replaced = set(read_syms(a.replaced).values()) if a.replaced else set()
-    unknown = replaced - set(funcs.values())
-    if unknown:
-        sys.exit(f"error: replaced functions not in --functions: {sorted(unknown)}")
-    dsyms = read_syms(a.data_syms)
+    replaced = set()
+    if a.c_sources:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from mkprotos import c_functions
+        for name, addr in c_functions(a.c_sources).items():
+            if funcs.get(addr) != name:
+                sys.exit(f"error: C function {name} claims address {addr:04X}, "
+                         f"which functions.txt calls {funcs.get(addr)!r}")
+            replaced.add(name)
+    dsyms = {}
+    for path in a.data_syms:
+        for off, name in read_syms(path).items():
+            if off in dsyms and dsyms[off] != name:
+                sys.exit(f"error: DGROUP {off:04X} named both {dsyms[off]} and {name}")
+            dsyms[off] = name
+    dup = {n for n in dsyms.values() if list(dsyms.values()).count(n) > 1}
+    if dup:
+        sys.exit(f"error: data symbols with several offsets: {sorted(dup)}")
 
     def fix(region_start, region_end):
         out = {}

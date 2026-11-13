@@ -1,8 +1,0 @@
-# Functions implemented in C (one per line, name from functions.txt).
-# tools/pdm2wasm.py splices a `jmp` to the C version at each original
-# address. Keep `make trace-check` green after every addition.
-0010 hangman_main
-001F hangman_init
-00BF hangman_cleanup
-0DD8 hangman_defineGame
-0E56 hangman_defineGameDialog

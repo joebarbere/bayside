@@ -1,8 +1,8 @@
 # Bayside top-level dev loop.
 #
 #   make setup          create .venv with capstone + unicorn
-#   make hangman        build HANGMAN.PDM: original code + C functions from
-#                       src/hangman/replaced.txt spliced in (build/hangman/)
+#   make hangman        build HANGMAN.PDM: original code + every C function
+#                       in src/hangman/*.c spliced in (build/hangman/)
 #   make identical      rebuild with no C spliced in; must be byte-identical
 #   make trace          trace original HANGMAN.PDM -> refresh golden trace
 #   make trace-check    trace the rebuilt HANGMAN and diff against the golden
@@ -39,11 +39,12 @@ HM_OBJ    := $(patsubst $(HM)/%.c,$(HMB)/%.obj,$(HM_C))
 # -ecc __cdecl everywhere (MSC convention, so C <-> original code calls work),
 # -zp1 byte packing, -os optimise for size
 # -nt/-g: C code in HM_TEXT, after the original startup segment (see pdm2wasm)
-WCC_FLAGS := -q -bt=dos -ms -0 -s -zl -ecc -zp1 -os -w4 -we -nt=HM_TEXT -g=CGROUP
+# -wcd=308: calls through protos.h's deliberate old-style declarations
+WCC_FLAGS := -q -bt=dos -ms -0 -s -zl -ecc -zp1 -os -w4 -we -wcd=308 -nt=HM_TEXT -g=CGROUP
 ARGC      := tests/traces/hangman.argc.json
 # Deep trace: calls into original functions are compared too, except those
 # implemented in C (C-to-C calls never pass through the original address).
-DEEP      := --deep $(HM)/functions.txt --deep-skip $(HM)/replaced.txt
+DEEP      := --deep $(HM)/functions.txt --deep-skip $(HMB)/in_c.txt
 
 .PHONY: setup hangman identical trace trace-check run-original run-rebuilt clean
 
@@ -56,17 +57,25 @@ $(PY): tools/requirements.txt
 
 hangman: $(REBUILT)
 
-$(HMB)/orig.asm: $(ORIG) $(HM)/functions.txt $(HM)/replaced.txt $(HM)/dgroup.syms tools/pdm2wasm.py | $(PY)
+HM_H      := $(wildcard $(HM)/*.h)
+HM_SYMS   := $(wildcard $(HM)/*.syms)
+
+# Declarations for original functions not yet in C + the list of C ones.
+$(HMB)/protos.h $(HMB)/in_c.txt: $(HM)/functions.txt $(HM_C) $(HM_H) tools/mkprotos.py | $(PY)
+	@mkdir -p $(HMB)
+	$(PY) tools/mkprotos.py $(HM)/functions.txt $(HM) -o $(HMB)/protos.h --list-c $(HMB)/in_c.txt
+
+$(HMB)/orig.asm: $(ORIG) $(HM)/functions.txt $(HM_C) $(HM_SYMS) tools/pdm2wasm.py tools/mkprotos.py | $(PY)
 	@mkdir -p $(HMB)
 	$(PY) tools/pdm2wasm.py $(ORIG) --functions $(HM)/functions.txt \
-	  --replaced $(HM)/replaced.txt --data-syms $(HM)/dgroup.syms -o $@
+	  --c-sources $(HM) $(foreach f,$(HM_SYMS),--data-syms $(f)) -o $@
 
 $(HMB)/orig.obj: $(HMB)/orig.asm
 	$(WATCOM_ENV) wasm -q -0 -fo=$@ $<
 
-$(HMB)/%.obj: $(HM)/%.c $(HM)/hangman.h
+$(HMB)/%.obj: $(HM)/%.c $(HM_H) $(HMB)/protos.h
 	@mkdir -p $(HMB)
-	$(WATCOM_ENV) wcc $(WCC_FLAGS) -fo=$@ $<
+	$(WATCOM_ENV) wcc $(WCC_FLAGS) -i=$(HMB) -fo=$@ $<
 
 # orig.obj must be linked first: its segments fix the original layout.
 $(HMB)/hangman.exe: $(HMB)/orig.obj $(HM_OBJ)
@@ -83,7 +92,7 @@ $(REBUILT): $(HMB)/hangman.exe tools/mkpdm.py
 identical: | $(PY)
 	@mkdir -p build/identical
 	$(PY) tools/pdm2wasm.py $(ORIG) --functions $(HM)/functions.txt \
-	  --data-syms $(HM)/dgroup.syms -o build/identical/orig.asm
+	  $(foreach f,$(HM_SYMS),--data-syms $(f)) -o build/identical/orig.asm
 	$(WATCOM_ENV) wasm -q -0 -fo=build/identical/orig.obj build/identical/orig.asm
 	$(WATCOM_ENV) wlink option quiet format dos option map=build/identical/h.map \
 	  option nodefaultlibs option start=_crt_start name build/identical/h.exe \
@@ -106,7 +115,7 @@ trace: $(PY)
 	    $(DEEP) --argc $(ARGC) -t tests/traces/$$s.trace 2>&1 | grep -E 'stopped' | sed "s/^/$$s: /"; \
 	done
 
-trace-check: $(REBUILT) | $(PY)
+trace-check: $(REBUILT) $(HMB)/in_c.txt | $(PY)
 	@fail=0; for s in $(SCENARIOS); do \
 	  $(PY) tools/pdm_trace.py $(REBUILT) --script tests/traces/$$s.json \
 	    $(DEEP) --argc $(ARGC) -t build/$$s.trace >/dev/null 2>&1; \
