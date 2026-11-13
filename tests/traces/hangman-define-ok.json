@@ -1,0 +1,6 @@
+[
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E",
+   "note": "Define Game dialog: OK (0xF56E; jump table HANGMAN 0000:105D)"},
+  {"on": ["DMCSR", "0xE4"], "after": 2, "ret": "0xF56E",
+   "note": "Define Players dialog: OK (0xF56E; HANGMAN 0000:138F)"}
+]

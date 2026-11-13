@@ -22,14 +22,17 @@
 WATCOM_DEFAULT_DIR="$HOME/watcom"
 WATCOM_SNAPSHOT_URL="https://github.com/open-watcom/open-watcom-v2/releases/download/Current-build/ow-snapshot.tar.xz"
 
-# Detect host architecture: arm64 (Apple Silicon) or x86_64 (Intel Mac)
+# Detect host OS + architecture and pick the matching OpenWatcom host bin dir.
+HOST_OS="$(uname -s)"
 HOST_ARCH="$(uname -m)"
-case "$HOST_ARCH" in
-    arm64)   WATCOM_BIN_DIR="armo64" ;;   # Apple Silicon M1/M2/M3/M4
-    x86_64)  WATCOM_BIN_DIR="binm"   ;;   # Intel Mac (64-bit host tools in binm)
+case "$HOST_OS/$HOST_ARCH" in
+    Darwin/arm64)    WATCOM_BIN_DIR="armo64" ;;   # Apple Silicon M1/M2/M3/M4
+    Darwin/x86_64)   WATCOM_BIN_DIR="binm"   ;;   # Intel Mac (64-bit host tools in binm)
+    Linux/x86_64)    WATCOM_BIN_DIR="binl64" ;;   # Linux x86-64
+    Linux/aarch64)   WATCOM_BIN_DIR="arml64" ;;   # Linux ARM64
     *)
-        echo "ERROR: Unknown host architecture: $HOST_ARCH" >&2
-        echo "       OpenWatcom provides 'armo64' (ARM64) and 'binm' (x86_64) host toolchains." >&2
+        echo "ERROR: Unknown host: $HOST_OS/$HOST_ARCH" >&2
+        echo "       Supported: Darwin arm64/x86_64, Linux x86_64/aarch64." >&2
         return 1 2>/dev/null || exit 1
         ;;
 esac
@@ -371,7 +374,13 @@ _watcom_setenv() {
 # ---------------------------------------------------------------------------
 
 # Detect if we are being sourced or executed
-if [[ "${(%):-%x}" == "$0" ]] || [[ "${BASH_SOURCE[0]:-}" == "$0" ]]; then
+_watcom_sourced=0
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+    [[ "${ZSH_EVAL_CONTEXT:-}" == *:file* ]] && _watcom_sourced=1
+elif [[ "${BASH_SOURCE[0]:-}" != "$0" ]]; then
+    _watcom_sourced=1
+fi
+if [[ $_watcom_sourced -eq 0 ]]; then
     # Being executed as a script
     _watcom_main "$@"
 else
