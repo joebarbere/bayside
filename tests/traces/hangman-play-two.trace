@@ -23,7 +23,6 @@ call  DMCSR    00D6 -> 0000
 fn    dm_loadDmguf
 inte0 DMGUF    0206 res='DMGUF' -> 0001
 inte0 PRGUF    0208 res='PRGUF' -> 0001
-fn    hangman_checkDmApiEvent [FD14]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] event='1:0000' -> 0000
 fn    dm_loadSpell
@@ -194,15 +193,12 @@ fn    dm_showForm [0CA4]
 call  DMCSR    00E3 [0CA4] -> 0000
 fn    dm_getFormResult [0CA4]
 call  DMCSR    00E4 [0CA4] -> F566   # script: Words per Game down (4->3)
-fn    hangman_spinnerControl [FFFF 10D4 0001 000A]
 fn    _atoi [10D4]
 fn    dm_getFormResult [0CA4]
 call  DMCSR    00E4 [0CA4] -> F566   # script: Words per Game down (3->2)
-fn    hangman_spinnerControl [FFFF 10D4 0001 000A]
 fn    _atoi [10D4]
 fn    dm_getFormResult [0CA4]
 call  DMCSR    00E4 [0CA4] -> F56E   # script: Define Game: 2 players (radio state 0C0F=1), OK
-fn    hangman_updatePlayerCount [0002]
 fn    dm_setTimer [00B4]
 call  DMCSR    0017 [00B4] -> 0000
 fn    _atoi [10D4]
@@ -211,7 +207,6 @@ fn    dm_yield
 call  DMCSR    0016 -> 0000
 fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
 call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
-fn    hangman_definePlayersDialog
 fn    _strncpy [STK ADF0]
 fn    _strncpy [STK AE05]
 fn    dm_openDialog [08FC 04BA 0D48 0C08]
@@ -230,12 +225,8 @@ fn    dm_yield
 call  DMCSR    0016 -> 0000
 fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
 call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
-fn    hangman_newGame
-fn    hangman_resetPlayerData [ADFD]
-fn    hangman_resetPlayerData [AE12]
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_initLetterTiles
 fn    dm_loadBitmap [00CA]
 call  DMCSR    001B [00CA] -> 0000
 fn    dm_loadBitmap [00DE]
@@ -288,7 +279,6 @@ fn    dm_loadBitmap [02AA]
 call  DMCSR    001B [02AA] -> 0000
 fn    dm_loadBitmap [02BE]
 call  DMCSR    001B [02BE] -> 0000
-fn    hangman_drawLetterTiles [0082]
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -366,12 +356,9 @@ fn    dm_setCursorPos [00C8 0370]
 call  DMCSR    0044 [00C8 0370] -> 0000
 fn    dm_drawString [112C]
 call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
-fn    hangman_drawStartScreen
 fn    dm_initScrollbar [0ED8]
 call  DMCSR    002D [0ED8] -> 0000
 fn    hangman_gameLoop
-fn    hangman_chooseWord
-fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
@@ -510,10 +497,7 @@ fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
 fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
-fn    hangman_layoutWordTiles
-fn    hangman_clearRevealFlags
 fn    hangman_initRoundState [ADFD]
-fn    hangman_drawInitialBoard
 fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
@@ -656,7 +640,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -1377,7 +1360,6 @@ call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    hangman_drawPressAnyKey
-fn    hangman_drawWordBlanks [00B8]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -1576,11 +1558,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_adjustWordLayout
 fn    dm_fillRect [0820 0DAC 0E4C 0294 0000]
 call  DMCSR    006E [0820 0DAC 0E4C 0294 0000] -> 0000
-fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -1730,10 +1709,7 @@ fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
 fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
-fn    hangman_layoutWordTiles
-fn    hangman_clearRevealFlags
 fn    hangman_initRoundState [AE12]
-fn    hangman_drawInitialBoard
 fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
@@ -1876,7 +1852,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -2394,7 +2369,6 @@ call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    hangman_drawPressAnyKey
-fn    hangman_drawWordBlanks [00B4]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -2717,11 +2691,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_adjustWordLayout
 fn    dm_fillRect [0820 0DAC 0E4C 0294 0000]
 call  DMCSR    006E [0820 0DAC 0E4C 0294 0000] -> 0000
-fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -2778,8 +2749,6 @@ fn    dm_setColor [0002 0003]
 call  DMCSR    004A [0002 0003] -> 0000
 fn    dm_fillRect [09C4 06E0 04B0 00DC 0000]
 call  DMCSR    006E [09C4 06E0 04B0 00DC 0000] -> 0000
-fn    hangman_chooseWord
-fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
@@ -2866,10 +2835,7 @@ fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
 fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
-fn    hangman_layoutWordTiles
-fn    hangman_clearRevealFlags
 fn    hangman_initRoundState [ADFD]
-fn    hangman_drawInitialBoard
 fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
@@ -3012,7 +2978,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -3534,7 +3499,6 @@ call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    hangman_drawPressAnyKey
-fn    hangman_drawWordBlanks [005C]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -3727,11 +3691,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_adjustWordLayout
 fn    dm_fillRect [0A78 0DAC 099C 0294 0000]
 call  DMCSR    006E [0A78 0DAC 099C 0294 0000] -> 0000
-fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -3868,10 +3829,7 @@ fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
 fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
-fn    hangman_layoutWordTiles
-fn    hangman_clearRevealFlags
 fn    hangman_initRoundState [AE12]
-fn    hangman_drawInitialBoard
 fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
@@ -4014,7 +3972,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -4589,7 +4546,6 @@ call  DMCSR    0049 [0000] -> 0000
 fn    dm_setActiveWin [0000]
 call  DMCSR    002E [0000] -> 0000
 fn    hangman_drawPressAnyKey
-fn    hangman_drawWordBlanks [0073]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]
@@ -4782,11 +4738,8 @@ fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_adjustWordLayout
 fn    dm_fillRect [0A78 0DAC 099C 0294 0000]
 call  DMCSR    006E [0A78 0DAC 099C 0294 0000] -> 0000
-fn    hangman_resetGuessedFlags
-fn    hangman_drawLetterTiles [0082]
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -4849,15 +4802,10 @@ fn    dm_msgBox [0ECC]
 call  DMCSR    00E9 [0ECC] -> 0000
 fn    dm_hideCursor
 call  DMCSR    0007 -> 0000
-fn    hangman_newGame
-fn    hangman_resetPlayerData [ADFD]
-fn    hangman_resetPlayerData [AE12]
 fn    dm_initWindow [0000]
 call  DMCSR    0030 [0000] -> 0000
-fn    hangman_drawStartScreen
 fn    dm_initScrollbar [0ED8]
 call  DMCSR    002D [0ED8] -> 0000
-fn    hangman_resetDisplay
 fn    hangman_setupMenuBar
 fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
@@ -4889,7 +4837,6 @@ fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
 fn    dm_drawString [0F20]
 call  DMCSR    0052 [0F20] s0='            ' -> 0000
-fn    hangman_drawLetterTiles [078F]
 fn    dm_drawBitmap [0000 00CA]
 call  DMCSR    001C [0000 00CA] -> 0000
 fn    dm_drawBitmap [0000 00DE]
@@ -4971,8 +4918,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_chooseWord
-fn    hangman_checkDmApiEvent [FD17]
 fn    dm_getEvent [STK]
 call  DMCSR    0014 [STK] -> 0000
 fn    _rand
@@ -5043,10 +4988,7 @@ fn    dm_closeDialog [0834 0DFC 0E74 0294 22D2]
 call  DMCSR    0063 [0834 0DFC 0E74 0294 22D2] -> 0000
 fn    dm_scrollContent
 call  DMCSR    00F7 -> 0000
-fn    hangman_layoutWordTiles
-fn    hangman_clearRevealFlags
 fn    hangman_initRoundState [ADFD]
-fn    hangman_drawInitialBoard
 fn    hangman_drawPlayerScores
 fn    dm_setColor [0002 0000]
 call  DMCSR    004A [0002 0000] -> 0000
@@ -5189,7 +5131,6 @@ fn    dm_setColor [0000 0001]
 call  DMCSR    004A [0000 0001] -> 0000
 fn    dm_setTextAttr [0000 0001 0002]
 call  DMCSR    004B [0000 0001 0002] -> 0000
-fn    hangman_drawWordBlanks [0847]
 fn    dm_drawBitmap [FFFF 02D2]
 call  DMCSR    001C [FFFF 02D2] -> 0000
 fn    dm_drawBitmap [FFFF 02E9]

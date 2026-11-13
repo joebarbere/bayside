@@ -1,0 +1,11 @@
+# Area B (0DD8-1AFA) DGROUP symbols: OFFSET name   (hex, DGROUP-relative)
+# C declarations in dialog.h.
+00CA g_letterTiles      # struct LetterTile[26]: letter buttons (0x14 bytes each)
+02D2 g_wordTiles        # struct WordTile[]: tiles of the current word (0x17 bytes each)
+0DA8 g_playersForm      # Define Players form (dm_showForm / dm_getFormResult)
+0E0A g_addPlayerForm    # Add Player form
+0E9E g_delPlayerForm    # Delete Player form
+0EEC g_saveConfig       # config-record descriptor for dm_writeConfig/readConfig/deleteConfig
+ABA8 g_saveBuffer       # 0x5A-byte saved-game image (copy of ADEE..AE47)
+ADBA g_letterBitmaps    # int[26]: dm_loadBitmap handles of the letter buttons
+ADF0 g_players          # struct Player[4] (0x15 bytes each), follows g_numPlayers
