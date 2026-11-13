@@ -65,14 +65,21 @@ RESOURCE_RETURNS = {
 }
 
 # Where the C-level arguments of a resource call live when control reaches
-# the resource, as (register, byte offset) relative to SS.
-#   PRGUF/DMGUF gateway (HANGMAN 0000:32CA): push [1cc3]; push ret; push bx;
-#     mov bx,sp -> args at SS:BX+6
+# the resource, as (register, args offset, near-return offset), all relative
+# to SS:reg. The near return address points back into the C caller, right
+# after its `call stub`; the caller's `add sp,N` there gives the arg count.
+#   PRGUF/DMGUF gateway (HANGMAN 0000:32CA): pop [1cc5]; push [1cc3];
+#     push [1cc5]; push bx; mov bx,sp -> args BX+6, return BX+2
 #   DMCSR gateway (HANGMAN 0000:345A): push bp; mov bp,sp; add bp,4
-#     -> args at SS:BP
+#     -> args BP+0, return BP-2
+#   SPELL gateway (HANGMAN 0000:3683): push bx; push es; mov bx,sp;
+#     add bx,6 -> args BX+0, return BX-2
 FRAME_SOURCE = {
-    "DMCSR": ("bp", 0),
+    "DMCSR": ("bp", 0, -2),
+    "SPELL": ("bx", 0, -2),
 }
+DEFAULT_FRAME_SOURCE = ("bx", 6, 2)
+STACK_WINDOW = 0x800    # args within [SP, SP+STACK_WINDOW) are stack pointers
 FRAME_WORDS = 8
 IDLE_WINDOW = 200
 IDLE_KINDS = 4
@@ -105,7 +112,10 @@ class TraceEvent:
 
 
 class PdmTracer:
-    def __init__(self, path, max_insns, script=None, verbose=False):
+    def __init__(self, path, max_insns, script=None, verbose=False,
+                 argc=None, learn_argc=False):
+        self.argc = argc or {}
+        self.learn_argc = {} if learn_argc else None
         self.path = path
         self.max_insns = max_insns
         self.verbose = verbose
@@ -275,9 +285,17 @@ class PdmTracer:
         ax, ss = self.reg("ax"), self.reg("ss")
         # Where the PDM-side glue leaves the C arguments differs per gateway
         # (see FRAME_SOURCE). Log the C argument words, not glue scratch.
-        reg, skip = FRAME_SOURCE.get(name, ("bx", 6))
-        base = self.reg(reg) + skip
-        frame = [self.rw(ss, base + 2 * i) for i in range(FRAME_WORDS)]
+        reg, skip, retoff = FRAME_SOURCE.get(name, DEFAULT_FRAME_SOURCE)
+        base = (self.reg(reg) + skip) & 0xFFFF
+        key = f"{name}:{ax:04X}"
+        if self.learn_argc is not None:
+            near_ret = self.rw(ss, (self.reg(reg) + retoff) & 0xFFFF)
+            n = self.cleanup_words(self.load_seg, near_ret)
+            self.learn_argc[key] = max(n, self.learn_argc.get(key, 0))
+        argc = self.argc.get(key, FRAME_WORDS)
+        frame = [self.rw(ss, base + 2 * i) for i in range(argc)]
+        sp = self.reg("sp")
+        ev_stack = [i for i, w in enumerate(frame) if sp <= w < sp + STACK_WINDOW]
         # caller = far return address on the stack
         sp = self.reg("sp")
         ret_ip, ret_cs = self.rw(ss, sp), self.rw(ss, sp + 2)
@@ -286,10 +304,29 @@ class PdmTracer:
                         strings=self.string_args(self.reg("ds"), frame),
                         caller=caller)
         ev.slot = (ip - 2) // 4
+        ev.stack_args = ev_stack
+        if key not in self.argc and self.argc:
+            ev.strings["argc"] = "unknown"
         ret = self.resource_return(name, ax, ev)
         ev.ret = ret
         self.setreg("ax", ret)
         self.emit(ev)
+
+    def cleanup_words(self, seg, off):
+        """Arg words a cdecl caller pops after the call returning to seg:off:
+        `add sp,imm8` (83 C4 ib), `add sp,imm16` (81 C4 iw), `pop reg`
+        (58-5F, possibly repeated), `inc sp`x2 (44 44)."""
+        b = self.rd(seg, off, 6)
+        if b[0] == 0x83 and b[1] == 0xC4:
+            return b[2] // 2
+        if b[0] == 0x81 and b[1] == 0xC4:
+            return (b[2] | b[3] << 8) // 2
+        if b[0] == 0x44 and b[1] == 0x44:
+            return 1
+        n = 0
+        while n < len(b) and 0x58 <= b[n] <= 0x5F and b[n] != 0x5C:
+            n += 1
+        return n
 
     def resource_return(self, name, ax, ev):
         """Scripted input first (in order), then the static policy table.
@@ -342,7 +379,7 @@ class PdmTracer:
         if ah == 0x30:                       # DOS version -> 3.30
             ret = 0x1E03
         elif ah == 0x4A:                     # resize block: always succeeds
-            ev.strings = {"paras": f"{self.reg('bx'):04X}"}
+            pass   # block size is layout dependent; not app behaviour
         elif ah == 0x48:                     # alloc: deny (no heap model yet)
             ret = 8
             self.setreg("bx", 0)
@@ -415,13 +452,24 @@ def main():
                     "(diffable golden file)")
     ap.add_argument("--no-frames", dest="frames", action="store_false",
                     help="omit argument frames from the text trace")
+    ap.add_argument("--argc", help="JSON table RES:AX -> argument count; "
+                    "frames are cut to that many words")
+    ap.add_argument("--learn-argc", metavar="FILE",
+                    help="learn arg counts from caller cleanup code (use on "
+                         "the original binary) and write them to FILE")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="print every event to stderr as it happens")
     args = ap.parse_args()
 
     script = json.load(open(args.script)) if args.script else None
-    t = PdmTracer(args.pdm, args.max_insns, script, args.verbose)
+    argc = json.load(open(args.argc)) if args.argc else None
+    t = PdmTracer(args.pdm, args.max_insns, script, args.verbose,
+                  argc=argc, learn_argc=bool(args.learn_argc))
     reason = t.run()
+    if args.learn_argc:
+        with open(args.learn_argc, "w") as f:
+            json.dump(dict(sorted(t.learn_argc.items())), f, indent=1)
+            f.write("\n")
     print(f"stopped after {t.insns} instructions, {len(t.events)} events: {reason}",
           file=sys.stderr)
     if args.trace:
@@ -444,7 +492,9 @@ def normalize(ev, frames=True):
     addresses (those legitimately differ in a rebuilt binary)."""
     s = f"{ev.kind:5s} {ev.name:8s} {ev.ax:04X}"
     if frames and ev.frame:
-        s += " [" + " ".join(f"{w:04X}" for w in ev.frame) + "]"
+        stk = getattr(ev, "stack_args", [])
+        s += " [" + " ".join("STK" if i in stk else f"{w:04X}"
+                             for i, w in enumerate(ev.frame)) + "]"
     strs = {k: v for k, v in ev.strings.items() if k != "script"}
     if strs:
         s += " " + " ".join(f"{k}={v!r}" for k, v in strs.items())

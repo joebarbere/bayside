@@ -1,0 +1,9 @@
+# HANGMAN.PDM DGROUP symbols: OFFSET name   (hex, DGROUP-relative)
+# Every C-visible original global lives at its original offset (the whole
+# original DGROUP is kept in place by tools/pdm2wasm.py), so pointer values
+# match the original exactly. Name things here as they get understood;
+# the C side declares them in hangman.h.
+0EFA g_titleDesc        # title descriptor passed to dm_setAppTitle (self-referencing struct)
+0F08 g_spellLoaded      # word: 1 once SPELL resource loaded (init 0000:0072)
+AB9E g_cursorHandle     # word: result of dm_initCursor (init 0000:0028)
+ABA2 g_windowHandle     # word: passed to dm_initWindow at cleanup (0000:00BF)
