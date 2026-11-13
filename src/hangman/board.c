@@ -28,7 +28,7 @@ void hangman_refreshBoard(void)
         } else {
             hangman_drawPlayerScores();
             hangman_drawWordBlanks();
-            hangman_drawWrongGuess(g_players[CUR_PLAYER].wrong);
+            hangman_drawWrongGuess(g_players[CUR_PLAYER].st.wrong);
         }
     } else {
         hangman_setupMenuBar();

@@ -9,7 +9,7 @@
 #define MSG_BOX         ((char *)0x0ED2) /* message box; text pointer at +3 */
 #define MSG_TEXT        DG16(0x0ED5)
 #define MSG_RESTORE_BAD 0x1316          /* "saved game is invalid" text */
-#define CFG_PTR_OFF     DG16(0x0EF3)    /* far pointer + size in g_saveConfig */
+#define CFG_PTR_OFF     DG16(0x0EF3)    /* far pointer + size in g_configDesc */
 #define CFG_PTR_SEG     DG16(0x0EF5)
 #define CFG_SIZE        DG16(0x0EF7)
 
@@ -78,11 +78,11 @@ int hangman_saveGame(void)
     CFG_PTR_OFF = (int)g_saveBuffer;
     CFG_PTR_SEG = save_getDS();
     CFG_SIZE = SAVE_SIZE;
-    if (dm_writeConfig(g_saveConfig) == -1) {
+    if (dm_writeConfig(g_configDesc) == -1) {
         return -1;
     }
-    if (dm_deleteConfig(g_saveConfig) == -1) {
-        dm_readConfig(g_saveConfig);
+    if (dm_deleteConfig(g_configDesc) == -1) {
+        dm_readConfig(g_configDesc);
         return -1;
     }
     GAME_SAVED = 1;
@@ -98,12 +98,12 @@ int hangman_restoreGame(void)
 {
     SAVE_EXISTS = 0;
     dm_setTimer(SAVE_TIMER);
-    dm_readConfig(g_saveConfig);
-    dm_deleteConfig(g_saveConfig);
-    if (hangman_validateSaveData(g_saveBuffer) != 0) {
+    dm_readConfig(g_configDesc);
+    dm_deleteConfig(g_configDesc);
+    if (hangman_validateSaveData((HmSave *)g_saveBuffer) != 0) {
         _memcpy((char *)&g_numPlayers, g_saveBuffer, SAVE_SIZE);
         CUR_PLAYER = hangman_restoreFromBuffer();
-        WORD_NUMBER = g_players[CUR_PLAYER].played + 1;
+        WORD_NUMBER = g_players[CUR_PLAYER].st.played + 1;
         return 0;
     }
     MSG_TEXT = MSG_RESTORE_BAD;
@@ -120,9 +120,9 @@ int hangman_restoreFromBuffer(void)
     int i;
 
     p = &g_players[0];
-    first = g_players[0].played;
+    first = g_players[0].st.played;
     for (i = 1; p = &g_players[i], i < g_numPlayers; i++) {
-        if (p->played < first) {
+        if (p->st.played < first) {
             return i;
         }
     }

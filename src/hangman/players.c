@@ -10,7 +10,7 @@ void hangman_newGame(void)
     int i;
 
     for (i = 0; g_numPlayers > i; i++) {
-        hangman_resetPlayerData(&g_players[i].b0D);
+        hangman_resetPlayerData(&g_players[i].st.guesses);
     }
     CUR_PLAYER = 0;
     WORD_NUMBER = 1;
@@ -39,7 +39,7 @@ int hangman_aboutDialog(int index)
         hangman_aboutBuildInfo(&g_players[i + 1], &g_players[i]);
     }
     g_players[g_numPlayers].name[0] = 0;
-    hangman_resetPlayerData(&g_players[g_numPlayers].b0D);
+    hangman_resetPlayerData(&g_players[g_numPlayers].st.guesses);
     if (index == CUR_PLAYER) {
         CUR_PLAYER = 0;
         return HM_READY;
@@ -55,7 +55,7 @@ int hangman_aboutDialog(int index)
 void hangman_aboutBuildInfo(struct HmPlayer *src, struct HmPlayer *dst)
 {
     _strncpy(dst->name, src->name);
-    hangman_aboutGetVersion(&src->b0D, &dst->b0D);
+    hangman_aboutGetVersion(&src->st.guesses, &dst->st.guesses);
 }
 
 /* address: 0000:18F8 hangman_aboutGetVersion -- misnamed: copy a player's

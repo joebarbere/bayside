@@ -23,35 +23,15 @@ struct HmWordTile {
     int           glyph;        /* +15 */
 };
 
-/* Player records at ADF0 (right after g_numPlayers), 0x15 bytes each.
- * Field meanings follow hangman_validateSaveData's limits. */
-struct HmPlayer {
-    char          name[13];
-    unsigned char b0D;          /* <= 0x15 */
-    unsigned char wrong;        /* +0E: wrong guesses (<= 12) */
-    unsigned char b0F;          /* <= 9 */
-    unsigned char won;          /* +10: words won (<= words per game) */
-    unsigned      played;       /* +11: words played (<= words per game) */
-    int           w13;
-};
-
-/* DeskMate event record, 8 bytes, filled by dm_getEvent */
-struct HmEvent {
-    unsigned char type;
-    int           code;
-    char          rest[5];
-};
+/* struct HmPlayer, struct HmEvent: see game.h (included first by hangman.h) */
 
 /* ---- DGROUP globals (dialog.syms); record layouts above ---------- */
 extern struct HmLetterTile g_letterTiles[];
 extern struct HmWordTile   g_wordTiles[];
-extern struct HmPlayer     g_players[];
 extern char g_playersForm[];
 extern char g_addPlayerForm[];
 extern char g_delPlayerForm[];
-extern char g_saveConfig[];
 extern char g_saveBuffer[];
-extern int  g_letterBitmaps[];
 
 /* dialog.c */
 int  hangman_defineGame(void);                  /* 0DD8 */

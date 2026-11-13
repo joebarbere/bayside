@@ -321,9 +321,12 @@ class PdmTracer:
         sp = self.reg("sp")
         ret_ip, ret_cs = self.rw(ss, sp), self.rw(ss, sp + 2)
         caller = f"{ret_cs - self.load_seg:04X}:{ret_ip:04X}"
+        # never decode pointers into the stack: their contents depend on
+        # each build's stack layout, not on program behaviour
+        strs = {k: v for k, v in self.string_args(self.reg("ds"), frame).items()
+                if int(k[1:]) not in ev_stack}
         ev = TraceEvent(0, "call", name, ax, self.snapshot(), frame=frame,
-                        strings=self.string_args(self.reg("ds"), frame),
-                        caller=caller)
+                        strings=strs, caller=caller)
         ev.slot = (ip - 2) // 4
         ev.stack_args = ev_stack
         ev.seg_args = self.segment_args(frame)
@@ -390,8 +393,8 @@ class PdmTracer:
 
     def cleanup_words(self, seg, off):
         """Arg words a cdecl caller pops after the call returning to seg:off:
-        `add sp,imm8` (83 C4 ib), `add sp,imm16` (81 C4 iw), `pop reg`
-        (58-5F, possibly repeated), `inc sp`x2 (44 44)."""
+        `add sp,imm8` (83 C4 ib), `add sp,imm16` (81 C4 iw), `pop ax..bx`
+        (58-5B, possibly repeated), `inc sp`x2 (44 44)."""
         b = self.rd(seg, off, 6)
         if b[0] == 0x83 and b[1] == 0xC4:
             return b[2] // 2
@@ -399,8 +402,10 @@ class PdmTracer:
             return (b[2] | b[3] << 8) // 2
         if b[0] == 0x44 and b[1] == 0x44:
             return 1
+        # pop ax/cx/dx/bx only: `pop si`/`pop di`/`pop bp` right after a
+        # call is the caller restoring its own saved registers, not cleanup
         n = 0
-        while n < len(b) and 0x58 <= b[n] <= 0x5F and b[n] != 0x5C:
+        while n < len(b) and 0x58 <= b[n] <= 0x5B:
             n += 1
         return n
 

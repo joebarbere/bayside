@@ -1,0 +1,7 @@
+{"word_addr": "0xAB92",
+ "defaults": {"DMCSR:0xE4": "0xF56E"},
+ "returns": [
+  {"on": ["DMCSR", "0xE9"], "arg0": "0x0EC6", "ret": "0xF701", "note": "replace saved game? yes"}],
+ "events": [["menu", "0xF501"], ["wrong", 2], ["menu", "0xF50B"], ["word"], ["key", " "],
+            ["word"], ["key", " "], ["word"], ["key", " "], ["word"], ["key", " "]],
+ "comment": "Save over an existing save; add a player mid-word; play on with 2 players (ends idle mid-game)"}

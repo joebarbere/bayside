@@ -31,3 +31,6 @@ disassembly/*.lock~
 # Python
 .venv/
 __pycache__/
+
+# agent worktrees
+.claude/worktrees/
