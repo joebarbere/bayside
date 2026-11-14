@@ -1,0 +1,7 @@
+{"word_addr": "0xAB92",
+ "defaults": {"DMCSR:0xE4": "0xF56E"},
+ "returns": [
+  {"on": ["DMGUF", "0x0B"], "ret": "0xFFFF", "note": "dm_setTitle(g_configDesc) fails: no config"},
+  {"on": ["DMCSR", "0xE9"], "arg0": "0x0EC0", "ret": "0xF703", "note": "quit: save first? yes"}],
+ "events": [["6", "0x0000"], ["key", "E"], ["menu", "0xF504"], ["word"], ["key", " "], ["menu", "0xF503"]],
+ "comment": "loadConfig: dm_setTitle -1 path; a timer event; F504 (run program); win a word; Quit with the save prompt answered yes"}

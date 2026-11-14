@@ -1,0 +1,2 @@
+# Area C DGROUP symbols: OFFSET name   (hex, DGROUP-relative)
+ABA6 g_figureStageBase  # word: stage offset into the figure stage table (12 - g_maxWrongGuesses; 0 while drawing the gallows)

@@ -27,3 +27,10 @@ disassembly/*.lock~
 *.err
 *.lst
 *.lnk
+
+# Python
+.venv/
+__pycache__/
+
+# agent worktrees
+.claude/worktrees/

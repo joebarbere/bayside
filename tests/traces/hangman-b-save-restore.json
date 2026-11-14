@@ -1,0 +1,15 @@
+{"word_addr": "0xAB92",
+ "defaults": {"DMCSR:0xE4": "0xF56E"},
+ "returns": [
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF56E", "poke": {"0C0F": 1}, "note": "Define Game: 2 players (radio state 0C0F=1), OK"},
+  {"on": ["DMCSR", "0xE9"], "arg0": "0x0EC6", "ret": "0xF701", "note": "Save: overwrite the saved game? yes (F701) -> hangman_saveGame"},
+  {"on": ["DMCSR", "0xE4"], "arg0": "0x0E9E", "ret": "0xF56E", "poke": {"0E8D": 0}, "note": "Delete Player: player 0 (radio 0E8D=0), OK"}],
+ "events": [["word"], ["key", " "],
+            ["6", "0x0004"],
+            ["menu", "0xF504"],
+            ["menu", "0xF501"],
+            ["menu", "0xF502"],
+            ["menu", "0xF50C"],
+            ["key", "E"],
+            ["menu", "0xF503"]],
+ "comment": "2 players: player 0 wins a word (turn -> player 1); type-6 event 4 (getTimerTick); F504 dialog (dm_runProgram 0); Save succeeds; Restore validates (turn = player 1 via restoreFromBuffer); delete player 0 (below current -> current shifts down); quit after a save (no prompt)"}

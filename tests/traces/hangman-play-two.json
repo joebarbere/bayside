@@ -1,0 +1,9 @@
+{"word_addr": "0xAB92",
+ "returns": [
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Words per Game down (4->3)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Words per Game down (3->2)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF56E", "poke": {"0C0F": 1}, "note": "Define Game: 2 players (radio state 0C0F=1), OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 1, "ret": "0xF56E", "note": "Define Players: OK"}],
+ "events": [["word"], ["key", " "], ["wrong", 7], ["key", " "],
+            ["wrong", 1], ["word"], ["key", " "], ["word"], ["key", " "]],
+ "comment": "2 players x 2 words, alternating turns, scores; end-of-game box -> new game"}

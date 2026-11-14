@@ -1,0 +1,750 @@
+#!/usr/bin/env python3
+"""
+pdm_trace.py -- Run a DeskMate PDM under Unicorn with a fake DESK.EXE and log
+every call it makes across the PDM <-> DeskMate boundary.
+
+Why: a PDM never touches hardware. Everything it does goes through
+  * INT E0h            -- DESK.EXE services (load/unload/query resources, ...)
+  * far calls          -- into resource entry points (PRGUF, DMGUF, DMCSR,
+                          SPELL...) that INT E0h AX=0206h hands back
+  * INT 21h            -- plain DOS (memory, files, exit)
+If the rebuilt PDM produces the same boundary trace as the original for the
+same scripted input, it behaves the same. Diffing traces is fast (seconds),
+needs no graphics, and points at the first call where behaviour diverges.
+
+How it works:
+  * The MZ image is loaded and relocated like DOS would, with a PSP in front.
+  * INT E0h AX=0206h writes a far pointer to a per-resource *trap segment*
+    into ES:BX. Each trap segment is filled with `INT F0h; RETF`, so any far
+    call into a resource lands in our INT F0h hook (which logs it and sets
+    the return value) and then returns to the PDM normally.
+  * Return values come from a small policy table (RESOURCE_RETURNS) and an
+    optional input script for event-fetch calls. Unknown calls return 0.
+
+Usage:
+    tools/pdm_trace.py archive/deskmate-3.05/extracted/HANGMAN.PDM \
+        [-o trace.jsonl] [--max-insns N] [--script events.json] [-v]
+
+Output: one JSON object per line (see TraceEvent below); a human-readable
+summary goes to stderr.
+"""
+
+import argparse
+import json
+import re
+import struct
+import sys
+from dataclasses import dataclass, field
+
+from unicorn import (Uc, UcError, UC_ARCH_X86, UC_MODE_16,
+                     UC_HOOK_INTR, UC_HOOK_CODE)
+from unicorn.x86_const import (
+    UC_X86_REG_AX, UC_X86_REG_BX, UC_X86_REG_CX, UC_X86_REG_DX,
+    UC_X86_REG_SI, UC_X86_REG_DI, UC_X86_REG_BP, UC_X86_REG_SP,
+    UC_X86_REG_IP, UC_X86_REG_CS, UC_X86_REG_DS, UC_X86_REG_ES,
+    UC_X86_REG_SS, UC_X86_REG_FLAGS)
+
+MEM_SIZE = 0x100000          # 1 MB real-mode address space
+PSP_SEG = 0x1000             # where the fake DOS puts the PSP
+ENV_SEG = 0x0F00             # environment block
+TOP_OF_MEM = 0x9FFF          # PSP:[2] -- last paragraph available
+TRAP_BASE_SEG = 0xE000       # resource trap segments: E000, E100, ...
+TRAP_INT = 0xF0
+TRAP_SLOTS = 0x400           # INT F0h;RETF stubs per trap segment
+CF = 0x0001
+
+REGS = {"ax": UC_X86_REG_AX, "bx": UC_X86_REG_BX, "cx": UC_X86_REG_CX,
+        "dx": UC_X86_REG_DX, "si": UC_X86_REG_SI, "di": UC_X86_REG_DI,
+        "bp": UC_X86_REG_BP, "sp": UC_X86_REG_SP, "ds": UC_X86_REG_DS,
+        "es": UC_X86_REG_ES, "ss": UC_X86_REG_SS}
+
+# Default return values for resource calls, keyed by (resource, AX).
+# Anything not listed returns AX=0. Grow this as the trace reveals what the
+# PDM needs to make progress -- each entry is a documented fact about the
+# DeskMate API, so annotate where it came from.
+RESOURCE_RETURNS = {
+    # DMCSR version (handler 0000:0653: mov ax,036Fh; and ah,0Fh). HANGMAN's
+    # glue (0000:38C6) picks its service-code mask from AL: AL > 37h ->
+    # EFFFh, so codes reach DMCSR as 20xxh, as in real DeskMate.
+    ("DMCSR", 0x00D5): 0x036F,
+}
+
+# Where the C-level arguments of a resource call live when control reaches
+# the resource, as (register, args offset, near-return offset), all relative
+# to SS:reg. The near return address points back into the C caller, right
+# after its `call stub`; the caller's `add sp,N` there gives the arg count.
+#   PRGUF/DMGUF gateway (HANGMAN 0000:32CA): pop [1cc5]; push [1cc3];
+#     push [1cc5]; push bx; mov bx,sp -> args BX+6, return BX+2
+#   DMCSR gateway (HANGMAN 0000:345A): push bp; mov bp,sp; add bp,4
+#     -> args BP+0, return BP-2
+#   SPELL gateway (HANGMAN 0000:3683): push bx; push es; mov bx,sp;
+#     add bx,6 -> args BX+0, return BX-2
+FRAME_SOURCE = {
+    "DMCSR": ("bp", 0, -2),
+    "SPELL": ("bx", 0, -2),
+}
+DEFAULT_FRAME_SOURCE = ("bx", 6, 2)
+STACK_WINDOW = 0x800    # args within [SP, SP+STACK_WINDOW) are stack pointers
+FRAME_WORDS = 8
+AL_IS_INPUT = {0x25, 0x35, 0x3D, 0x42, 0x43, 0x44, 0x4B, 0x4C, 0x57}
+IDLE_WINDOW = 400
+IDLE_KINDS = 12
+
+# INT E0h service return values (AX) not handled specially below.
+INT_E0_RETURNS = {
+    0x0208: 1,   # query resource: >0 means present (HANGMAN 0000:320B)
+}
+
+
+def num(v):
+    return int(v, 0) if isinstance(v, str) else int(v)
+
+
+class Stop(Exception):
+    pass
+
+
+@dataclass
+class TraceEvent:
+    seq: int
+    kind: str                 # "int21" | "inte0" | "call" | "int" | "exit"
+    name: str                 # resource name / DOS fn label
+    ax: int
+    regs: dict
+    frame: list = field(default_factory=list)   # words at SS:BX (calls)
+    strings: dict = field(default_factory=dict) # decoded string args
+    ret: int | None = None
+    caller: str = ""          # CS:IP of the far call / INT site
+
+
+class PdmTracer:
+    def __init__(self, path, max_insns, script=None, verbose=False,
+                 argc=None, learn_argc=False, deep=None):
+        self.deep = deep or {}
+        self.argc = argc or {}
+        self.learn_argc = {} if learn_argc else None
+        self.path = path
+        self.max_insns = max_insns
+        self.verbose = verbose
+        self.events = []
+        self.resources = {}       # trap seg -> name
+        self.res_by_name = {}     # name -> trap seg
+        self.open_files = {}      # handle -> (name, data, pos)
+        self.next_handle = 5
+        # A scenario is either a list of return-value steps (old form) or
+        # {"returns": [...], "events": [...]}; events are ["key", "A"],
+        # ["menu", "0xF500"] or [type, word].
+        self.word_addr = 0
+        self.defaults = {}
+        self.clock_reads = 0
+        self.held = None            # DMCSR's held (peeked) event
+        self.stop_after = None
+        if isinstance(script, dict):
+            evs = script.get("events", [])
+            self.events_in = [self.parse_event(e) for e in evs]
+            self.events_ahead = [len(e) > 2 and e[2] == "ahead" for e in evs]
+            self.word_addr = num(script.get("word_addr", 0))
+            # "defaults": {"DMCSR:0xE4": "0xF56E"} -- return value for every
+            # such call not answered by a "returns" step
+            for k, v in script.get("defaults", {}).items():
+                r, a = k.split(":")
+                self.defaults[f"{r}:{num(a):04X}"] = num(v)
+            script = script.get("returns", [])
+        else:
+            self.events_in = []
+            self.events_ahead = []
+        self.script = list(script or [])
+        self.exit_code = None
+        self.recent = []
+        self.uc = Uc(UC_ARCH_X86, UC_MODE_16)
+        self.uc.mem_map(0, MEM_SIZE)
+        self._load()
+        self.uc.hook_add(UC_HOOK_INTR, self._on_int)
+
+    # ---- memory helpers ------------------------------------------------
+    def rd(self, seg, off, n):
+        return bytes(self.uc.mem_read(((seg << 4) + off) & 0xFFFFF, n))
+
+    def wr(self, seg, off, data):
+        self.uc.mem_write(((seg << 4) + off) & 0xFFFFF, bytes(data))
+
+    def rw(self, seg, off):
+        return struct.unpack("<H", self.rd(seg, off, 2))[0]
+
+    def ww(self, seg, off, v):
+        self.wr(seg, off, struct.pack("<H", v & 0xFFFF))
+
+    def asciiz(self, seg, off, limit=128):
+        raw = self.rd(seg, off, limit)
+        end = raw.find(b"\0")
+        return raw[: end if end >= 0 else limit]
+
+    def reg(self, r):
+        return self.uc.reg_read(REGS[r])
+
+    def setreg(self, r, v):
+        self.uc.reg_write(REGS[r], v & 0xFFFF)
+
+    def set_cf(self, on):
+        fl = self.uc.reg_read(UC_X86_REG_FLAGS)
+        self.uc.reg_write(UC_X86_REG_FLAGS, (fl | CF) if on else (fl & ~CF))
+
+    def snapshot(self):
+        return {r: self.reg(r) for r in REGS}
+
+    # ---- loader ----------------------------------------------------------
+    def _load(self):
+        data = open(self.path, "rb").read()
+        (sig, last, pages, nrel, hdrp, minalloc, maxalloc, ss, sp, _csum,
+         ip, cs, reloff, _ovl) = struct.unpack("<2s13H", data[:28])
+        if sig not in (b"MZ", b"ZM"):
+            raise SystemExit(f"{self.path}: not an MZ executable")
+        size = pages * 512 - ((512 - last) if last else 0)
+        image = data[hdrp * 16: size]
+        self.dm89 = data[0x1C:0x20] == b"DM89"
+        if self.dm89:
+            # DM89 CS:IP at 0x26/0x28 is authoritative (README, DM89 table)
+            cs, ip = struct.unpack("<HH", data[0x26:0x2A])
+        load = PSP_SEG + 0x10
+        self.load_seg = load
+        self.wr(load, 0, image)
+        for i in range(nrel):
+            off, seg = struct.unpack("<HH", data[reloff + 4 * i: reloff + 4 * i + 4])
+            self.ww(load + seg, off, self.rw(load + seg, off) + load)
+
+        # PSP
+        self.wr(PSP_SEG, 0, b"\xCD\x20")
+        self.ww(PSP_SEG, 2, TOP_OF_MEM)
+        self.ww(PSP_SEG, 0x2C, ENV_SEG)
+        self.wr(PSP_SEG, 0x80, b"\x00\x0D")
+        self.wr(ENV_SEG, 0, b"DMCONFIG=C:\\\0COMSPEC=C:\\COMMAND.COM\0\0"
+                            b"\x01\x00C:\\HANGMAN.PDM\0")
+
+        # Trap segments are allocated lazily per resource; IVT entry for
+        # INT F0h is irrelevant because UC_HOOK_INTR intercepts first.
+        self.uc.reg_write(UC_X86_REG_CS, load + cs)
+        self.uc.reg_write(UC_X86_REG_IP, ip)
+        self.uc.reg_write(UC_X86_REG_SS, load + ss)
+        self.uc.reg_write(UC_X86_REG_SP, sp)
+        self.uc.reg_write(UC_X86_REG_DS, PSP_SEG)
+        self.uc.reg_write(UC_X86_REG_ES, PSP_SEG)
+        self.entry = (load + cs, ip)
+        print(f"loaded {self.path}: {len(image)} bytes at {load:04X}:0000, "
+              f"entry {load + cs:04X}:{ip:04X} (DM89={'yes' if self.dm89 else 'no'}), "
+              f"{nrel} relocs", file=sys.stderr)
+
+    def trap_for(self, name):
+        if name in self.res_by_name:
+            return self.res_by_name[name]
+        seg = TRAP_BASE_SEG + 0x100 * len(self.resources)
+        stub = b"\xCD" + bytes([TRAP_INT]) + b"\xCB\x90"
+        self.wr(seg, 0, stub * TRAP_SLOTS)
+        self.resources[seg] = name
+        self.res_by_name[name] = seg
+        return seg
+
+    # ---- tracing ---------------------------------------------------------
+    def caller_addr(self, back=2):
+        cs = self.uc.reg_read(UC_X86_REG_CS)
+        ip = self.uc.reg_read(UC_X86_REG_IP)
+        return f"{cs - self.load_seg:04X}:{(ip - back) & 0xFFFF:04X}"
+
+    def emit(self, ev):
+        ev.seq = len(self.events)
+        self.events.append(ev)
+        if self.verbose:
+            print(self.fmt(ev), file=sys.stderr)
+        # Idle detection: the last IDLE_WINDOW events use <= IDLE_KINDS
+        # distinct calls (e.g. GetEvent/Yield ping-pong waiting for input).
+        key = (ev.kind, ev.name, ev.ax, tuple(ev.frame),
+               tuple(sorted(ev.strings.items())))
+        self.recent.append(key)
+        if len(self.recent) > IDLE_WINDOW:
+            self.recent.pop(0)
+            if len(set(self.recent)) <= IDLE_KINDS:
+                # trim the idle tail down to one period for a stable golden
+                period = len(set(self.recent))
+                del self.events[len(self.events) - IDLE_WINDOW + period:]
+                raise Stop(f"idle: waiting for input in a {period}-call loop "
+                           f"({', '.join(f'{k[1]}:{k[2]:04X}' for k in dict.fromkeys(self.recent))})")
+
+    @staticmethod
+    def fmt(ev):
+        s = f"[{ev.seq:5d}] {ev.caller:>9s} {ev.kind:5s} {ev.name:8s} AX={ev.ax:04X}"
+        if ev.frame:
+            s += " frame=" + " ".join(f"{w:04X}" for w in ev.frame)
+        if ev.strings:
+            s += " " + " ".join(f"{k}={v!r}" for k, v in ev.strings.items())
+        if ev.ret is not None:
+            s += f" -> {ev.ret:04X}"
+        return s
+
+    def string_args(self, seg, words):
+        """Heuristic: decode words that look like DS-relative ASCIIZ pointers."""
+        out = {}
+        for i, w in enumerate(words):
+            if w < 0x10:
+                continue
+            raw = self.asciiz(seg, w, 64)
+            starts_string = self.rd(seg, w - 1, 1)[0] == 0
+            if starts_string and len(raw) >= 3 and all(32 <= c < 127 for c in raw):
+                out[f"s{i}"] = raw.decode("ascii")
+        return out
+
+    # ---- interrupt dispatch ---------------------------------------------
+    def _on_int(self, uc, intno, _ud):
+        try:
+            if intno == TRAP_INT:
+                self.on_resource_call()
+            elif intno == 0xE0:
+                self.on_int_e0()
+            elif intno == 0x21:
+                self.on_int21()
+            else:
+                ax = self.reg("ax")
+                self.emit(TraceEvent(0, "int", f"INT{intno:02X}", ax,
+                                     self.snapshot(), caller=self.caller_addr()))
+        except Stop as e:
+            self.stop_reason = str(e)
+            uc.emu_stop()
+
+    def on_resource_call(self):
+        cs = self.uc.reg_read(UC_X86_REG_CS)
+        ip = self.uc.reg_read(UC_X86_REG_IP)
+        name = self.resources.get(cs, f"?{cs:04X}")
+        ax, ss = self.reg("ax"), self.reg("ss")
+        if name == "DMCSR":
+            # DMCSR dispatches on AX & 0FFFh (0000:0475); the top nibble
+            # (2 from HANGMAN) is passed to the handler, not part of the code
+            ax &= 0x0FFF
+        # Where the PDM-side glue leaves the C arguments differs per gateway
+        # (see FRAME_SOURCE). Log the C argument words, not glue scratch.
+        reg, skip, retoff = FRAME_SOURCE.get(name, DEFAULT_FRAME_SOURCE)
+        base = (self.reg(reg) + skip) & 0xFFFF
+        key = f"{name}:{ax:04X}"
+        if self.learn_argc is not None:
+            near_ret = self.rw(ss, (self.reg(reg) + retoff) & 0xFFFF)
+            n = self.cleanup_words(self.load_seg, near_ret)
+            self.learn_argc[key] = max(n, self.learn_argc.get(key, 0))
+        argc = self.argc.get(key, FRAME_WORDS)
+        frame = [self.rw(ss, base + 2 * i) for i in range(argc)]
+        sp = self.reg("sp")
+        ev_stack = [i for i, w in enumerate(frame) if sp <= w < sp + STACK_WINDOW]
+        # caller = far return address on the stack
+        sp = self.reg("sp")
+        ret_ip, ret_cs = self.rw(ss, sp), self.rw(ss, sp + 2)
+        caller = f"{ret_cs - self.load_seg:04X}:{ret_ip:04X}"
+        # never decode pointers into the stack: their contents depend on
+        # each build's stack layout, not on program behaviour
+        strs = {k: v for k, v in self.string_args(self.reg("ds"), frame).items()
+                if int(k[1:]) not in ev_stack}
+        ev = TraceEvent(0, "call", name, ax, self.snapshot(), frame=frame,
+                        strings=strs, caller=caller)
+        ev.slot = (ip - 2) // 4
+        ev.stack_args = ev_stack
+        ev.seg_args = self.segment_args(frame)
+        if key not in self.argc and self.argc:
+            ev.strings["argc"] = "unknown"
+        ret = self.resource_return(name, ax, ev)
+        ev.ret = ret
+        self.setreg("ax", ret)
+        self.emit(ev)
+        if self.stop_after:
+            raise Stop(self.stop_after)
+
+    def on_function_entry(self, name):
+        """Deep trace: entry of an original (untranslated) function. All code
+        is in segment 0 near-called, so [SS:SP] is the return address into
+        the caller and the args follow it (cdecl)."""
+        ss, sp = self.reg("ss"), self.reg("sp")
+        ret = self.rw(ss, sp)
+        key = f"fn:{name}"
+        if self.learn_argc is not None:
+            n = self.cleanup_words(self.load_seg, ret)
+            self.learn_argc[key] = max(n, self.learn_argc.get(key, 0))
+        argc = self.argc.get(key, 0)
+        frame = [self.rw(ss, sp + 2 + 2 * i) for i in range(argc)]
+        ev = TraceEvent(0, "fn", name, 0, self.snapshot(), frame=frame,
+                        caller=f"0000:{ret:04X}")
+        ev.stack_args = [i for i, w in enumerate(frame)
+                         if sp <= w < sp + STACK_WINDOW]
+        ev.seg_args = self.segment_args(frame)
+        self.emit(ev)
+
+    def segment_args(self, frame):
+        """Args that are absolute segment values (parts of far pointers).
+        DGROUP's segment moves whenever the code segment grows, so these
+        are compared symbolically. SS == DGROUP once the startup has run."""
+        names = {self.reg("ss"): "DGRP", self.load_seg: "CSEG"}
+        return {i: names[w] for i, w in enumerate(frame) if w in names}
+
+    def expand_event_macros(self):
+        """Scenario macros, expanded when they reach the queue head so they
+        see the game's state at that moment (word at self.word_addr):
+          ["word"]      type the current word's distinct letters in order
+          ["wrong", n]  type n letters not in the current word (A..Z order)"""
+        while self.events_in and self.events_in[0][0] in ("word", "wrong"):
+            kind, arg = self.events_in.pop(0)
+            word = self.asciiz(self.reg("ds"), self.word_addr, 32).decode("latin-1").upper()
+            if kind == "word":
+                letters = list(dict.fromkeys(c for c in word if "A" <= c <= "Z"))
+            else:
+                letters = [c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if c not in word][:arg]
+            self.events_in[0:0] = [(1, ord(c)) for c in letters]
+            self.events_ahead[0:1] = [False] * len(letters)
+
+    @staticmethod
+    def parse_event(e):
+        kind = e[0]
+        if kind == "word":
+            return ("word", None)
+        if kind == "wrong":
+            return ("wrong", int(e[1]))
+        val = e[1]
+        if kind == "key":
+            return (1, ord(val) if isinstance(val, str) and len(val) == 1 else num(val))
+        if kind == "menu":
+            return (3, num(val))
+        return (num(kind), num(val))
+
+    def cleanup_words(self, seg, off):
+        """Arg words a cdecl caller pops after the call returning to seg:off:
+        `add sp,imm8` (83 C4 ib), `add sp,imm16` (81 C4 iw), `pop ax..bx`
+        (58-5B, possibly repeated), `inc sp`x2 (44 44)."""
+        b = self.rd(seg, off, 6)
+        if b[0] == 0x83 and b[1] == 0xC4:
+            return b[2] // 2
+        if b[0] == 0x81 and b[1] == 0xC4:
+            return (b[2] | b[3] << 8) // 2
+        if b[0] == 0x44 and b[1] == 0x44:
+            return 1
+        # pop ax/cx/dx/bx only: `pop si`/`pop di`/`pop bp` right after a
+        # call is the caller restoring its own saved registers, not cleanup
+        n = 0
+        while n < len(b) and 0x58 <= b[n] <= 0x5B:
+            n += 1
+        return n
+
+    def resource_return(self, name, ax, ev):
+        """Scripted input first (in order), then the static policy table.
+
+        Script steps: {"on": ["DMCSR", "0xE4"], "ret": "0xF56E",
+                       "after": 3, "note": "..."}
+        A step fires on the (after+1)-th matching call once it reaches the
+        head of the script. Numbers may be ints or hex strings.
+        """
+        # DeskMate event queue, as implemented by DMCSR.R89 (handlers
+        # 0000:2A31 peek, 0000:2B9B get, 0000:2BD5 flush; see
+        # research/docs/dmcsr-services.md). The record is 7 bytes at arg0
+        # (DS-relative): type byte, key/menu word, word, word.
+        #   0014h peek : non-blocking. Returns the held event if there is
+        #                one; otherwise polls the input sources and, if one
+        #                has an event, holds it. Nothing -> type 0. A type-1
+        #                (key) event gets FFFFh in its second word.
+        #   0013h get  : peeks until an event exists (BLOCKS), then consumes
+        #                it (type 4 is not consumed).
+        #   0016h flush: discards the held event without returning it.
+        # Scenario events are input the user gives while the program waits
+        # in get; an event marked "ahead" was typed ahead, so peeks see it.
+        # When the script has no more input, get would block forever: stop.
+        if name == "DMCSR" and ax in (0x0013, 0x0014) and ev.frame:
+            ptr = ev.frame[0]
+            if self.held is None and self.events_in:
+                if ax == 0x0013 or self.events_ahead[0]:
+                    self.expand_event_macros()
+                    if self.events_in:
+                        self.held = self.events_in.pop(0)
+                        self.events_ahead.pop(0)
+            if self.held is None and ax == 0x0013:
+                self.stop_after = "idle: get (DMCSR 0013h) blocks; the script has no more input"
+            rec = bytes(7)
+            if self.held is not None:
+                t, w = self.held
+                rec = bytes([t, w & 0xFF, w >> 8]) + (b"\xff\xff" if t == 1 else bytes(2)) + bytes(2)
+                ev.strings["event"] = f"{t}:{w:04X}"
+                if ax == 0x0013 and t != 4:
+                    self.held = None
+            self.wr(self.reg("ds"), ptr, rec)
+            return 0
+        if name == "DMCSR" and ax == 0x0016:
+            self.held = None
+            return 0
+        # dm_keyToChar: DMGUF forwards 0023h to PRGUF.RES (0000:01CA): the
+        # key word goes through the DOS country case-map routine (changes
+        # only AL >= 80h; identity here), then AL a-z is upper-cased. AH
+        # passes through unchanged.
+        if name == "DMGUF" and ax == 0x0023 and ev.frame:
+            k = ev.frame[0]
+            c = k & 0xFF
+            return (k & 0xFF00) | (c - 32 if 0x61 <= c <= 0x7A else c)
+        if self.script:
+            step = self.script[0]
+            want_name, want_ax = step["on"]
+            arg_ok = "arg0" not in step or (ev.frame and ev.frame[0] == num(step["arg0"]))
+            if want_name == name and num(want_ax) == ax and arg_ok:
+                left = num(step.get("after", 0))
+                if left > 0:
+                    step["after"] = left - 1
+                else:
+                    self.script.pop(0)
+                    ev.strings["script"] = step.get("note", "")
+                    # "poke": {"0C0F": 1} sets DGROUP bytes first (dialog
+                    # state the form would have changed, e.g. a radio button)
+                    for off, val in step.get("poke", {}).items():
+                        data = (val.encode("latin-1") + b"\0" if isinstance(val, str)
+                                and not val.startswith("0x") else bytes([num(val)]))
+                        self.wr(self.reg("ds"), int(off, 16), data)
+                    return num(step.get("ret", 0))
+        d = self.defaults.get(f"{name}:{ax:04X}")
+        if d is not None:
+            return d
+        return RESOURCE_RETURNS.get((name, ax), 0)
+
+    def on_int_e0(self):
+        ax = self.reg("ax")
+        ev = TraceEvent(0, "inte0", "DESK", ax, self.snapshot(),
+                        caller=self.caller_addr())
+        ret = INT_E0_RETURNS.get(ax, 0)
+        if ax in (0x0206, 0x0207, 0x0208):
+            name = self.asciiz(self.reg("ds"), self.reg("dx"), 16).decode("ascii", "replace")
+            ev.name = name
+            ev.strings = {"res": name}
+            if ax == 0x0206:
+                seg = self.trap_for(name)
+                es, bx = self.reg("es"), self.reg("bx")
+                self.ww(es, bx, 0)       # offset 0 of the trap segment
+                self.ww(es, bx + 2, seg)
+                ret = 1
+        ev.ret = ret
+        self.setreg("ax", ret)
+        self.emit(ev)
+
+    # ---- minimal DOS -----------------------------------------------------
+    def on_int21(self):
+        ah = self.reg("ax") >> 8
+        al = self.reg("ax") & 0xFF
+        # AL is an input only for some DOS functions; elsewhere it is
+        # leftover register garbage that differs between builds.
+        ax_in = self.reg("ax") if ah in AL_IS_INPUT else ah << 8
+        ev = TraceEvent(0, "int21", f"21/{ah:02X}", ax_in,
+                        self.snapshot(), caller=self.caller_addr())
+        ret = None
+        self.set_cf(False)
+        if ah == 0x30:                       # DOS version -> 3.30
+            ret = 0x1E03
+        elif ah == 0x4A:                     # resize block: always succeeds
+            pass   # block size is layout dependent; not app behaviour
+        elif ah == 0x48:                     # alloc: deny (no heap model yet)
+            ret = 8
+            self.setreg("bx", 0)
+            self.set_cf(True)
+        elif ah in (0x25,):                  # set vector
+            pass
+        elif ah == 0x35:                     # get vector
+            self.setreg("es", 0)
+            self.setreg("bx", 0)
+        elif ah == 0x2A:                     # date: fixed for reproducibility
+            self.setreg("cx", 1990)
+            self.setreg("dx", 0x0101)
+            ret = (self.reg("ax") & 0xFF00) | 1
+        elif ah == 0x2C:
+            # Time: starts 12:00:00.00 and advances 1/100 s per read, so
+            # delay loops that poll the clock terminate, identically in the
+            # original and the rebuild (independent of instruction counts).
+            t = self.clock_reads
+            self.clock_reads += 1
+            sec, hund = divmod(t, 100)
+            mins, sec = divmod(sec, 60)
+            self.setreg("cx", (12 << 8) | (mins % 60))
+            self.setreg("dx", (sec << 8) | hund)
+            ev.strings = {"t": f"12:{mins % 60:02d}:{sec:02d}.{hund:02d}"}
+        elif ah == 0x3D:                     # open: no files yet -> not found
+            fn = self.asciiz(self.reg("ds"), self.reg("dx")).decode("ascii", "replace")
+            ev.strings = {"file": fn}
+            ret = 2
+            self.set_cf(True)
+        elif ah == 0x40:                     # write
+            data = self.rd(self.reg("ds"), self.reg("dx"), self.reg("cx"))
+            ev.strings = {"h": self.reg("bx"), "data": data.decode("latin-1")}
+            ret = self.reg("cx")
+        elif ah == 0x44:                     # ioctl: report char device
+            self.setreg("dx", 0x80)
+        elif ah == 0x4C:
+            self.exit_code = al
+            ev.kind = "exit"
+            self.emit(ev)
+            raise Stop(f"program exited via INT 21h/4Ch code {al}")
+        else:
+            ev.strings = {"unhandled": True}
+        if ret is not None:
+            self.setreg("ax", ret)
+            ev.ret = ret
+        self.emit(ev)
+
+    # ---- run -------------------------------------------------------------
+    def run(self):
+        self.stop_reason = None
+        self.insns = 0
+
+        base = self.load_seg << 4
+        deep = {base + off: name for off, name in self.deep.items()}
+
+        def count(uc, addr, size, _):
+            self.insns += 1
+            if self.insns >= self.max_insns:
+                self.stop_reason = f"instruction budget ({self.max_insns}) exhausted"
+                uc.emu_stop()
+            if addr in deep:
+                try:
+                    self.on_function_entry(deep[addr])
+                except Stop as e:
+                    self.stop_reason = str(e)
+                    uc.emu_stop()
+        self.uc.hook_add(UC_HOOK_CODE, count)
+        cs, ip = self.entry
+        try:
+            self.uc.emu_start((cs << 4) + ip, 0xFFFFF + 1)
+        except UcError as e:
+            cs = self.uc.reg_read(UC_X86_REG_CS)
+            ip = self.uc.reg_read(UC_X86_REG_IP)
+            self.stop_reason = (f"CPU fault {e} at {cs - self.load_seg:04X}:{ip:04X} "
+                                f"(abs {cs:04X}:{ip:04X})")
+        return self.stop_reason
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("pdm")
+    ap.add_argument("-o", "--out", help="write JSONL trace here")
+    ap.add_argument("--max-insns", type=int, default=5_000_000)
+    ap.add_argument("--script", help="JSON list of scripted resource returns")
+    ap.add_argument("-t", "--trace", help="write normalized text trace here "
+                    "(diffable golden file)")
+    ap.add_argument("--no-frames", dest="frames", action="store_false",
+                    help="omit argument frames from the text trace")
+    ap.add_argument("--argc", help="JSON table RES:AX -> argument count; "
+                    "frames are cut to that many words")
+    ap.add_argument("--learn-argc", metavar="FILE",
+                    help="learn arg counts from caller cleanup code (use on "
+                         "the original binary) and write them to FILE")
+    ap.add_argument("--deep", metavar="FUNCS",
+                    help="also log calls into these functions (functions.txt "
+                         "format: OFFSET name)")
+    ap.add_argument("--deep-skip", metavar="LIST",
+                    help="functions to leave out of the deep trace (the "
+                         "functions implemented in C, build/hangman/in_c.txt: C-to-C calls bypass the original "
+                         "address, so they cannot be compared)")
+    ap.add_argument("--peek", action="append", default=[], metavar="OFF:LEN",
+                    help="print DGROUP bytes at OFF (hex) when tracing stops")
+    ap.add_argument("-v", "--verbose", action="store_true",
+                    help="print every event to stderr as it happens")
+    args = ap.parse_args()
+
+    script = json.load(open(args.script)) if args.script else None
+    argc = json.load(open(args.argc)) if args.argc else None
+    deep = read_syms(args.deep) if args.deep else {}
+    if args.deep_skip:
+        skip = set(read_syms(args.deep_skip).values())
+        deep = {o: n for o, n in deep.items() if n not in skip}
+    t = PdmTracer(args.pdm, args.max_insns, script, args.verbose,
+                  argc=argc, learn_argc=bool(args.learn_argc), deep=deep)
+    reason = t.run()
+    for spec in args.peek:
+        off, ln = (int(x, 16) for x in spec.split(":"))
+        print(f"peek {off:04X}: {t.rd(t.reg('ss'), off, ln)!r}", file=sys.stderr)
+    if args.learn_argc:
+        # merge with what earlier scenarios learned (max per service)
+        try:
+            known = json.load(open(args.learn_argc))
+        except (OSError, ValueError):
+            known = {}
+        for k, v in t.learn_argc.items():
+            known[k] = max(v, known.get(k, 0))
+        with open(args.learn_argc, "w") as f:
+            json.dump(dict(sorted(known.items())), f, indent=1)
+            f.write("\n")
+    print(f"stopped after {t.insns} instructions, {len(t.events)} events: {reason}",
+          file=sys.stderr)
+    if args.trace:
+        with open(args.trace, "w") as f:
+            for line in fold_repeats([normalize(ev, args.frames) for ev in t.events]):
+                f.write(line + "\n")
+            f.write(f"# end: {'exit' if t.exit_code is not None else 'idle' if (reason or '').startswith('idle') else reason}\n")
+    if args.out:
+        with open(args.out, "w") as f:
+            for ev in t.events:
+                d = dict(ev.__dict__)
+                f.write(json.dumps(d) + "\n")
+    if not args.verbose:
+        for line in collapse(PdmTracer.fmt(ev) for ev in t.events[-40:]):
+            print(line, file=sys.stderr)
+
+
+def read_syms(path):
+    out = {}
+    for line in open(path):
+        line = line.split("#")[0].strip()
+        if line:
+            off, name = line.split()[:2]
+            out[int(off, 16)] = name
+    return out
+
+
+def normalize(ev, frames=True):
+    """Stable one-line form for golden files: no seq numbers or code
+    addresses (those legitimately differ in a rebuilt binary)."""
+    s = (f"{ev.kind:5s} {ev.name}" if ev.kind == "fn"
+         else f"{ev.kind:5s} {ev.name:8s} {ev.ax:04X}")
+    if frames and ev.frame:
+        stk = getattr(ev, "stack_args", [])
+        seg = getattr(ev, "seg_args", {})
+        s += " [" + " ".join("STK" if i in stk else seg.get(i, f"{w:04X}")
+                             for i, w in enumerate(ev.frame)) + "]"
+    strs = {k: v for k, v in ev.strings.items() if k != "script"}
+    if strs:
+        s += " " + " ".join(f"{k}={v!r}" for k, v in strs.items())
+    if ev.ret is not None:
+        s += f" -> {ev.ret:04X}"
+    if "script" in ev.strings:
+        s += f"   # script: {ev.strings['script']}"
+    return s
+
+
+def fold_repeats(lines, max_period=32):
+    """Fold a block of lines repeated back to back (a delay or polling loop)
+    into '#{ xN' / first iteration / '#}'. Clock readings (t='...') are
+    ignored when comparing iterations, since every pass of a delay loop
+    reads a later time. A changed iteration count still shows as a diff."""
+    keys = [re.sub(r" t='[^']*'", "", x) for x in lines]
+    out, i, n = [], 0, len(lines)
+    while i < n:
+        for p in range(1, max_period + 1):
+            if keys[i:i + p] == keys[i + p:i + 2 * p]:
+                k = 2
+                while keys[i:i + p] == keys[i + k * p:i + (k + 1) * p]:
+                    k += 1
+                out += [f"#{{ x{k}"] + lines[i:i + p] + ["#}"]
+                i += k * p
+                break
+        else:
+            out.append(lines[i])
+            i += 1
+    return out
+
+
+def collapse(lines):
+    """Fold runs of identical events (ignoring the seq number) into one line."""
+    prev, n, first = None, 0, None
+    for line in list(lines) + [None]:
+        key = line[8:] if line else None
+        if key == prev:
+            n += 1
+            continue
+        if first is not None:
+            yield first + (f"   (x{n})" if n > 1 else "")
+        prev, n, first = key, 1, line
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,4 @@
+[
+  {"on": ["DMCSR", "0xE4"], "after": 1, "ret": "0xF56F",
+   "note": "Define Game: Cancel -> init returns 0 -> cleanup -> exit"}
+]

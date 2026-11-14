@@ -1,0 +1,14 @@
+[
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Wrong Guesses up (7->8)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Wrong Guesses up (8->9)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Wrong Guesses up (9->10)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Wrong Guesses up (10->11)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Wrong Guesses up (11->12, max)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Wrong Guesses up at max"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Words per Game down (4->3)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Words per Game down (3->2)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Words per Game down (2->1, min)"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Words per Game down at min"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF56E", "note": "Define Game: OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 1, "ret": "0xF56E", "note": "Define Players: OK"}
+]

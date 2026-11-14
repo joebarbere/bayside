@@ -1,0 +1,6 @@
+{"word_addr": "0xAB92",
+ "defaults": {"DMCSR:0xE4": "0xF56E"},
+ "returns": [
+  {"on": ["DMGUF", "0x0C"], "ret": "0x0001", "note": "dm_getTitle reports no saved game"}],
+ "events": [["word"], ["key", " "], ["menu", "0xF501"], ["menu", "0xF503"]],
+ "comment": "loadConfig: dm_getTitle nonzero path; win a word; Save; Quit (no save prompt after save)"}

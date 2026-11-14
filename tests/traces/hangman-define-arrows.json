@@ -1,0 +1,9 @@
+[
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF565", "note": "Define Game: Words per Game up"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF565", "note": "Define Game: Words per Game up"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF568", "note": "Define Game: Wrong Guesses down"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF566", "note": "Define Game: Words per Game down"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF567", "note": "Define Game: Wrong Guesses up"},
+  {"on": ["DMCSR", "0xE4"], "ret": "0xF56E", "note": "Define Game: OK"},
+  {"on": ["DMCSR", "0xE4"], "after": 1, "ret": "0xF56E", "note": "Define Players: OK"}
+]

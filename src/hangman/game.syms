@@ -1,0 +1,14 @@
+# Area A (0010-0DD7) DGROUP symbols: OFFSET name  (hex, DGROUP-relative)
+# C declarations are in game.h.
+004E g_configOpen       # byte: 1 when dm_setTitle(g_configDesc) succeeded (loadConfig)
+0059 g_haveSavedGame    # byte: 1 when a saved game was found; Save asks to overwrite
+0EEC g_configDesc       # config/saved-game descriptor passed to dm_setTitle/dm_getTitle
+0EE8 g_roundOver        # word: 1 once the current word was won or lost
+0F0A g_resumeRound      # word: nonzero = a restored round is in progress (skip word pick)
+AB8C g_wordNumber       # word: number of the word being played in this game (1-based)
+AB8E g_curPlayer        # word: index of the player whose turn it is
+AB90 g_wordLen          # word: letters in the current word (hangman_chooseWord)
+AB92 g_word             # char[]: the current word (upper case)
+ABA4 g_gameSaved        # word: nonzero = no changes since last save (no save prompt)
+ADBA g_letterBitmaps    # int[26]: bitmap handed to dm_drawBitmap for a used letter tile
+ADF0 g_players          # HmPlayer[4], stride 0x15 (part of the save record at ADEE)

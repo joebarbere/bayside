@@ -1,0 +1,2438 @@
+int21 21/30    3000 -> 1E03
+int21 21/4A    4A00
+fn    _cinit
+int21 21/30    3000 -> 1E03
+int21 21/35    3500
+int21 21/25    2500
+#{ x5
+int21 21/44    4400
+#}
+fn    _crt_printStr
+fn    _crt_printMsg
+fn    _setargv
+fn    _crt_sbrk
+fn    _setenvp
+fn    dm_initCursor
+fn    dm_loadCursor
+inte0 DMCSR    0206 res='DMCSR' -> 0001
+call  DMCSR    00D5 -> 036F
+fn    dm_cursorInit
+call  DMCSR    00D6 -> 0000
+fn    dm_loadDmguf
+inte0 DMGUF    0206 res='DMGUF' -> 0001
+inte0 PRGUF    0208 res='PRGUF' -> 0001
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_loadSpell
+inte0 SPELL    0206 res='SPELL' -> 0001
+fn    _ftime [STK]
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+fn    _crt_ltoa
+fn    _crt_getEnvItem [STK STK]
+int21 21/2A    2A00 -> 2A01
+fn    _crt_getEnvItem [STK STK]
+int21 21/2C    2C00 t='12:00:00.00'
+fn    _crt_mktime [000A 0001 0001 000C 0000 0000]
+#{ x4
+fn    _crt_lmul
+#}
+fn    _tzset
+fn    _crt_findEnv [1F82]
+fn    _strlen [1F82]
+#{ x2
+fn    _isindst [STK]
+#}
+fn    _srand [STK]
+#{ x44
+fn    _rand
+fn    _crt_lmul
+#}
+fn    dm_setAppTitle [0EFA]
+call  DMCSR    0100 [0EFA] -> 0000
+fn    dm_initApp
+inte0 DESK     020A -> 0000
+fn    dm_setBorder
+call  DMCSR    006A -> 0000
+fn    dm_showStatusBar
+call  DMCSR    0047 -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getScreenWidth [0122]
+call  DMCSR    003F [0122] -> 0000
+fn    dm_getScreenHeight [0158]
+call  DMCSR    0041 [0158] -> 0000
+fn    dm_setCursorPos [0000 0000]
+call  DMCSR    0044 [0000 0000] -> 0000
+fn    dm_setBackground
+call  DMCSR    006C -> 0000
+fn    dm_multiply [0294]
+call  DMCSR    0043 [0294] -> 0000
+fn    dm_divide [0064]
+call  DMCSR    0042 [0064] -> 0000
+fn    dm_defineMenu [FFFF 0000 1EDC 1564 0000]
+call  DMCSR    005A [FFFF 0000 1EDC 1564 0000] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_setCursorPos [0960 0024]
+call  DMCSR    0044 [0960 0024] -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_drawString [0F0C]
+call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_setTitle [0EEC]
+call  DMGUF    000B [0EEC] -> 0000
+fn    dm_getTitle [0EEC]
+call  DMGUF    000C [0EEC] -> 0000
+fn    _sscanf [0000 0000 DGRP ABA8 005A]
+fn    dm_msgBox [0EBA]
+call  DMCSR    00E9 [0EBA] -> 0000
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0CA4]
+call  DMCSR    00E3 [0CA4] -> 0000
+fn    dm_getFormResult [0CA4]
+call  DMCSR    00E4 [0CA4] -> F56E
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _atoi [10D4]
+fn    _atoi [10D8]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    _strncpy [STK ADF0]
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0DA8]
+call  DMCSR    00E3 [0DA8] -> 0000
+fn    dm_getFormResult [0DA8]
+call  DMCSR    00E4 [0DA8] -> F56E
+fn    _strncpy [ADF0 STK]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_loadBitmap [00CA]
+call  DMCSR    001B [00CA] -> 0000
+fn    dm_loadBitmap [00DE]
+call  DMCSR    001B [00DE] -> 0000
+fn    dm_loadBitmap [00F2]
+call  DMCSR    001B [00F2] -> 0000
+fn    dm_loadBitmap [0106]
+call  DMCSR    001B [0106] -> 0000
+fn    dm_loadBitmap [011A]
+call  DMCSR    001B [011A] -> 0000
+fn    dm_loadBitmap [012E]
+call  DMCSR    001B [012E] -> 0000
+fn    dm_loadBitmap [0142]
+call  DMCSR    001B [0142] -> 0000
+fn    dm_loadBitmap [0156]
+call  DMCSR    001B [0156] -> 0000
+fn    dm_loadBitmap [016A]
+call  DMCSR    001B [016A] -> 0000
+fn    dm_loadBitmap [017E]
+call  DMCSR    001B [017E] -> 0000
+fn    dm_loadBitmap [0192]
+call  DMCSR    001B [0192] -> 0000
+fn    dm_loadBitmap [01A6]
+call  DMCSR    001B [01A6] -> 0000
+fn    dm_loadBitmap [01BA]
+call  DMCSR    001B [01BA] -> 0000
+fn    dm_loadBitmap [01CE]
+call  DMCSR    001B [01CE] -> 0000
+fn    dm_loadBitmap [01E2]
+call  DMCSR    001B [01E2] -> 0000
+fn    dm_loadBitmap [01F6]
+call  DMCSR    001B [01F6] -> 0000
+fn    dm_loadBitmap [020A]
+call  DMCSR    001B [020A] -> 0000
+fn    dm_loadBitmap [021E]
+call  DMCSR    001B [021E] -> 0000
+fn    dm_loadBitmap [0232]
+call  DMCSR    001B [0232] -> 0000
+fn    dm_loadBitmap [0246]
+call  DMCSR    001B [0246] -> 0000
+fn    dm_loadBitmap [025A]
+call  DMCSR    001B [025A] -> 0000
+fn    dm_loadBitmap [026E]
+call  DMCSR    001B [026E] -> 0000
+fn    dm_loadBitmap [0282]
+call  DMCSR    001B [0282] -> 0000
+fn    dm_loadBitmap [0296]
+call  DMCSR    001B [0296] -> 0000
+fn    dm_loadBitmap [02AA]
+call  DMCSR    001B [02AA] -> 0000
+fn    dm_loadBitmap [02BE]
+call  DMCSR    001B [02BE] -> 0000
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0001 0002]
+call  DMCSR    004A [0001 0002] -> 0000
+fn    dm_defineMenu [0064 0294 0F3C 0B2C 0001]
+call  DMCSR    005A [0064 0294 0F3C 0B2C 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0000]
+call  DMCSR    004B [0000 0001 0000] -> 0000
+fn    dm_setColor [0003 0001]
+call  DMCSR    004A [0003 0001] -> 0000
+fn    dm_setCursorPos [0064 0294]
+call  DMCSR    0044 [0064 0294] -> 0000
+fn    dm_drawString [10DC]
+call  DMCSR    0052 [10DC] s0='             SCOREBOARD               ' -> 0000
+fn    dm_setCursorPos [0064 0528]
+call  DMCSR    0044 [0064 0528] -> 0000
+fn    dm_drawString [1104]
+call  DMCSR    0052 [1104] s0='            CURRENT GAME              ' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0370]
+call  DMCSR    0044 [00C8 0370] -> 0000
+fn    dm_drawString [112C]
+call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
+fn    dm_initScrollbar [0ED8]
+call  DMCSR    002D [0ED8] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    _rand
+fn    _crt_lmul
+fn    dm_waitReady
+call  DMCSR    00F8 -> 0000
+fn    _strlen [139A]
+fn    dm_openDialog [0834 0D8E 0E74 0294]
+call  DMCSR    0061 [0834 0D8E 0E74 0294] -> 0000
+fn    dm_openDialogEx [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0062 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_setColor [0001 0000]
+call  DMCSR    004A [0001 0000] -> 0000
+fn    dm_setCursorPos [0834 0DC0]
+call  DMCSR    0044 [0834 0DC0] -> 0000
+fn    dm_drawString [139A]
+call  DMCSR    0052 [139A] s0='Please wait while a word is chosen...' -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setCursorPos [0834 0E9C]
+call  DMCSR    0044 [0834 0E9C] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+#{ x20
+fn    _rand
+fn    _crt_lmul
+#}
+fn    dm_drawChar [002E]
+call  DMCSR    0051 [002E] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_spellCheckWord [AB92]
+call  SPELL    0002 [AB92] s0='txufwirco' -> 0000
+fn    _strncmp [AB93 215C 0006]
+fn    _strncmp [AB93 2163 0005]
+fn    _strncmp [AB93 2169 0003]
+fn    _strupr [AB92]
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _strlen [139A]
+fn    dm_closeDialog [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0063 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_scrollContent
+call  DMCSR    00F7 -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [07D0 044C]
+call  DMCSR    0044 [07D0 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 044C]
+call  DMCSR    0044 [0D48 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [01F4 0604]
+call  DMCSR    0044 [01F4 0604] -> 0000
+fn    dm_drawString [1160]
+call  DMCSR    0052 [1160] s0='Current player: ' -> 0000
+fn    _strlen [ADF0]
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setCursorPos [0C80 0604]
+call  DMCSR    0044 [0C80 0604] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [01F4 06E0]
+call  DMCSR    0044 [01F4 06E0] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1182]
+call  DMCSR    0052 [1182] s0='Words per game: ' -> 0000
+fn    dm_setCursorPos [0C1C 06E0]
+call  DMCSR    0044 [0C1C 06E0] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0034]
+call  DMCSR    0051 [0034] -> 0000
+fn    dm_setCursorPos [01F4 07BC]
+call  DMCSR    0044 [01F4 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1172]
+call  DMCSR    0052 [1172] s0='Current word: ' -> 0000
+fn    dm_setCursorPos [0C1C 07BC]
+call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0898]
+call  DMCSR    0044 [01F4 0898] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1194]
+call  DMCSR    0052 [1194] s0='Number of guesses so far: ' -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 0974]
+call  DMCSR    0044 [01F4 0974] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11B0]
+call  DMCSR    0052 [11B0] s0='Number of wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 0A50]
+call  DMCSR    0044 [01F4 0A50] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11CA]
+call  DMCSR    0052 [11CA] s0='Maximum wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0A50]
+call  DMCSR    0044 [0C1C 0A50] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0037]
+call  DMCSR    0051 [0037] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_drawBitmap [FFFF 02D2]
+call  DMCSR    001C [FFFF 02D2] -> 0000
+fn    dm_drawBitmap [FFFF 02E9]
+call  DMCSR    001C [FFFF 02E9] -> 0000
+fn    dm_drawBitmap [FFFF 0300]
+call  DMCSR    001C [FFFF 0300] -> 0000
+fn    dm_drawBitmap [FFFF 0317]
+call  DMCSR    001C [FFFF 0317] -> 0000
+fn    dm_drawBitmap [FFFF 032E]
+call  DMCSR    001C [FFFF 032E] -> 0000
+fn    dm_drawBitmap [FFFF 0345]
+call  DMCSR    001C [FFFF 0345] -> 0000
+fn    dm_drawBitmap [FFFF 035C]
+call  DMCSR    001C [FFFF 035C] -> 0000
+fn    dm_drawBitmap [FFFF 0373]
+call  DMCSR    001C [FFFF 0373] -> 0000
+fn    dm_drawBitmap [FFFF 038A]
+call  DMCSR    001C [FFFF 038A] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setFont [0000]
+call  DMCSR    004C [0000] -> 0000
+fn    dm_defineMenu [0000 0000 0F28 0898 0001]
+call  DMCSR    005A [0000 0000 0F28 0898 0001] -> 0000
+fn    dm_setTextAttr [0000 0000 0003]
+call  DMCSR    004B [0000 0000 0003] -> 0000
+fn    dm_drawAt [0A94 0EE0 0000]
+call  DMCSR    0060 [0A94 0EE0 0000] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_drawAt [0A9C 0EE0 0000]
+call  DMCSR    0060 [0A9C 0EE0 0000] -> 0000
+fn    dm_getDialogField [1424 0018 01C2]
+call  DMCSR    005F [1424 0018 01C2] -> 0000
+fn    dm_setDialogField [01F4 012C 0082 0082 0000]
+call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0946 0EE0 0000]
+call  DMCSR    0060 [0946 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [094E 0EE0 0000]
+call  DMCSR    0060 [094E 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0964 0EE0 0000]
+call  DMCSR    0060 [0964 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0000 0002]
+call  DMCSR    004B [0000 0000 0002] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [098A 0EE0 0000]
+call  DMCSR    0060 [098A 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0998 0EE0 0000]
+call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09A6 0EE0 0000]
+call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0002]
+call  DMCSR    004B [0000 0002 0002] -> 0000
+fn    dm_drawAt [09AE 0EE0 0000]
+call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
+fn    dm_drawAt [09B6 0EE0 0000]
+call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [09BE 0EE0 0000]
+call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='1:0045' -> 0000
+fn    dm_keyToChar [0045]
+call  DMGUF    0023 [0045] -> 0045
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    _strstr [AB92 0045]
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09CE 0EE0 0000]
+call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F505' -> 0000
+fn    hangman_aboutBoxHandler [0EFE]
+fn    dm_getVideoMode
+inte0 DESK     0600 -> 0000
+fn    hangman_strlenSI
+#{ x28
+fn    hangman_strcpyDI
+#}
+fn    hangman_strlenSI
+fn    dm_showForm [1DD1]
+call  DMCSR    00E3 [1DD1] -> 0000
+fn    dm_setScrollArea
+call  DMCSR    002B -> 0000
+fn    dm_defineDialog [079E 04BA 1770 0906 0002 0000]
+call  DMCSR    005B [079E 04BA 1770 0906 0002 0000] -> 0000
+fn    dm_setScrollPos
+call  DMCSR    002C -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_getFormResult [1DD1]
+call  DMCSR    00E4 [1DD1] -> F5CA   # script: About box (SDK form 1DD1): OK = F5CA (0000:386F)
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getScreenWidth [0122]
+call  DMCSR    003F [0122] -> 0000
+fn    dm_getScreenHeight [0158]
+call  DMCSR    0041 [0158] -> 0000
+fn    dm_setCursorPos [0000 0000]
+call  DMCSR    0044 [0000 0000] -> 0000
+fn    dm_setBackground
+call  DMCSR    006C -> 0000
+fn    dm_multiply [0294]
+call  DMCSR    0043 [0294] -> 0000
+fn    dm_divide [0064]
+call  DMCSR    0042 [0064] -> 0000
+fn    dm_defineMenu [FFFF 0000 1EDC 1564 0000]
+call  DMCSR    005A [FFFF 0000 1EDC 1564 0000] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_setCursorPos [0960 0024]
+call  DMCSR    0044 [0960 0024] -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_drawString [0F0C]
+call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F50A' -> 0000
+fn    _strncpy [STK ADF0]
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0DA8]
+call  DMCSR    00E3 [0DA8] -> 0000
+fn    dm_getFormResult [0DA8]
+call  DMCSR    00E4 [0DA8] -> F56E
+fn    _strncpy [ADF0 STK]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_fillRect [09C4 0604 04B0 00DC 0000]
+call  DMCSR    006E [09C4 0604 04B0 00DC 0000] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [07D0 044C]
+call  DMCSR    0044 [07D0 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 044C]
+call  DMCSR    0044 [0D48 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [01F4 0604]
+call  DMCSR    0044 [01F4 0604] -> 0000
+fn    dm_drawString [1160]
+call  DMCSR    0052 [1160] s0='Current player: ' -> 0000
+fn    _strlen [ADF0]
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setCursorPos [0C80 0604]
+call  DMCSR    0044 [0C80 0604] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [01F4 06E0]
+call  DMCSR    0044 [01F4 06E0] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1182]
+call  DMCSR    0052 [1182] s0='Words per game: ' -> 0000
+fn    dm_setCursorPos [0C1C 06E0]
+call  DMCSR    0044 [0C1C 06E0] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0034]
+call  DMCSR    0051 [0034] -> 0000
+fn    dm_setCursorPos [01F4 07BC]
+call  DMCSR    0044 [01F4 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1172]
+call  DMCSR    0052 [1172] s0='Current word: ' -> 0000
+fn    dm_setCursorPos [0C1C 07BC]
+call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0898]
+call  DMCSR    0044 [01F4 0898] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1194]
+call  DMCSR    0052 [1194] s0='Number of guesses so far: ' -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0974]
+call  DMCSR    0044 [01F4 0974] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11B0]
+call  DMCSR    0052 [11B0] s0='Number of wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0A50]
+call  DMCSR    0044 [01F4 0A50] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11CA]
+call  DMCSR    0052 [11CA] s0='Maximum wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0A50]
+call  DMCSR    0044 [0C1C 0A50] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0037]
+call  DMCSR    0051 [0037] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F50B' -> 0000
+fn    dm_openDialog [0898 074E 0D48 07BC]
+call  DMCSR    0061 [0898 074E 0D48 07BC] s3='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_openDialogEx [0898 074E 0D48 07BC 22D2]
+call  DMCSR    0062 [0898 074E 0D48 07BC 22D2] s3='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_showForm [0E0A]
+call  DMCSR    00E3 [0E0A] -> 0000
+fn    dm_getFormResult [0E0A]
+call  DMCSR    00E4 [0E0A] -> F56E
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [0898 074E 0D48 07BC 22D2]
+call  DMCSR    0063 [0898 074E 0D48 07BC 22D2] s3='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_fillRect [0820 0D3E 0E4C 0294 0000]
+call  DMCSR    006E [0820 0D3E 0E4C 0294 0000] -> 0000
+fn    dm_drawBitmap [FFFF 02D2]
+call  DMCSR    001C [FFFF 02D2] -> 0000
+fn    dm_drawBitmap [FFFF 02E9]
+call  DMCSR    001C [FFFF 02E9] -> 0000
+fn    dm_drawBitmap [FFFF 0300]
+call  DMCSR    001C [FFFF 0300] -> 0000
+fn    dm_drawBitmap [FFFF 0317]
+call  DMCSR    001C [FFFF 0317] -> 0000
+fn    dm_drawBitmap [FFFF 032E]
+call  DMCSR    001C [FFFF 032E] -> 0000
+fn    dm_drawBitmap [FFFF 0345]
+call  DMCSR    001C [FFFF 0345] -> 0000
+fn    dm_drawBitmap [FFFF 035C]
+call  DMCSR    001C [FFFF 035C] -> 0000
+fn    dm_drawBitmap [FFFF 0373]
+call  DMCSR    001C [FFFF 0373] -> 0000
+fn    dm_drawBitmap [FFFF 038A]
+call  DMCSR    001C [FFFF 038A] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0001 0002]
+call  DMCSR    004A [0001 0002] -> 0000
+fn    dm_defineMenu [0064 0294 0F3C 0C08 0001]
+call  DMCSR    005A [0064 0294 0F3C 0C08 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0000]
+call  DMCSR    004B [0000 0001 0000] -> 0000
+fn    dm_setColor [0003 0001]
+call  DMCSR    004A [0003 0001] -> 0000
+fn    dm_setCursorPos [0064 0294]
+call  DMCSR    0044 [0064 0294] -> 0000
+fn    dm_drawString [10DC]
+call  DMCSR    0052 [10DC] s0='             SCOREBOARD               ' -> 0000
+fn    dm_setCursorPos [0064 0604]
+call  DMCSR    0044 [0064 0604] -> 0000
+fn    dm_drawString [1104]
+call  DMCSR    0052 [1104] s0='            CURRENT GAME              ' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0370]
+call  DMCSR    0044 [00C8 0370] -> 0000
+fn    dm_drawString [112C]
+call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [07D0 044C]
+call  DMCSR    0044 [07D0 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 044C]
+call  DMCSR    0044 [0D48 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0528]
+call  DMCSR    0044 [00C8 0528] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 0528]
+call  DMCSR    0044 [00C8 0528] -> 0000
+fn    dm_drawString [AE05]
+call  DMCSR    0052 [AE05] -> 0000
+fn    dm_setCursorPos [07D0 0528]
+call  DMCSR    0044 [07D0 0528] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 0528]
+call  DMCSR    0044 [0D48 0528] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 06E0]
+call  DMCSR    0044 [01F4 06E0] -> 0000
+fn    dm_drawString [1160]
+call  DMCSR    0052 [1160] s0='Current player: ' -> 0000
+fn    _strlen [ADF0]
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setCursorPos [0C80 06E0]
+call  DMCSR    0044 [0C80 06E0] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [01F4 07BC]
+call  DMCSR    0044 [01F4 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1182]
+call  DMCSR    0052 [1182] s0='Words per game: ' -> 0000
+fn    dm_setCursorPos [0C1C 07BC]
+call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0034]
+call  DMCSR    0051 [0034] -> 0000
+fn    dm_setCursorPos [01F4 0898]
+call  DMCSR    0044 [01F4 0898] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1172]
+call  DMCSR    0052 [1172] s0='Current word: ' -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0974]
+call  DMCSR    0044 [01F4 0974] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1194]
+call  DMCSR    0052 [1194] s0='Number of guesses so far: ' -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0A50]
+call  DMCSR    0044 [01F4 0A50] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11B0]
+call  DMCSR    0052 [11B0] s0='Number of wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0A50]
+call  DMCSR    0044 [0C1C 0A50] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0B2C]
+call  DMCSR    0044 [01F4 0B2C] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11CA]
+call  DMCSR    0052 [11CA] s0='Maximum wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0B2C]
+call  DMCSR    0044 [0C1C 0B2C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0037]
+call  DMCSR    0051 [0037] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_initWindow [0000]
+call  DMCSR    0030 [0000] -> 0000
+fn    dm_initScrollbar [0ED8]
+call  DMCSR    002D [0ED8] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setFont [0000]
+call  DMCSR    004C [0000] -> 0000
+fn    dm_defineMenu [0000 0000 0F28 0974 0001]
+call  DMCSR    005A [0000 0000 0F28 0974 0001] -> 0000
+fn    dm_setTextAttr [0000 0000 0003]
+call  DMCSR    004B [0000 0000 0003] -> 0000
+fn    dm_drawAt [0A94 0EE0 0000]
+call  DMCSR    0060 [0A94 0EE0 0000] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_drawAt [0A9C 0EE0 0000]
+call  DMCSR    0060 [0A9C 0EE0 0000] -> 0000
+fn    dm_getDialogField [1424 0018 01C2]
+call  DMCSR    005F [1424 0018 01C2] -> 0000
+fn    dm_setDialogField [01F4 012C 0082 0082 0000]
+call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0946 0EE0 0000]
+call  DMCSR    0060 [0946 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [094E 0EE0 0000]
+call  DMCSR    0060 [094E 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0964 0EE0 0000]
+call  DMCSR    0060 [0964 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0000 0002]
+call  DMCSR    004B [0000 0000 0002] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [098A 0EE0 0000]
+call  DMCSR    0060 [098A 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0998 0EE0 0000]
+call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09A6 0EE0 0000]
+call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0002]
+call  DMCSR    004B [0000 0002 0002] -> 0000
+fn    dm_drawAt [09AE 0EE0 0000]
+call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
+fn    dm_drawAt [09B6 0EE0 0000]
+call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [09BE 0EE0 0000]
+call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09CE 0EE0 0000]
+call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F50C' -> 0000
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0E9E]
+call  DMCSR    00E3 [0E9E] -> 0000
+fn    dm_getFormResult [0E9E]
+call  DMCSR    00E4 [0E9E] -> F56E
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_fillRect [0064 0B1D 1E78 0118 0000]
+call  DMCSR    006E [0064 0B1D 1E78 0118 0000] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_fillRect [0820 0DAC 0E4C 0294 0000]
+call  DMCSR    006E [0820 0DAC 0E4C 0294 0000] -> 0000
+fn    dm_drawBitmap [FFFF 02D2]
+call  DMCSR    001C [FFFF 02D2] -> 0000
+fn    dm_drawBitmap [FFFF 02E9]
+call  DMCSR    001C [FFFF 02E9] -> 0000
+fn    dm_drawBitmap [FFFF 0300]
+call  DMCSR    001C [FFFF 0300] -> 0000
+fn    dm_drawBitmap [FFFF 0317]
+call  DMCSR    001C [FFFF 0317] -> 0000
+fn    dm_drawBitmap [FFFF 032E]
+call  DMCSR    001C [FFFF 032E] -> 0000
+fn    dm_drawBitmap [FFFF 0345]
+call  DMCSR    001C [FFFF 0345] -> 0000
+fn    dm_drawBitmap [FFFF 035C]
+call  DMCSR    001C [FFFF 035C] -> 0000
+fn    dm_drawBitmap [FFFF 0373]
+call  DMCSR    001C [FFFF 0373] -> 0000
+fn    dm_drawBitmap [FFFF 038A]
+call  DMCSR    001C [FFFF 038A] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0001 0002]
+call  DMCSR    004A [0001 0002] -> 0000
+fn    dm_defineMenu [0064 0294 0F3C 0B2C 0001]
+call  DMCSR    005A [0064 0294 0F3C 0B2C 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0000]
+call  DMCSR    004B [0000 0001 0000] -> 0000
+fn    dm_setColor [0003 0001]
+call  DMCSR    004A [0003 0001] -> 0000
+fn    dm_setCursorPos [0064 0294]
+call  DMCSR    0044 [0064 0294] -> 0000
+fn    dm_drawString [10DC]
+call  DMCSR    0052 [10DC] s0='             SCOREBOARD               ' -> 0000
+fn    dm_setCursorPos [0064 0528]
+call  DMCSR    0044 [0064 0528] -> 0000
+fn    dm_drawString [1104]
+call  DMCSR    0052 [1104] s0='            CURRENT GAME              ' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0370]
+call  DMCSR    0044 [00C8 0370] -> 0000
+fn    dm_drawString [112C]
+call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [07D0 044C]
+call  DMCSR    0044 [07D0 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 044C]
+call  DMCSR    0044 [0D48 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [01F4 0604]
+call  DMCSR    0044 [01F4 0604] -> 0000
+fn    dm_drawString [1160]
+call  DMCSR    0052 [1160] s0='Current player: ' -> 0000
+fn    _strlen [ADF0]
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setCursorPos [0C80 0604]
+call  DMCSR    0044 [0C80 0604] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [01F4 06E0]
+call  DMCSR    0044 [01F4 06E0] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1182]
+call  DMCSR    0052 [1182] s0='Words per game: ' -> 0000
+fn    dm_setCursorPos [0C1C 06E0]
+call  DMCSR    0044 [0C1C 06E0] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0034]
+call  DMCSR    0051 [0034] -> 0000
+fn    dm_setCursorPos [01F4 07BC]
+call  DMCSR    0044 [01F4 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1172]
+call  DMCSR    0052 [1172] s0='Current word: ' -> 0000
+fn    dm_setCursorPos [0C1C 07BC]
+call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0898]
+call  DMCSR    0044 [01F4 0898] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1194]
+call  DMCSR    0052 [1194] s0='Number of guesses so far: ' -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0974]
+call  DMCSR    0044 [01F4 0974] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11B0]
+call  DMCSR    0052 [11B0] s0='Number of wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0A50]
+call  DMCSR    0044 [01F4 0A50] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11CA]
+call  DMCSR    0052 [11CA] s0='Maximum wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0A50]
+call  DMCSR    0044 [0C1C 0A50] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0037]
+call  DMCSR    0051 [0037] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_initWindow [0000]
+call  DMCSR    0030 [0000] -> 0000
+fn    dm_initScrollbar [0ED8]
+call  DMCSR    002D [0ED8] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setFont [0000]
+call  DMCSR    004C [0000] -> 0000
+fn    dm_defineMenu [0000 0000 0F28 0898 0001]
+call  DMCSR    005A [0000 0000 0F28 0898 0001] -> 0000
+fn    dm_setTextAttr [0000 0000 0003]
+call  DMCSR    004B [0000 0000 0003] -> 0000
+fn    dm_drawAt [0A94 0EE0 0000]
+call  DMCSR    0060 [0A94 0EE0 0000] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_drawAt [0A9C 0EE0 0000]
+call  DMCSR    0060 [0A9C 0EE0 0000] -> 0000
+fn    dm_getDialogField [1424 0018 01C2]
+call  DMCSR    005F [1424 0018 01C2] -> 0000
+fn    dm_setDialogField [01F4 012C 0082 0082 0000]
+call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0946 0EE0 0000]
+call  DMCSR    0060 [0946 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [094E 0EE0 0000]
+call  DMCSR    0060 [094E 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0964 0EE0 0000]
+call  DMCSR    0060 [0964 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0000 0002]
+call  DMCSR    004B [0000 0000 0002] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [098A 0EE0 0000]
+call  DMCSR    0060 [098A 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0998 0EE0 0000]
+call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09A6 0EE0 0000]
+call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0002]
+call  DMCSR    004B [0000 0002 0002] -> 0000
+fn    dm_drawAt [09AE 0EE0 0000]
+call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
+fn    dm_drawAt [09B6 0EE0 0000]
+call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [09BE 0EE0 0000]
+call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09CE 0EE0 0000]
+call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F501' -> 0000
+fn    dm_msgBox [0EC6]
+call  DMCSR    00E9 [0EC6] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F502' -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_readConfig [0EEC]
+call  DMGUF    000F [0EEC] -> 0000
+fn    dm_deleteConfig [0EEC]
+call  DMGUF    0010 [0EEC] -> 0000
+fn    dm_msgBox [0ED2]
+call  DMCSR    00E9 [0ED2] -> 0000
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_fillRect [0820 0D3E 0E4C 0294 0000]
+call  DMCSR    006E [0820 0D3E 0E4C 0294 0000] -> 0000
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_initWindow [0000]
+call  DMCSR    0030 [0000] -> 0000
+fn    dm_initScrollbar [0ED8]
+call  DMCSR    002D [0ED8] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getScreenWidth [0122]
+call  DMCSR    003F [0122] -> 0000
+fn    dm_getScreenHeight [0158]
+call  DMCSR    0041 [0158] -> 0000
+fn    dm_setCursorPos [0000 0000]
+call  DMCSR    0044 [0000 0000] -> 0000
+fn    dm_setBackground
+call  DMCSR    006C -> 0000
+fn    dm_multiply [0294]
+call  DMCSR    0043 [0294] -> 0000
+fn    dm_divide [0064]
+call  DMCSR    0042 [0064] -> 0000
+fn    dm_defineMenu [FFFF 0000 1EDC 1564 0000]
+call  DMCSR    005A [FFFF 0000 1EDC 1564 0000] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_setCursorPos [0960 0024]
+call  DMCSR    0044 [0960 0024] -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_drawString [0F0C]
+call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0001 0002]
+call  DMCSR    004A [0001 0002] -> 0000
+fn    dm_defineMenu [0064 0294 0F3C 0B2C 0001]
+call  DMCSR    005A [0064 0294 0F3C 0B2C 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0000]
+call  DMCSR    004B [0000 0001 0000] -> 0000
+fn    dm_setColor [0003 0001]
+call  DMCSR    004A [0003 0001] -> 0000
+fn    dm_setCursorPos [0064 0294]
+call  DMCSR    0044 [0064 0294] -> 0000
+fn    dm_drawString [10DC]
+call  DMCSR    0052 [10DC] s0='             SCOREBOARD               ' -> 0000
+fn    dm_setCursorPos [0064 0528]
+call  DMCSR    0044 [0064 0528] -> 0000
+fn    dm_drawString [1104]
+call  DMCSR    0052 [1104] s0='            CURRENT GAME              ' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0370]
+call  DMCSR    0044 [00C8 0370] -> 0000
+fn    dm_drawString [112C]
+call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    _rand
+fn    _crt_lmul
+fn    dm_waitReady
+call  DMCSR    00F8 -> 0000
+fn    _strlen [139A]
+fn    dm_openDialog [0834 0D8E 0E74 0294]
+call  DMCSR    0061 [0834 0D8E 0E74 0294] -> 0000
+fn    dm_openDialogEx [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0062 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_setColor [0001 0000]
+call  DMCSR    004A [0001 0000] -> 0000
+fn    dm_setCursorPos [0834 0DC0]
+call  DMCSR    0044 [0834 0DC0] -> 0000
+fn    dm_drawString [139A]
+call  DMCSR    0052 [139A] s0='Please wait while a word is chosen...' -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setCursorPos [0834 0E9C]
+call  DMCSR    0044 [0834 0E9C] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+#{ x7
+fn    _rand
+fn    _crt_lmul
+#}
+fn    dm_drawChar [002E]
+call  DMCSR    0051 [002E] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_spellCheckWord [AB92]
+call  SPELL    0002 [AB92] s0='atsair' -> 0000
+fn    _strncmp [AB93 1FEA 0003]
+fn    _strncmp [AB93 1FEE 0007]
+fn    _strncmp [AB93 1FF6 0003]
+fn    _strupr [AB92]
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _strlen [139A]
+fn    dm_closeDialog [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0063 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_scrollContent
+call  DMCSR    00F7 -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [07D0 044C]
+call  DMCSR    0044 [07D0 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 044C]
+call  DMCSR    0044 [0D48 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [01F4 0604]
+call  DMCSR    0044 [01F4 0604] -> 0000
+fn    dm_drawString [1160]
+call  DMCSR    0052 [1160] s0='Current player: ' -> 0000
+fn    _strlen [ADF0]
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setCursorPos [0C80 0604]
+call  DMCSR    0044 [0C80 0604] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [01F4 06E0]
+call  DMCSR    0044 [01F4 06E0] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1182]
+call  DMCSR    0052 [1182] s0='Words per game: ' -> 0000
+fn    dm_setCursorPos [0C1C 06E0]
+call  DMCSR    0044 [0C1C 06E0] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0034]
+call  DMCSR    0051 [0034] -> 0000
+fn    dm_setCursorPos [01F4 07BC]
+call  DMCSR    0044 [01F4 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1172]
+call  DMCSR    0052 [1172] s0='Current word: ' -> 0000
+fn    dm_setCursorPos [0C1C 07BC]
+call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0898]
+call  DMCSR    0044 [01F4 0898] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1194]
+call  DMCSR    0052 [1194] s0='Number of guesses so far: ' -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 0974]
+call  DMCSR    0044 [01F4 0974] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11B0]
+call  DMCSR    0052 [11B0] s0='Number of wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 0A50]
+call  DMCSR    0044 [01F4 0A50] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11CA]
+call  DMCSR    0052 [11CA] s0='Maximum wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0A50]
+call  DMCSR    0044 [0C1C 0A50] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0037]
+call  DMCSR    0051 [0037] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_drawBitmap [FFFF 02D2]
+call  DMCSR    001C [FFFF 02D2] -> 0000
+fn    dm_drawBitmap [FFFF 02E9]
+call  DMCSR    001C [FFFF 02E9] -> 0000
+fn    dm_drawBitmap [FFFF 0300]
+call  DMCSR    001C [FFFF 0300] -> 0000
+fn    dm_drawBitmap [FFFF 0317]
+call  DMCSR    001C [FFFF 0317] -> 0000
+fn    dm_drawBitmap [FFFF 032E]
+call  DMCSR    001C [FFFF 032E] -> 0000
+fn    dm_drawBitmap [FFFF 0345]
+call  DMCSR    001C [FFFF 0345] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setFont [0000]
+call  DMCSR    004C [0000] -> 0000
+fn    dm_defineMenu [0000 0000 0F28 0898 0001]
+call  DMCSR    005A [0000 0000 0F28 0898 0001] -> 0000
+fn    dm_setTextAttr [0000 0000 0003]
+call  DMCSR    004B [0000 0000 0003] -> 0000
+fn    dm_drawAt [0A94 0EE0 0000]
+call  DMCSR    0060 [0A94 0EE0 0000] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_drawAt [0A9C 0EE0 0000]
+call  DMCSR    0060 [0A9C 0EE0 0000] -> 0000
+fn    dm_getDialogField [1424 0018 01C2]
+call  DMCSR    005F [1424 0018 01C2] -> 0000
+fn    dm_setDialogField [01F4 012C 0082 0082 0000]
+call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0946 0EE0 0000]
+call  DMCSR    0060 [0946 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [094E 0EE0 0000]
+call  DMCSR    0060 [094E 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0964 0EE0 0000]
+call  DMCSR    0060 [0964 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0000 0002]
+call  DMCSR    004B [0000 0000 0002] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [098A 0EE0 0000]
+call  DMCSR    0060 [098A 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0998 0EE0 0000]
+call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09A6 0EE0 0000]
+call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0002]
+call  DMCSR    004B [0000 0002 0002] -> 0000
+fn    dm_drawAt [09AE 0EE0 0000]
+call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
+fn    dm_drawAt [09B6 0EE0 0000]
+call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [09BE 0EE0 0000]
+call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F546' -> 0000
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    _strstr [AB92 0041]
+fn    dm_drawBitmap [FFFF 02D2]
+call  DMCSR    001C [FFFF 02D2] -> 0000
+fn    _strstr [AB93 0041]
+fn    dm_drawBitmap [FFFF 0317]
+call  DMCSR    001C [FFFF 0317] -> 0000
+fn    _strstr [AB96 0041]
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09A6 0EE0 0000]
+call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0002]
+call  DMCSR    004B [0000 0002 0002] -> 0000
+fn    dm_drawAt [09AE 0EE0 0000]
+call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
+fn    dm_drawAt [09B6 0EE0 0000]
+call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [09BE 0EE0 0000]
+call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F547' -> 0000
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    _strstr [AB92 0042]
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0032]
+call  DMCSR    0051 [0032] -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09CE 0EE0 0000]
+call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='1:0053' -> 0000
+fn    dm_keyToChar [0053]
+call  DMGUF    0023 [0053] -> 0053
+fn    dm_keyToChar [F547]
+call  DMGUF    0023 [F547] -> F547
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    _strstr [AB92 0053]
+fn    dm_drawBitmap [FFFF 0300]
+call  DMCSR    001C [FFFF 0300] -> 0000
+fn    _strstr [AB95 0053]
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0033]
+call  DMCSR    0051 [0033] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09CE 0EE0 0000]
+call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F500' -> 0000
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0CA4]
+call  DMCSR    00E3 [0CA4] -> 0000
+fn    dm_getFormResult [0CA4]
+call  DMCSR    00E4 [0CA4] -> F56E
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _atoi [10D4]
+fn    _atoi [10D8]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    _strncpy [STK ADF0]
+fn    dm_openDialog [08FC 04BA 0D48 0C08]
+call  DMCSR    0061 [08FC 04BA 0D48 0C08] -> 0000
+fn    dm_openDialogEx [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0062 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_showForm [0DA8]
+call  DMCSR    00E3 [0DA8] -> 0000
+fn    dm_getFormResult [0DA8]
+call  DMCSR    00E4 [0DA8] -> F56E
+fn    _strncpy [ADF0 STK]
+fn    dm_yield
+call  DMCSR    0016 -> 0000
+fn    dm_closeDialog [08FC 04BA 0D48 0C08 22D2]
+call  DMCSR    0063 [08FC 04BA 0D48 0C08 22D2] -> 0000
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_fillRect [0A78 0D3E 099C 0294 0000]
+call  DMCSR    006E [0A78 0D3E 099C 0294 0000] -> 0000
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_initWindow [0000]
+call  DMCSR    0030 [0000] -> 0000
+fn    dm_initScrollbar [0ED8]
+call  DMCSR    002D [0ED8] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getScreenWidth [0122]
+call  DMCSR    003F [0122] -> 0000
+fn    dm_getScreenHeight [0158]
+call  DMCSR    0041 [0158] -> 0000
+fn    dm_setCursorPos [0000 0000]
+call  DMCSR    0044 [0000 0000] -> 0000
+fn    dm_setBackground
+call  DMCSR    006C -> 0000
+fn    dm_multiply [0294]
+call  DMCSR    0043 [0294] -> 0000
+fn    dm_divide [0064]
+call  DMCSR    0042 [0064] -> 0000
+fn    dm_defineMenu [FFFF 0000 1EDC 1564 0000]
+call  DMCSR    005A [FFFF 0000 1EDC 1564 0000] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    dm_setCursorPos [0960 0024]
+call  DMCSR    0044 [0960 0024] -> 0000
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+fn    dm_drawString [0F0C]
+call  DMCSR    0052 [0F0C] s0='Hangman' -> 0000
+#{ x2
+fn    dm_drawString [0F20]
+call  DMCSR    0052 [0F20] s0='            ' -> 0000
+#}
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0001 0002]
+call  DMCSR    004A [0001 0002] -> 0000
+fn    dm_defineMenu [0064 0294 0F3C 0B2C 0001]
+call  DMCSR    005A [0064 0294 0F3C 0B2C 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0000]
+call  DMCSR    004B [0000 0001 0000] -> 0000
+fn    dm_setColor [0003 0001]
+call  DMCSR    004A [0003 0001] -> 0000
+fn    dm_setCursorPos [0064 0294]
+call  DMCSR    0044 [0064 0294] -> 0000
+fn    dm_drawString [10DC]
+call  DMCSR    0052 [10DC] s0='             SCOREBOARD               ' -> 0000
+fn    dm_setCursorPos [0064 0528]
+call  DMCSR    0044 [0064 0528] -> 0000
+fn    dm_drawString [1104]
+call  DMCSR    0052 [1104] s0='            CURRENT GAME              ' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 0370]
+call  DMCSR    0044 [00C8 0370] -> 0000
+fn    dm_drawString [112C]
+call  DMCSR    0052 [112C] s0='Player       Words Guessed     Score' -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    _rand
+fn    _crt_lmul
+fn    dm_waitReady
+call  DMCSR    00F8 -> 0000
+fn    _strlen [139A]
+fn    dm_openDialog [0834 0D8E 0E74 0294]
+call  DMCSR    0061 [0834 0D8E 0E74 0294] -> 0000
+fn    dm_openDialogEx [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0062 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_setColor [0001 0000]
+call  DMCSR    004A [0001 0000] -> 0000
+fn    dm_setCursorPos [0834 0DC0]
+call  DMCSR    0044 [0834 0DC0] -> 0000
+fn    dm_drawString [139A]
+call  DMCSR    0052 [139A] s0='Please wait while a word is chosen...' -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setCursorPos [0834 0E9C]
+call  DMCSR    0044 [0834 0E9C] -> 0000
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+#{ x4
+fn    _rand
+fn    _crt_lmul
+#}
+fn    dm_drawChar [002E]
+call  DMCSR    0051 [002E] -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_spellCheckWord [AB92]
+call  SPELL    0002 [AB92] s0='desa' -> 0000
+fn    _strncmp [AB93 2035 0003]
+fn    _strncmp [AB93 2039 0003]
+fn    _strncmp [AB93 203D 0005]
+fn    _strupr [AB92]
+fn    dm_setTimer [00B4]
+call  DMCSR    0017 [00B4] -> 0000
+fn    _strlen [139A]
+fn    dm_closeDialog [0834 0D8E 0E74 0294 22D2]
+call  DMCSR    0063 [0834 0D8E 0E74 0294 22D2] -> 0000
+fn    dm_scrollContent
+call  DMCSR    00F7 -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawString [1152]
+call  DMCSR    0052 [1152] s0='            ' -> 0000
+fn    dm_setCursorPos [00C8 044C]
+call  DMCSR    0044 [00C8 044C] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [07D0 044C]
+call  DMCSR    0044 [07D0 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [0D48 044C]
+call  DMCSR    0044 [0D48 044C] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_setCursorPos [01F4 0604]
+call  DMCSR    0044 [01F4 0604] -> 0000
+fn    dm_drawString [1160]
+call  DMCSR    0052 [1160] s0='Current player: ' -> 0000
+fn    _strlen [ADF0]
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setCursorPos [0C80 0604]
+call  DMCSR    0044 [0C80 0604] -> 0000
+fn    dm_drawString [ADF0]
+call  DMCSR    0052 [ADF0] -> 0000
+fn    dm_setCursorPos [01F4 06E0]
+call  DMCSR    0044 [01F4 06E0] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1182]
+call  DMCSR    0052 [1182] s0='Words per game: ' -> 0000
+fn    dm_setCursorPos [0C1C 06E0]
+call  DMCSR    0044 [0C1C 06E0] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0034]
+call  DMCSR    0051 [0034] -> 0000
+fn    dm_setCursorPos [01F4 07BC]
+call  DMCSR    0044 [01F4 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1172]
+call  DMCSR    0052 [1172] s0='Current word: ' -> 0000
+fn    dm_setCursorPos [0C1C 07BC]
+call  DMCSR    0044 [0C1C 07BC] s1='N<SD^`ddodu\\uXE' -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [01F4 0898]
+call  DMCSR    0044 [01F4 0898] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [1194]
+call  DMCSR    0052 [1194] s0='Number of guesses so far: ' -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 0974]
+call  DMCSR    0044 [01F4 0974] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11B0]
+call  DMCSR    0052 [11B0] s0='Number of wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0030]
+call  DMCSR    0051 [0030] -> 0000
+fn    dm_setCursorPos [01F4 0A50]
+call  DMCSR    0044 [01F4 0A50] -> 0000
+fn    dm_setColor [0002 0000]
+call  DMCSR    004A [0002 0000] -> 0000
+fn    dm_drawString [11CA]
+call  DMCSR    0052 [11CA] s0='Maximum wrong guesses: ' -> 0000
+fn    dm_setCursorPos [0C1C 0A50]
+call  DMCSR    0044 [0C1C 0A50] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0037]
+call  DMCSR    0051 [0037] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setTextAttr [0000 0001 0002]
+call  DMCSR    004B [0000 0001 0002] -> 0000
+fn    dm_drawBitmap [FFFF 02D2]
+call  DMCSR    001C [FFFF 02D2] -> 0000
+fn    dm_drawBitmap [FFFF 02E9]
+call  DMCSR    001C [FFFF 02E9] -> 0000
+fn    dm_drawBitmap [FFFF 0300]
+call  DMCSR    001C [FFFF 0300] -> 0000
+fn    dm_drawBitmap [FFFF 0317]
+call  DMCSR    001C [FFFF 0317] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_setFont [0000]
+call  DMCSR    004C [0000] -> 0000
+fn    dm_defineMenu [0000 0000 0F28 0898 0001]
+call  DMCSR    005A [0000 0000 0F28 0898 0001] -> 0000
+fn    dm_setTextAttr [0000 0000 0003]
+call  DMCSR    004B [0000 0000 0003] -> 0000
+fn    dm_drawAt [0A94 0EE0 0000]
+call  DMCSR    0060 [0A94 0EE0 0000] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_drawAt [0A9C 0EE0 0000]
+call  DMCSR    0060 [0A9C 0EE0 0000] -> 0000
+fn    dm_getDialogField [1424 0018 01C2]
+call  DMCSR    005F [1424 0018 01C2] -> 0000
+fn    dm_setDialogField [01F4 012C 0082 0082 0000]
+call  DMCSR    005C [01F4 012C 0082 0082 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0946 0EE0 0000]
+call  DMCSR    0060 [0946 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [094E 0EE0 0000]
+call  DMCSR    0060 [094E 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0964 0EE0 0000]
+call  DMCSR    0060 [0964 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0000 0002]
+call  DMCSR    004B [0000 0000 0002] -> 0000
+fn    dm_drawAt [0AA4 0EE0 0000]
+call  DMCSR    0060 [0AA4 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [098A 0EE0 0000]
+call  DMCSR    0060 [098A 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [0998 0EE0 0000]
+call  DMCSR    0060 [0998 0EE0 0000] -> 0000
+#{ x2
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09A6 0EE0 0000]
+call  DMCSR    0060 [09A6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0002]
+call  DMCSR    004B [0000 0002 0002] -> 0000
+fn    dm_drawAt [09AE 0EE0 0000]
+call  DMCSR    0060 [09AE 0EE0 0000] -> 0000
+fn    dm_drawAt [09B6 0EE0 0000]
+call  DMCSR    0060 [09B6 0EE0 0000] -> 0000
+fn    dm_setTextAttr [0000 0002 0003]
+call  DMCSR    004B [0000 0002 0003] -> 0000
+fn    dm_drawAt [09BE 0EE0 0000]
+call  DMCSR    0060 [09BE 0EE0 0000] -> 0000
+#}
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_getEvent [STK]
+call  DMCSR    0014 [STK] -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='1:0054' -> 0000
+fn    dm_keyToChar [0054]
+call  DMGUF    0023 [0054] -> 0054
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    _strstr [AB92 0054]
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_setCursorPos [0C1C 0898]
+call  DMCSR    0044 [0C1C 0898] -> 0000
+fn    dm_setColor [0002 0003]
+call  DMCSR    004A [0002 0003] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setCursorPos [0C1C 0974]
+call  DMCSR    0044 [0C1C 0974] -> 0000
+fn    dm_drawChar [0020]
+call  DMCSR    0051 [0020] -> 0000
+fn    dm_drawChar [0031]
+call  DMCSR    0051 [0031] -> 0000
+fn    dm_setColor [0000 0001]
+call  DMCSR    004A [0000 0001] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_setTextAttr [0000 0001 0003]
+call  DMCSR    004B [0000 0001 0003] -> 0000
+fn    dm_drawAt [09CE 0EE0 0000]
+call  DMCSR    0060 [09CE 0EE0 0000] -> 0000
+fn    dm_setActiveWin [0000]
+call  DMCSR    002E [0000] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_replyEvent [STK]
+call  DMCSR    0013 [STK] event='3:F503' -> 0000
+fn    _strncpy [STK 124C]
+fn    dm_msgBox [0EC0]
+call  DMCSR    00E9 [0EC0] -> 0000
+fn    dm_hideCursor
+call  DMCSR    0007 -> 0000
+fn    dm_fillRect [0C08 0D3E 067C 0294 0000]
+call  DMCSR    006E [0C08 0D3E 067C 0294 0000] -> 0000
+fn    dm_drawBitmap [0000 00CA]
+call  DMCSR    001C [0000 00CA] -> 0000
+fn    dm_drawBitmap [0000 00DE]
+call  DMCSR    001C [0000 00DE] -> 0000
+fn    dm_drawBitmap [0000 00F2]
+call  DMCSR    001C [0000 00F2] -> 0000
+fn    dm_drawBitmap [0000 0106]
+call  DMCSR    001C [0000 0106] -> 0000
+fn    dm_drawBitmap [0000 011A]
+call  DMCSR    001C [0000 011A] -> 0000
+fn    dm_drawBitmap [0000 012E]
+call  DMCSR    001C [0000 012E] -> 0000
+fn    dm_drawBitmap [0000 0142]
+call  DMCSR    001C [0000 0142] -> 0000
+fn    dm_drawBitmap [0000 0156]
+call  DMCSR    001C [0000 0156] -> 0000
+fn    dm_drawBitmap [0000 016A]
+call  DMCSR    001C [0000 016A] -> 0000
+fn    dm_drawBitmap [0000 017E]
+call  DMCSR    001C [0000 017E] -> 0000
+fn    dm_drawBitmap [0000 0192]
+call  DMCSR    001C [0000 0192] -> 0000
+fn    dm_drawBitmap [0000 01A6]
+call  DMCSR    001C [0000 01A6] -> 0000
+fn    dm_drawBitmap [0000 01BA]
+call  DMCSR    001C [0000 01BA] -> 0000
+fn    dm_drawBitmap [0000 01CE]
+call  DMCSR    001C [0000 01CE] -> 0000
+fn    dm_drawBitmap [0000 01E2]
+call  DMCSR    001C [0000 01E2] -> 0000
+fn    dm_drawBitmap [0000 01F6]
+call  DMCSR    001C [0000 01F6] -> 0000
+fn    dm_drawBitmap [0000 020A]
+call  DMCSR    001C [0000 020A] -> 0000
+fn    dm_drawBitmap [0000 021E]
+call  DMCSR    001C [0000 021E] -> 0000
+fn    dm_drawBitmap [0000 0232]
+call  DMCSR    001C [0000 0232] -> 0000
+fn    dm_drawBitmap [0000 0246]
+call  DMCSR    001C [0000 0246] -> 0000
+fn    dm_drawBitmap [0000 025A]
+call  DMCSR    001C [0000 025A] -> 0000
+fn    dm_drawBitmap [0000 026E]
+call  DMCSR    001C [0000 026E] -> 0000
+fn    dm_drawBitmap [0000 0282]
+call  DMCSR    001C [0000 0282] -> 0000
+fn    dm_drawBitmap [0000 0296]
+call  DMCSR    001C [0000 0296] -> 0000
+fn    dm_drawBitmap [0000 02AA]
+call  DMCSR    001C [0000 02AA] -> 0000
+fn    dm_drawBitmap [0000 02BE]
+call  DMCSR    001C [0000 02BE] -> 0000
+fn    dm_initWindow [0000]
+call  DMCSR    0030 [0000] -> 0000
+fn    dm_saveBitmap [0000 00CA]
+call  DMCSR    001E [0000 00CA] -> 0000
+fn    dm_saveBitmap [0000 00DE]
+call  DMCSR    001E [0000 00DE] -> 0000
+fn    dm_saveBitmap [0000 00F2]
+call  DMCSR    001E [0000 00F2] -> 0000
+fn    dm_saveBitmap [0000 0106]
+call  DMCSR    001E [0000 0106] -> 0000
+fn    dm_saveBitmap [0000 011A]
+call  DMCSR    001E [0000 011A] -> 0000
+fn    dm_saveBitmap [0000 012E]
+call  DMCSR    001E [0000 012E] -> 0000
+fn    dm_saveBitmap [0000 0142]
+call  DMCSR    001E [0000 0142] -> 0000
+fn    dm_saveBitmap [0000 0156]
+call  DMCSR    001E [0000 0156] -> 0000
+fn    dm_saveBitmap [0000 016A]
+call  DMCSR    001E [0000 016A] -> 0000
+fn    dm_saveBitmap [0000 017E]
+call  DMCSR    001E [0000 017E] -> 0000
+fn    dm_saveBitmap [0000 0192]
+call  DMCSR    001E [0000 0192] -> 0000
+fn    dm_saveBitmap [0000 01A6]
+call  DMCSR    001E [0000 01A6] -> 0000
+fn    dm_saveBitmap [0000 01BA]
+call  DMCSR    001E [0000 01BA] -> 0000
+fn    dm_saveBitmap [0000 01CE]
+call  DMCSR    001E [0000 01CE] -> 0000
+fn    dm_saveBitmap [0000 01E2]
+call  DMCSR    001E [0000 01E2] -> 0000
+fn    dm_saveBitmap [0000 01F6]
+call  DMCSR    001E [0000 01F6] -> 0000
+fn    dm_saveBitmap [0000 020A]
+call  DMCSR    001E [0000 020A] -> 0000
+fn    dm_saveBitmap [0000 021E]
+call  DMCSR    001E [0000 021E] -> 0000
+fn    dm_saveBitmap [0000 0232]
+call  DMCSR    001E [0000 0232] -> 0000
+fn    dm_saveBitmap [0000 0246]
+call  DMCSR    001E [0000 0246] -> 0000
+fn    dm_saveBitmap [0000 025A]
+call  DMCSR    001E [0000 025A] -> 0000
+fn    dm_saveBitmap [0000 026E]
+call  DMCSR    001E [0000 026E] -> 0000
+fn    dm_saveBitmap [0000 0282]
+call  DMCSR    001E [0000 0282] -> 0000
+fn    dm_saveBitmap [0000 0296]
+call  DMCSR    001E [0000 0296] -> 0000
+fn    dm_saveBitmap [0000 02AA]
+call  DMCSR    001E [0000 02AA] -> 0000
+fn    dm_saveBitmap [0000 02BE]
+call  DMCSR    001E [0000 02BE] -> 0000
+fn    dm_setTimeout [00B4]
+call  DMCSR    0018 [00B4] -> 0000
+fn    dm_showCursor
+call  DMCSR    0006 -> 0000
+fn    dm_unloadSpell
+fn    dm_spellCleanup
+call  SPELL    0014 -> 0000
+inte0 SPELL    0207 res='SPELL' -> 0000
+fn    dm_unloadRes
+inte0 DMGUF    0207 res='DMGUF' -> 0000
+fn    dm_cleanupCursor
+fn    dm_cursorCleanup
+call  DMCSR    00D7 -> 0000
+fn    dm_unloadCursor
+inte0 DMCSR    0207 res='DMCSR' -> 0000
+fn    _exit [0000]
+#{ x3
+fn    _crt_printMsg
+#}
+fn    _crt_printStr
+fn    _nullcheck
+fn    _amsg_exit
+int21 21/25    2500
+exit  21/4C    4C00
+# end: exit

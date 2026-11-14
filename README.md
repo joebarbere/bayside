@@ -11,8 +11,8 @@ bayside is a preservation and reconstruction project targeting DeskMate 3.05 (19
 | 1. Research & Acquisition | **Complete** | 148 files extracted from 3 disk image sources; 20 file formats documented; full hardware register maps; desk accessory documentation |
 | 2. Binary Analysis | **Complete** | 87 binaries disassembled (565K+ lines of assembly); 8,500+ functions identified; compiler confirmed as Microsoft C 5.x |
 | 3. Annotation | **Complete** | All 87 binaries fully annotated — 17 EXE/PDM + 52 RES + 18 ACC; every function named; data structures mapped; INT E0h API reference with 8 service classes |
-| 4. C Transpilation | **In Progress** | HANGMAN.PDM transpiled to ~3,900 lines of C89; compiles with OpenWatcom to DOS MZ executable |
-| 5. Verification | **In Progress** | DOSBox-X + OpenWatcom toolchain configured; HANGMAN.EXE builds successfully; runtime testing pending |
+| 4. C Transpilation | **In Progress** | HANGMAN.PDM: all 84 application functions translated to C (runtime + DeskMate SDK glue still original); playable in real DeskMate |
+| 5. Verification | **In Progress** | Automated: Unicorn boundary/call-trace diff vs. the original (`make trace-check`) + headless DOSBox-X runs in real DeskMate |
 
 See [STATUS.md](STATUS.md) for detailed per-module progress.
 
@@ -127,75 +127,59 @@ The DOSBox config (`dosbox/configs/deskmate-tandy.conf`) matches the original Ta
 - `cycles=4000` — approximate Tandy 1000 SX speed
 - `memsize=640` — 640KB conventional, no EMS/XMS/UMB
 
-### Building the Rebuilt Version
+### Development Loop
 
-The transpiled C source compiles with OpenWatcom targeting 16-bit DOS:
-
-```bash
-# Set up the OpenWatcom environment
-source scripts/setup-watcom.sh
-
-# Build HANGMAN (first completed module)
-cd src/hangman
-wmake
-
-# Output: build/hangman/HANGMAN.EXE (10 KB DOS MZ executable)
-```
-
-Build flags match the original Microsoft C 5.x configuration:
-- `-mm` — Medium memory model (multiple code segments, single data segment)
-- `-0` — 8086 instruction set only
-- `-zp1` — 1-byte struct packing (binary-compatible with original data layouts)
-- `-s` — No stack checking (original had none)
-
-### Running the Rebuilt Version in DOSBox
-
-The rebuilt HANGMAN.EXE is a standard DOS MZ executable, but it is a **PDM module** — it cannot run standalone. It requires the DeskMate host environment (DESK.EXE) to provide the INT E0h API services (window management, menus, file I/O, cursor control, etc.).
-
-To test the rebuilt Hangman inside the original DeskMate shell:
+Everything runs from the top-level `Makefile` (any shell; it sets up the
+OpenWatcom environment itself). Requires OpenWatcom V2 in `~/watcom`
+(or `$WATCOM`), DOSBox-X (`dosbox-x` on PATH or the
+`com.dosbox_x.DOSBox-X` flatpak), ffmpeg, and Python 3.
 
 ```bash
-# Copy the rebuilt binary into the DeskMate directory
-cp build/hangman/HANGMAN.EXE archive/deskmate-3.05/extracted/HANGMAN.PDM
-
-# Launch DeskMate with the replaced module
-./dosbox/scripts/run-original.sh
-
-# In DeskMate: open Hangman from the Programs menu
+make setup          # .venv with capstone + unicorn
+make identical      # rebuild HANGMAN.PDM from source with no C: byte-identical check
+make hangman        # build build/hangman/HANGMAN.PDM (original + C functions spliced in)
+make trace-check    # ~1s: every scenario's boundary + call trace vs. the original
+make run-rebuilt    # headless DOSBox-X in real DeskMate, frames in build/run/
+make play           # play the rebuilt Hangman in a DOSBox-X window (make play-original to compare)
+make trace          # re-record the golden traces from the original binary
 ```
 
-To restore the original:
-```bash
-git checkout -- archive/deskmate-3.05/extracted/HANGMAN.PDM
-```
+**How the rebuild works (binary splicing).** `tools/pdm2wasm.py` turns the
+original PDM into linkable OpenWatcom asm with every function and every
+DGROUP variable at its original offset. A C function in `src/hangman/*.c`
+whose definition carries a `/* address: 0000:XXXX */` comment replaces the
+original function at that address; C calls untranslated
+original code through labels (`src/hangman/functions.txt`) and uses
+original globals at their original addresses (`src/hangman/dgroup.syms`).
+Everything is `__cdecl` (`wcc -ecc`), matching MSC 5.x, so both directions
+work. `tools/mkpdm.py` writes the MZ+DM89 header. While some application
+functions are still original, the C code links after the startup segment
+(fine in the harness, but DESK.EXE refuses that layout); once the whole
+application range (`0010-2FFF`) is C, it links *into* that range and the
+PDM keeps the original segment map exactly, which real DeskMate needs.
 
-> **Note:** The rebuilt HANGMAN.EXE currently compiles but has not yet been verified for runtime equivalence. The word list data is a placeholder subset — full verification requires extracting the complete packed word data from the original binary. See [STATUS.md](STATUS.md) for current verification status.
+**How it is verified.** `tools/pdm_trace.py` runs a PDM under Unicorn with a
+fake DESK.EXE and records every INT E0h call, every far call into a
+DeskMate resource (DMCSR, DMGUF, PRGUF, SPELL), DOS calls, and every call
+into a not-yet-translated original function, with arguments. Input
+scenarios (`tests/traces/*.json`) script dialog results; their golden
+traces (`*.trace`) come from the original binary. A wrong argument in
+translated C shows up as a one-line diff naming the call. Where the fake
+DeskMate has to behave like the real one (the event queue, key decoding, the
+DMCSR version, SPELL's return codes), its behaviour was checked against the
+service handlers in DMCSR/DMGUF/PRGUF/SPELL: see
+`research/docs/dmcsr-services.md` and `tools/resdis.py`.
 
-### Capturing Screenshots
+**To translate a function:** read it with `tools/disfn.py`, write it in C
+with a `/* address: 0000:XXXX name */` comment (that alone splices it in),
+name any globals it touches in a `*.syms` file, run `make trace-check`. If no
+scenario reaches the new code, add one first.
 
-For visual comparison between original and rebuilt versions:
-
-```bash
-./dosbox/scripts/capture-screenshots.sh
-```
-
-This launches DeskMate in DOSBox-X. Press **Ctrl+F5** to save PNG screenshots. DOSBox-X saves captures to its internal capture directory (typically `~/Library/Preferences/DOSBox-X/capture/` on macOS or `~/.dosbox-x/capture/` on Linux).
-
-## Stage 4: First Transpilation — HANGMAN.PDM
-
-HANGMAN.PDM was chosen as the first module to transpile because it's self-contained (no DM89 imports), visually testable, and small enough to validate the full pipeline.
-
-**Source files** (`src/hangman/`):
-
-| File | Lines | Description |
-|------|-------|-------------|
-| `hangman.c` | 1,336 | Core game logic: init, game loop, input, word selection, save/restore |
-| `hangman_ui.c` | 732 | Drawing: game board, hangman figure, letter tiles, animations |
-| `hangman_dialog.c` | 343 | Dialogs: define game, define players, add/delete player, about |
-| `hangman_data.c` | 404 | Static data: word list, profanity filter, menus, graphics coords |
-| `deskmate.h` / `deskmate.c` | 789 | DeskMate INT E0h API wrappers (reusable for other modules) |
-| `hangman.h` | 224 | Structs, constants, prototypes |
-| `Makefile` | 83 | OpenWatcom wmake build targeting DOS medium model |
+`tools/dosbox_run.py` (behind `make run-original` / `make run-rebuilt`)
+boots DeskMate headless in a throwaway copy of the files, records AVI and
+extracts PNG frames; `DESK.EXE HANGMAN.PDM` launches Hangman directly.
+The earlier hand-written transpilation is kept for reference in
+`src/hangman/legacy/` (not built).
 
 ## Technical Details
 

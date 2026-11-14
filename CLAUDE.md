@@ -185,20 +185,56 @@ Both scripts should use Tandy machine type with matching memory/video/sound conf
 
 ## Development Commands
 
-### Build (once OpenWatcom is set up)
+All from the top-level Makefile (no need to source anything; works from fish):
+
 ```bash
-# Set up OpenWatcom environment
-source scripts/setup-watcom.sh
-# Build all modules
-make -C src all
+make setup          # .venv (capstone, unicorn)
+make identical      # HANGMAN.PDM rebuilt from source, no C: must be byte-identical
+make hangman        # build/hangman/HANGMAN.PDM with C functions spliced in
+make trace-check    # compare traces of the rebuild vs. golden traces (~1s) -- run after every change
+make trace          # re-record golden traces from the original binary
+make run-rebuilt    # headless DOSBox-X run inside real DeskMate (frames in build/run/)
+make play           # interactive DOSBox-X window with the rebuilt Hangman
 ```
 
-### Disassemble a binary
-```bash
-python tools/disasm.py archive/deskmate-3.05/DESK.EXE -o disassembly/raw/desk.asm
-```
+### Decompilation workflow (binary splicing)
+- The original PDM is emitted as asm with original offsets (tools/pdm2wasm.py).
+  A C function replaces the original when its definition is preceded by a
+  `/* address: 0000:XXXX ... */` comment whose address and name match
+  src/hangman/functions.txt. Placement: once every function in 0010-2FFF is
+  C, the C code links INTO that range (two-pass link, original segment map
+  kept exactly -- real DESK.EXE needs this); otherwise after CRT_TEXT, which
+  only runs in the harness. Never between _TEXT and CRT_TEXT.
+- Read code with `tools/disfn.py <name|addr>` (calls resolved, arg counts,
+  jump tables decoded). Translate faithfully from the disassembly, not from
+  the annotations' prose: annotated names/arg descriptions are often guesses.
+- Original functions not yet in C are declared old-style in the generated
+  build/hangman/protos.h. Functions in C get a full prototype in their area
+  header: game.h (0010-0DD7), dialog.h (0DD8-1AFA), draw.h (1AFB-23EA),
+  words.h (23EB-2FFF). Never call hangman_itoaBuf/strcpyDI/strlenSI or
+  dm_videoNameIndex (register conventions).
+- Globals: original DGROUP offsets. Name them in a *.syms file (one per area
+  is fine; conflicts fail the build) or use DG8/DG16(addr) until understood.
+- No new uninitialised C globals (build fails): the original startup only
+  zeroes the original BSS.
+- After each function: `make trace-check`. If no scenario reaches the code,
+  add tests/traces/hangman-<name>.json and run `make trace` (re-records all
+  goldens from the original).
 
-### Compare original vs rebuilt
-```bash
-python tools/compare.py --original dosbox/configs/original.conf --rebuilt dosbox/configs/rebuilt.conf
-```
+### PDM <-> DeskMate interface (verified with tools/pdm_trace.py)
+- INT E0h AX=0206h loads a resource by name (DS:DX) and writes its far entry
+  point to ES:BX; 0207h unloads; 0208h queries.
+- UI services are far calls into DMCSR; DMCSR dispatches on AX & 0FFFh (args at SS:BP);
+  DMGUF/PRGUF calls take args at SS:BX+6. NOT direct INT E0h.
+- Service dispatch in DMCSR/DMGUF/PRGUF/SPELL is mapped in
+  research/docs/dmcsr-services.md; `tools/resdis.py DMCSR <code>` disassembles
+  any service handler. Check a harness model against the handler before
+  relying on it.
+- Verified against the handlers and modelled to match: the event queue
+  (0014h peek holds an event, 0013h get blocks then consumes, 0016h flush
+  DISCARDS the held event), keyToChar (PRGUF 0023h), the DMCSR version
+  (00D5h = 036Fh), SPELL return codes. Scenario events are input given while
+  the program blocks in get; mark an event "ahead" (["key","A","ahead"]) for
+  type-ahead that peeks can see. Drawing/dialog/form services are not read
+  (traces check their arguments only). Passing traces + a DOSBox playthrough
+  together are still the bar.
